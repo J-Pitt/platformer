@@ -4,7 +4,7 @@
   "description": "A dark metroidvania platformer — explore, fight, and survive the depths.",
   "start_url": "./",
   "display": "fullscreen",
-  "orientation": "landscape",
+  "orientation": "any",
   "background_color": "#050508",
   "theme_color": "#1a1008",
   "icons": [

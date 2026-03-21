@@ -13,9 +13,22 @@
   <title>Abyssal Depths</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touch-action: none; }
-    #game-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-    canvas { image-rendering: pixelated; }
+    html, body {
+      width: 100vw; height: 100vh; height: 100dvh;
+      background: #000; overflow: hidden; touch-action: none;
+      position: fixed; inset: 0;
+    }
+    #game-container {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      position: absolute; inset: 0;
+    }
+    #game-container canvas {
+      image-rendering: pixelated;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover;
+    }
 
     /* ── On-screen touch gamepad ── */
     #touch-controls {
@@ -74,7 +87,7 @@
     #btn-slash { right: 128px; bottom: 48px; }
     #btn-dash  { right: 0; bottom: 48px; }
 
-    /* Landscape small phones: shrink a bit */
+    /* Landscape small phones: tighter spacing */
     @media (max-height: 400px) {
       .dpad-container { bottom: 8px; left: 8px; }
       .dpad-container .touch-btn { width: 44px; height: 44px; font-size: 18px; }
@@ -88,6 +101,22 @@
       #btn-jump  { right: 52px; bottom: 90px; }
       #btn-slash { right: 104px; bottom: 38px; }
       #btn-dash  { right: 0; bottom: 38px; }
+    }
+
+    /* Portrait mode: controls near bottom, spaced for thumbs */
+    @media (orientation: portrait) {
+      .dpad-container { bottom: 24px; left: 12px; }
+      .dpad-container .touch-btn { width: 52px; height: 52px; font-size: 20px; }
+      #dpad-up    { left: 54px; top: 0; }
+      #dpad-down  { left: 54px; top: 108px; }
+      #dpad-left  { left: 0; top: 54px; }
+      #dpad-right { left: 108px; top: 54px; }
+
+      .action-container { bottom: 24px; right: 12px; }
+      .action-container .touch-btn { width: 56px; height: 56px; font-size: 12px; }
+      #btn-jump  { right: 60px; bottom: 106px; }
+      #btn-slash { right: 120px; bottom: 44px; }
+      #btn-dash  { right: 0; bottom: 44px; }
     }
   </style>
 </head>
