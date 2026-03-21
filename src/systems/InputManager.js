@@ -88,6 +88,7 @@ export class InputManager {
 
   _maybeShowHint() {
     if (!navigator.getGamepads) return;
+    if (this.touch.active) return;
     this.scene.time.delayedCall(4000, () => {
       if (this.findFirstConnectedGamepad()) return;
       if (this.hintShown) return;
@@ -212,14 +213,30 @@ export class InputManager {
       this.storePrevButtons(pad);
     }
 
-    this.state.left = kbLeft || gpLeft;
-    this.state.right = kbRight || gpRight;
-    this.state.up = kbUp || gpUp;
-    this.state.down = kbDown || gpDown;
-    this.state.jumpPressed = kbJumpPressed || gpJumpPressed;
-    this.state.jumpHeld = kbJumpHeld || gpJumpHeld;
-    this.state.dashPressed = kbDashPressed || gpDashPressed;
-    this.state.slashPressed = kbSlashPressed || gpSlashPressed;
+    let tLeft = false, tRight = false, tUp = false, tDown = false;
+    let tJumpPressed = false, tJumpHeld = false;
+    let tDashPressed = false, tSlashPressed = false;
+
+    if (this.touch.active) {
+      const t = this.touch.consume();
+      tLeft = !!(t.left && t.left.pressed);
+      tRight = !!(t.right && t.right.pressed);
+      tUp = !!(t.up && t.up.pressed);
+      tDown = !!(t.down && t.down.pressed);
+      tJumpPressed = !!(t.jump && t.jump.justPressed);
+      tJumpHeld = !!(t.jump && t.jump.held);
+      tDashPressed = !!(t.dash && t.dash.justPressed);
+      tSlashPressed = !!(t.slash && t.slash.justPressed);
+    }
+
+    this.state.left = kbLeft || gpLeft || tLeft;
+    this.state.right = kbRight || gpRight || tRight;
+    this.state.up = kbUp || gpUp || tUp;
+    this.state.down = kbDown || gpDown || tDown;
+    this.state.jumpPressed = kbJumpPressed || gpJumpPressed || tJumpPressed;
+    this.state.jumpHeld = kbJumpHeld || gpJumpHeld || tJumpHeld;
+    this.state.dashPressed = kbDashPressed || gpDashPressed || tDashPressed;
+    this.state.slashPressed = kbSlashPressed || gpSlashPressed || tSlashPressed;
 
     return this.state;
   }

@@ -11,6 +11,7 @@ const config = {
   backgroundColor: '#050508',
   input: {
     gamepad: true,
+    touch: true,
   },
   physics: {
     default: 'arcade',
