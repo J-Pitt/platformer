@@ -176,7 +176,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(1);
     this.clearTint();
     if (this.playerIndex === 1) this.setTint(0x6688ff);
-    this.setPosition(this.checkpointX, this.checkpointY);
+    this.setPosition(this.spawnX, this.spawnY);
     this.body.velocity.set(0, 0);
     this.combat.isInvulnerable = false;
     this.combat.invulnTimer = 0;
