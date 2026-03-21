@@ -991,6 +991,9 @@ function buildRoom8() {
   clearRect(tiles, f - 2, 0, f + 1, 0);
   // Door opening right (back to room5)
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+  // Top center opening to boss room
+  clearRect(tiles, 0, 23, 0, 26);
+  fillRow(tiles, 4, 22, 27, 2);
 
   return {
     name: 'The Crucible',
@@ -1001,6 +1004,7 @@ function buildRoom8() {
     objects: [
       { type: 'door', targetRoom: 'room7', x: 1, y: f, spawnX: 26, spawnY: 5 },
       { type: 'door', targetRoom: 'room5', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
+      { type: 'door', targetRoom: 'room9', x: W / 2, y: 2, spawnX: 3, spawnY: 17 },
       // Central lava
       { type: 'magma_pool', x: 16, y: 24, width: 18 },
       { type: 'spike_wall', x: 16, y: 23, width: 576, height: 16 },
@@ -1111,6 +1115,103 @@ function buildRoom8() {
   };
 }
 
+function buildRoom9() {
+  const W = 44, H = 20;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Arena floor — wide open for the boss fight
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Raised side platforms (escape routes / vantage)
+  fillRow(tiles, 14, 2, 6, 2);
+  fillRow(tiles, 14, W - 7, W - 3, 2);
+  fillRow(tiles, 10, 4, 8, 2);
+  fillRow(tiles, 10, W - 9, W - 5, 2);
+
+  // Central elevated platform
+  fillRow(tiles, 12, 18, 25, 2);
+  fillRow(tiles, 8, 20, 23, 2);
+
+  // Pillars framing the arena (boss aesthetic)
+  fillRect(tiles, 4, 10, 14, 10, 1);
+  fillRect(tiles, 4, W - 11, 14, W - 11, 1);
+
+  // Small terrain bumps on the floor
+  fillRect(tiles, f, 14, f + 1, 15, 1);
+  fillRect(tiles, f, W - 16, f + 1, W - 15, 1);
+
+  // Door opening on left (entry from room8)
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+
+  return {
+    name: 'Throne of the Bone Tyrant',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room8', x: 1, y: f, spawnX: 46, spawnY: 23 },
+      { type: 'boss', x: 28, y: f },
+      { type: 'bench', x: 5, y: f },
+      { type: 'health_pickup', x: 6, y: 9 },
+      { type: 'health_pickup', x: W - 7, y: 9 },
+      { type: 'health_pickup', x: 22, y: 7 },
+      // Lava pits on the sides for danger
+      { type: 'magma_pool', x: 12, y: f + 1, width: 3 },
+      { type: 'magma_pool', x: W - 14, y: f + 1, width: 3 },
+      // Decorations
+      { type: 'pillar', x: 10, y: f },
+      { type: 'pillar', x: W - 11, y: f },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 16, y: 1 },
+      { type: 'chain', x: W - 17, y: 1 },
+      { type: 'chain', x: W - 9, y: 1 },
+      { type: 'stalactite', x: 12, y: 1 },
+      { type: 'stalactite', x: 22, y: 1 },
+      { type: 'stalactite', x: W - 13, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: W - 7, y: 1 },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 22, y: 4 },
+      { type: 'glow_spore', x: W - 15, y: 6 },
+      { type: 'ruin_arch', x: 12, y: f },
+      { type: 'ruin_arch', x: W - 13, y: f },
+    ],
+    foreground: [
+      { type: 'fg_pillar_fragment', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_pillar_fragment', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 6 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 6 },
+      { type: 'fg_torch_bracket', x: 1, y: 12 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 12 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 2, y: 2, w: 16, h: 12 },
+      { type: 'cb_detail_bricks', x: W - 18, y: 2, w: 16, h: 12 },
+      { type: 'cb_rune_mark', x: 10, y: 6 },
+      { type: 'cb_rune_mark', x: 22, y: 4 },
+      { type: 'cb_rune_mark', x: W - 11, y: 6 },
+      { type: 'cb_rune_mark', x: 16, y: 12 },
+      { type: 'cb_rune_mark', x: W - 17, y: 12 },
+    ],
+    lighting: {
+      beams: [
+        { x: 22, y: 0, angle: 0, key: 'warm', alpha: 0.20, scale: 2.0 },
+        { x: 10, y: 0, angle: -15, key: 'warm', alpha: 0.14, scale: 1.4 },
+        { x: W - 11, y: 0, angle: 15, key: 'warm', alpha: 0.14, scale: 1.4 },
+      ],
+      ambientColor: 0xff2244,
+      ambientAlpha: 0.06,
+    },
+    locked: true,
+    ambience: 'guardian',
+  };
+}
+
 export const rooms = {
   room1: buildRoom1(),
   room2: buildRoom2(),
@@ -1120,4 +1221,5 @@ export const rooms = {
   room6: buildRoom6(),
   room7: buildRoom7(),
   room8: buildRoom8(),
+  room9: buildRoom9(),
 };

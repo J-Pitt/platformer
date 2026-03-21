@@ -64,17 +64,32 @@
       color: rgba(68,255,102,0.9);
     }
 
-    /* D-pad */
+    /* Big left/right movement buttons (top-left in landscape, bottom-left in portrait) */
+    .move-container {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+    }
+    #move-left, #move-right {
+      width: 78px; height: 64px;
+      border-radius: 14px;
+      font-size: 30px;
+      position: absolute;
+    }
+    #move-left  { left: 0; top: 0; }
+    #move-right { left: 86px; top: 0; }
+
+    /* D-pad (up/down sit below the move buttons in landscape) */
     .dpad-container {
       position: absolute;
-      bottom: 20px;
-      left: 20px;
+      top: 88px;
+      left: 14px;
     }
     .dpad-container .touch-btn { width: 56px; height: 56px; font-size: 22px; }
-    #dpad-up    { left: 58px; top: 0; }
-    #dpad-down  { left: 58px; top: 116px; }
-    #dpad-left  { left: 0; top: 58px; }
-    #dpad-right { left: 116px; top: 58px; }
+    #dpad-up    { left: 54px; top: 0; }
+    #dpad-down  { left: 54px; top: 64px; }
+    #dpad-left  { display: none; }
+    #dpad-right { display: none; }
 
     /* Action buttons */
     .action-container {
@@ -89,12 +104,14 @@
 
     /* Landscape small phones: tighter spacing */
     @media (max-height: 400px) {
-      .dpad-container { bottom: 8px; left: 8px; }
+      .move-container { top: 8px; left: 8px; }
+      #move-left, #move-right { width: 62px; height: 52px; font-size: 24px; }
+      #move-right { left: 68px; }
+
+      .dpad-container { top: 68px; left: 8px; }
       .dpad-container .touch-btn { width: 44px; height: 44px; font-size: 18px; }
-      #dpad-up    { left: 46px; top: 0; }
-      #dpad-down  { left: 46px; top: 92px; }
-      #dpad-left  { left: 0; top: 46px; }
-      #dpad-right { left: 92px; top: 46px; }
+      #dpad-up    { left: 44px; top: 0; }
+      #dpad-down  { left: 44px; top: 52px; }
 
       .action-container { bottom: 8px; right: 8px; }
       .action-container .touch-btn { width: 48px; height: 48px; font-size: 11px; }
@@ -105,12 +122,14 @@
 
     /* Portrait mode: controls near bottom, spaced for thumbs */
     @media (orientation: portrait) {
-      .dpad-container { bottom: 24px; left: 12px; }
+      .move-container { top: auto; bottom: 18px; left: 12px; }
+      #move-left, #move-right { width: 74px; height: 60px; font-size: 28px; }
+      #move-right { left: 82px; }
+
+      .dpad-container { top: auto; bottom: 88px; left: 12px; }
       .dpad-container .touch-btn { width: 52px; height: 52px; font-size: 20px; }
-      #dpad-up    { left: 54px; top: 0; }
-      #dpad-down  { left: 54px; top: 108px; }
-      #dpad-left  { left: 0; top: 54px; }
-      #dpad-right { left: 108px; top: 54px; }
+      #dpad-up    { left: 50px; top: 0; }
+      #dpad-down  { left: 50px; top: 60px; }
 
       .action-container { bottom: 24px; right: 12px; }
       .action-container .touch-btn { width: 56px; height: 56px; font-size: 12px; }
@@ -129,6 +148,10 @@
       <div id="dpad-down" class="touch-btn" data-btn="down">▼</div>
       <div id="dpad-left" class="touch-btn" data-btn="left">◀</div>
       <div id="dpad-right" class="touch-btn" data-btn="right">▶</div>
+    </div>
+    <div class="move-container">
+      <div id="move-left" class="touch-btn" data-btn="left">◀</div>
+      <div id="move-right" class="touch-btn" data-btn="right">▶</div>
     </div>
     <div class="action-container">
       <div id="btn-jump" class="touch-btn" data-btn="jump">JUMP</div>

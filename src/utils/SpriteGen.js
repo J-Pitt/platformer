@@ -24,6 +24,7 @@ export function generateAllTextures(scene) {
   generatePlayerSlashTextures(scene);
   generateCrawlerTexture(scene);
   generateFlyerTexture(scene);
+  generateBossTextures(scene);
   generateTileTextures(scene);
   generateBackgroundTextures(scene);
   generateParallaxTextures(scene);
@@ -559,6 +560,159 @@ function generateFlyerTexture(scene) {
   g.fillCircle(20, 13, 1.5);
   g.generateTexture('flyer', 40, 40);
   g.destroy();
+}
+
+function generateBossTextures(scene) {
+  const W = 64, H = 64;
+
+  // Idle texture
+  const g = scene.make.graphics({ add: false });
+  drawBossBody(g, W, H, false);
+  g.generateTexture('boss_idle', W, H);
+  g.destroy();
+
+  // Attack texture
+  const ga = scene.make.graphics({ add: false });
+  drawBossBody(ga, W, H, true);
+  ga.generateTexture('boss_attack', W, H);
+  ga.destroy();
+
+  // Projectile (flaming skull)
+  const gp = scene.make.graphics({ add: false });
+  gp.fillStyle(0x220808);
+  gp.fillCircle(10, 10, 10);
+  gp.fillStyle(0xff4422);
+  gp.fillCircle(10, 10, 7);
+  gp.fillStyle(0xff8844);
+  gp.fillCircle(10, 8, 4);
+  gp.fillStyle(0xffcc44);
+  gp.fillCircle(10, 7, 2);
+  gp.fillStyle(0x110000);
+  gp.fillCircle(7, 10, 2);
+  gp.fillCircle(13, 10, 2);
+  gp.fillStyle(0xff2200);
+  gp.fillCircle(7, 10, 1);
+  gp.fillCircle(13, 10, 1);
+  gp.generateTexture('boss_projectile', 20, 20);
+  gp.destroy();
+}
+
+function drawBossBody(g, W, H, attacking) {
+  const cx = W / 2;
+
+  // Tattered cape
+  g.fillStyle(0x440808);
+  g.fillTriangle(cx - 18, 20, cx + 18, 20, cx - 22, H - 4);
+  g.fillTriangle(cx + 18, 20, cx + 22, H - 4, cx - 22, H - 4);
+  g.fillStyle(0x330606);
+  g.fillTriangle(cx - 10, 24, cx + 10, 24, cx - 14, H - 8);
+  g.fillTriangle(cx + 10, 24, cx + 14, H - 8, cx - 14, H - 8);
+
+  // Armored torso
+  g.fillStyle(0x2a1a1a);
+  g.fillRect(cx - 14, 22, 28, 20);
+  g.fillStyle(0x3a2222);
+  g.fillRect(cx - 12, 24, 24, 16);
+  // Ribcage lines
+  g.lineStyle(1.5, 0x665544, 0.7);
+  for (let i = 0; i < 4; i++) {
+    const ry = 26 + i * 4;
+    g.lineBetween(cx - 10, ry, cx + 10, ry);
+  }
+  // Shoulder pauldrons
+  g.fillStyle(0x444444);
+  g.fillEllipse(cx - 16, 24, 14, 10);
+  g.fillEllipse(cx + 16, 24, 14, 10);
+  g.fillStyle(0x555555);
+  g.fillEllipse(cx - 16, 23, 10, 6);
+  g.fillEllipse(cx + 16, 23, 10, 6);
+  // Spikes on pauldrons
+  g.fillStyle(0x888888);
+  g.fillTriangle(cx - 22, 22, cx - 19, 14, cx - 16, 22);
+  g.fillTriangle(cx + 22, 22, cx + 19, 14, cx + 16, 22);
+
+  // Skull head (larger)
+  g.fillStyle(0xd8ccb8);
+  g.fillEllipse(cx, 14, 22, 18);
+  g.fillStyle(0xc8bca8);
+  g.fillEllipse(cx, 16, 20, 14);
+  // Jaw
+  g.fillStyle(0xc0b4a0);
+  g.fillRect(cx - 8, 18, 16, 6);
+  // Eye sockets
+  g.fillStyle(0x0a0404);
+  g.fillEllipse(cx - 6, 12, 7, 6);
+  g.fillEllipse(cx + 6, 12, 7, 6);
+  // Glowing red eyes
+  g.fillStyle(0xff2222);
+  g.fillCircle(cx - 6, 12, 2.5);
+  g.fillCircle(cx + 6, 12, 2.5);
+  g.fillStyle(0xff6644);
+  g.fillCircle(cx - 6, 11.5, 1.2);
+  g.fillCircle(cx + 6, 11.5, 1.2);
+  // Nose hole
+  g.fillStyle(0x0a0404);
+  g.fillTriangle(cx - 2, 16, cx, 14, cx + 2, 16);
+  // Teeth
+  g.fillStyle(0xd0c8b0);
+  for (let i = 0; i < 5; i++) {
+    g.fillRect(cx - 6 + i * 3, 20, 2, 3);
+  }
+
+  // Crown (dark iron with red gems)
+  g.fillStyle(0x555555);
+  g.fillRect(cx - 12, 4, 24, 6);
+  g.fillStyle(0x666666);
+  g.fillTriangle(cx - 12, 4, cx - 9, -4, cx - 6, 4);
+  g.fillTriangle(cx - 3, 4, cx, -6, cx + 3, 4);
+  g.fillTriangle(cx + 6, 4, cx + 9, -4, cx + 12, 4);
+  // Red gems
+  g.fillStyle(0xff2244);
+  g.fillCircle(cx - 9, 0, 1.8);
+  g.fillCircle(cx, -2, 2);
+  g.fillCircle(cx + 9, 0, 1.8);
+
+  // Legs (armored)
+  g.fillStyle(0x2a1a1a);
+  g.fillRect(cx - 10, 42, 8, 18);
+  g.fillRect(cx + 2, 42, 8, 18);
+  g.fillStyle(0x333333);
+  g.fillRect(cx - 9, 44, 6, 14);
+  g.fillRect(cx + 3, 44, 6, 14);
+  // Boots
+  g.fillStyle(0x444444);
+  g.fillRect(cx - 12, 56, 10, 6);
+  g.fillRect(cx + 2, 56, 10, 6);
+
+  // Weapon
+  if (attacking) {
+    // Great axe swinging
+    const wx = cx + 24;
+    const wy = 16;
+    // Shaft
+    g.lineStyle(3.5, 0x553322, 1);
+    g.lineBetween(cx + 14, 28, wx + 6, wy - 12);
+    // Axe head
+    g.fillStyle(0x888888);
+    g.fillTriangle(wx - 2, wy - 14, wx + 14, wy - 4, wx - 2, wy + 6);
+    g.fillStyle(0xaaaaaa);
+    g.fillTriangle(wx, wy - 12, wx + 10, wy - 4, wx, wy + 4);
+    // Edge gleam
+    g.lineStyle(1.5, 0xcccccc, 0.7);
+    g.lineBetween(wx + 12, wy - 6, wx + 2, wy + 4);
+  } else {
+    // Great axe resting
+    const wx = cx + 18;
+    const wy = 20;
+    // Shaft
+    g.lineStyle(3.5, 0x553322, 1);
+    g.lineBetween(cx + 12, 26, wx, wy + 28);
+    // Axe head at bottom
+    g.fillStyle(0x888888);
+    g.fillTriangle(wx - 8, wy + 22, wx + 8, wy + 16, wx + 8, wy + 32);
+    g.fillStyle(0xaaaaaa);
+    g.fillTriangle(wx - 6, wy + 24, wx + 6, wy + 18, wx + 6, wy + 30);
+  }
 }
 
 function lerpRgb(c1, c2, t) {

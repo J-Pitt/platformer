@@ -8,10 +8,10 @@ export function isMobileDevice() {
 export class TouchControls {
   constructor() {
     this.active = false;
-    this.buttons = {};
     this._pressed = {};
     this._justPressed = {};
     this._held = {};
+    this._activeCount = {};
 
     if (!isMobileDevice()) return;
 
@@ -23,13 +23,16 @@ export class TouchControls {
     btnEls.forEach((btn) => {
       const key = btn.dataset.btn;
       if (!key) return;
-      this.buttons[key] = btn;
-      this._pressed[key] = false;
-      this._justPressed[key] = false;
-      this._held[key] = false;
+      if (this._activeCount[key] === undefined) {
+        this._pressed[key] = false;
+        this._justPressed[key] = false;
+        this._held[key] = false;
+        this._activeCount[key] = 0;
+      }
 
       const onDown = (e) => {
         e.preventDefault();
+        this._activeCount[key]++;
         if (!this._pressed[key]) {
           this._justPressed[key] = true;
         }
@@ -40,9 +43,12 @@ export class TouchControls {
 
       const onUp = (e) => {
         e.preventDefault();
-        this._pressed[key] = false;
-        this._held[key] = false;
+        this._activeCount[key] = Math.max(0, this._activeCount[key] - 1);
         btn.classList.remove('active');
+        if (this._activeCount[key] === 0) {
+          this._pressed[key] = false;
+          this._held[key] = false;
+        }
       };
 
       btn.addEventListener('touchstart', onDown, { passive: false });

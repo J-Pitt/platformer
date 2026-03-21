@@ -1,6 +1,7 @@
 import { rooms, TILE_SIZE } from './rooms.js';
 import { Crawler } from '../entities/Crawler.js';
 import { Flyer } from '../entities/Flyer.js';
+import { Boss } from '../entities/Boss.js';
 
 export class LevelManager {
   constructor(scene) {
@@ -532,6 +533,7 @@ export class LevelManager {
         case 'bench': this.createBench(px, py); break;
         case 'crawler': this.createCrawler(px, py); break;
         case 'flyer': this.createFlyer(px, py); break;
+        case 'boss': this.createBoss(px, py); break;
         case 'health_pickup': this.createHealthPickup(px, py); break;
         case 'moving_platform': this.createMovingPlatform(px, py, obj); break;
         case 'pendulum_trap': this.createPendulumTrap(px, py, obj); break;
@@ -865,6 +867,11 @@ export class LevelManager {
   createFlyer(x, y) {
     const flyer = new Flyer(this.scene, x, y);
     this.scene.enemies.add(flyer);
+  }
+
+  createBoss(x, y) {
+    const boss = new Boss(this.scene, x, y);
+    this.scene.enemies.add(boss);
   }
 
   createHealthPickup(x, y) {
@@ -1255,7 +1262,7 @@ export class LevelManager {
         onComplete: () => text.destroy(),
       });
 
-      if (this.currentRoomId === 'room8') {
+      if (this.currentRoomId === 'room9') {
         this.scene.time.delayedCall(2500, () => {
           this.scene.showLevelComplete();
         });
