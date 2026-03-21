@@ -91,6 +91,18 @@
     #dpad-left  { display: none; }
     #dpad-right { display: none; }
 
+    /* Pause button (top-right) */
+    #btn-pause {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 44px;
+      height: 44px;
+      font-size: 16px;
+      border-radius: 10px;
+      pointer-events: auto;
+    }
+
     /* Action buttons */
     .action-container {
       position: absolute;
@@ -158,6 +170,7 @@
       <div id="btn-slash" class="touch-btn" data-btn="slash">ATK</div>
       <div id="btn-dash" class="touch-btn" data-btn="dash">DASH</div>
     </div>
+    <div id="btn-pause" class="touch-btn" data-btn="pause">❚❚</div>
   </div>
 
   <script type="module" src="/src/main.js"></script>

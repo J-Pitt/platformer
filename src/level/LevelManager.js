@@ -2,6 +2,7 @@ import { rooms, TILE_SIZE } from './rooms.js';
 import { Crawler } from '../entities/Crawler.js';
 import { Flyer } from '../entities/Flyer.js';
 import { Boss } from '../entities/Boss.js';
+import { NPC } from '../entities/NPC.js';
 
 export class LevelManager {
   constructor(scene) {
@@ -23,6 +24,7 @@ export class LevelManager {
     this.hazardZones = [];
     this.crumblePlatforms = [];
     this.hazardDamageCooldown = 0;
+    this.npcs = [];
   }
 
   get roomWidth() {
@@ -534,6 +536,7 @@ export class LevelManager {
         case 'crawler': this.createCrawler(px, py); break;
         case 'flyer': this.createFlyer(px, py); break;
         case 'boss': this.createBoss(px, py); break;
+        case 'npc': this.createNPC(px, py, obj); break;
         case 'health_pickup': this.createHealthPickup(px, py); break;
         case 'moving_platform': this.createMovingPlatform(px, py, obj); break;
         case 'pendulum_trap': this.createPendulumTrap(px, py, obj); break;
@@ -880,6 +883,52 @@ export class LevelManager {
   createBoss(x, y) {
     const boss = new Boss(this.scene, x, y);
     this.scene.enemies.add(boss);
+  }
+
+  createNPC(x, y, obj) {
+    const npc = new NPC(this.scene, x, y, obj.npcType, obj.dialogue);
+    this.scene.physics.add.collider(npc, this.wallLayer);
+    this.scene.physics.add.collider(npc, this.platformGroup);
+
+    const zone = this.scene.physics.add.image(x, y, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(60, 48);
+
+    let playerInZone = false;
+    this.scene.physics.add.overlap(
+      this.scene.player, zone,
+      () => {
+        if (!playerInZone) {
+          playerInZone = true;
+          npc.setPlayerNearby(true);
+        }
+        const input = this.scene.inputManager.state;
+        if ((input.up || input.slashPressed) && !npc.isTalking && !this.scene.dialogueActive) {
+          this.scene.dialogueActive = true;
+          npc.interact(() => {
+            this.scene.dialogueActive = false;
+          });
+        }
+      },
+    );
+
+    this.scene.time.addEvent({
+      delay: 200, loop: true,
+      callback: () => {
+        if (!zone.active || !this.scene.player) return;
+        const dist = Phaser.Math.Distance.Between(
+          this.scene.player.x, this.scene.player.y, zone.x, zone.y,
+        );
+        if (dist > 50 && playerInZone) {
+          playerInZone = false;
+          npc.setPlayerNearby(false);
+        }
+      },
+    });
+
+    this.npcs.push({ npc, zone });
   }
 
   createHealthPickup(x, y) {
@@ -1340,6 +1389,12 @@ export class LevelManager {
       if (hz.zone && hz.zone.active) hz.zone.destroy();
     }
     this.hazardZones = [];
+
+    for (const n of this.npcs) {
+      if (n.npc && n.npc.active) n.npc.destroy();
+      if (n.zone && n.zone.active) n.zone.destroy();
+    }
+    this.npcs = [];
 
     if (this.scene.enemies) { this.scene.enemies.clear(true, true); }
 

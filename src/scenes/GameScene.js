@@ -41,8 +41,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.transitioning = false;
+    this.paused = false;
+    this.pauseElements = [];
+    this.dialogueActive = false;
 
     this.levelManager.loadRoom('room1');
+
+    this.input.keyboard.on('keydown-P', () => this.togglePause());
+    this.input.keyboard.on('keydown-ESC', () => this.togglePause());
 
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     this.cameras.main.setDeadzone(60, 40);
@@ -122,6 +128,18 @@ export class GameScene extends Phaser.Scene {
 
     this.inputManager.update();
 
+    if (this.inputManager.touch.active) {
+      const t = this.inputManager.touch._pressed;
+      if (t.pause && !this._pauseTouchPrev) {
+        this.togglePause();
+      }
+      this._pauseTouchPrev = !!t.pause;
+    }
+
+    if (this.paused) return;
+
+    if (this.dialogueActive) return;
+
     if (this.hud && this.hud.mapOverlay && this.hud.mapOverlay.visible) {
       return;
     }
@@ -182,6 +200,51 @@ export class GameScene extends Phaser.Scene {
 
   findCheckpointRoom() {
     return this.player._checkpointRoom || this.levelManager.currentRoomId;
+  }
+
+  togglePause() {
+    if (this.transitioning) return;
+    if (this.hud && this.hud.mapOverlay && this.hud.mapOverlay.visible) return;
+
+    this.paused = !this.paused;
+    if (this.paused) {
+      this.physics.pause();
+      this.showPauseOverlay();
+    } else {
+      this.physics.resume();
+      this.hidePauseOverlay();
+    }
+  }
+
+  showPauseOverlay() {
+    const cam = this.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height / 2;
+
+    const bg = this.add.rectangle(cx, cy, cam.width, cam.height, 0x000000, 0.6)
+      .setScrollFactor(0).setDepth(250);
+    this.pauseElements.push(bg);
+
+    const title = this.add.text(cx, cy - 20, 'PAUSED', {
+      fontSize: '36px', fontFamily: 'monospace', color: '#44ff66',
+      stroke: '#000', strokeThickness: 5,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
+    this.pauseElements.push(title);
+
+    const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
+    const hint = this.add.text(cx, cy + 30,
+      isMobile ? '[ TAP PAUSE TO RESUME ]' : '[ P OR ESC TO RESUME ]', {
+        fontSize: '12px', fontFamily: 'monospace', color: '#6a5838',
+        stroke: '#000', strokeThickness: 2,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
+    this.pauseElements.push(hint);
+  }
+
+  hidePauseOverlay() {
+    for (const el of this.pauseElements) {
+      if (el.destroy) el.destroy();
+    }
+    this.pauseElements = [];
   }
 
   showLevelComplete() {

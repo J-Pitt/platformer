@@ -37,6 +37,7 @@ export function generateAllTextures(scene) {
   generateDoorTexture(scene);
   generateHazardTextures(scene);
   generateDepthLayersTextures(scene);
+  generateNPCTextures(scene);
 }
 
 /** Royal blade + gold guard + pommel (hx,hy = hand / crossguard center) */
@@ -2446,4 +2447,115 @@ function generateDepthLayersTextures(scene) {
   cbRune.setAlpha(1);
   cbRune.generateTexture('cb_rune_mark', 32, 32);
   cbRune.destroy();
+}
+
+function generateNPCTextures(scene) {
+  const W = 32, H = 40;
+
+  // Old Hermit — hooded, hunched, with a staff
+  const gh = scene.make.graphics({ add: false });
+  // Robe
+  gh.fillStyle(0x4a3828);
+  gh.fillTriangle(W / 2 - 10, 14, W / 2 + 10, 14, W / 2 - 12, H - 4);
+  gh.fillTriangle(W / 2 + 10, 14, W / 2 + 12, H - 4, W / 2 - 12, H - 4);
+  gh.fillStyle(0x3a2818);
+  gh.fillTriangle(W / 2 - 6, 16, W / 2 + 6, 16, W / 2 - 8, H - 6);
+  gh.fillTriangle(W / 2 + 6, 16, W / 2 + 8, H - 6, W / 2 - 8, H - 6);
+  // Hood
+  gh.fillStyle(0x5a4838);
+  gh.fillEllipse(W / 2, 12, 18, 16);
+  gh.fillStyle(0x3a2818);
+  gh.fillEllipse(W / 2, 13, 14, 12);
+  // Eyes (faint green glow)
+  gh.fillStyle(0x44cc66);
+  gh.fillCircle(W / 2 - 3, 13, 1.5);
+  gh.fillCircle(W / 2 + 3, 13, 1.5);
+  // Staff
+  gh.lineStyle(2.5, 0x7a6848);
+  gh.lineBetween(W / 2 + 12, 8, W / 2 + 10, H - 2);
+  gh.fillStyle(0x44ff66);
+  gh.fillCircle(W / 2 + 12, 7, 3);
+  gh.fillStyle(0x88ffaa, 0.4);
+  gh.fillCircle(W / 2 + 12, 7, 5);
+  gh.generateTexture('npc_hermit', W, H);
+  gh.destroy();
+
+  // Fallen Knight — armored, kneeling/leaning
+  const gk = scene.make.graphics({ add: false });
+  // Armor body
+  gk.fillStyle(0x555566);
+  gk.fillRect(W / 2 - 8, 14, 16, 18);
+  gk.fillStyle(0x666677);
+  gk.fillRect(W / 2 - 6, 16, 12, 14);
+  // Helmet
+  gk.fillStyle(0x777788);
+  gk.fillEllipse(W / 2, 10, 16, 14);
+  gk.fillStyle(0x555566);
+  gk.fillRect(W / 2 - 6, 10, 12, 4);
+  // Visor slit
+  gk.fillStyle(0x112233);
+  gk.fillRect(W / 2 - 5, 10, 10, 2);
+  // Blue eye glow
+  gk.fillStyle(0x4488ff);
+  gk.fillCircle(W / 2 - 2, 10, 1);
+  gk.fillCircle(W / 2 + 2, 10, 1);
+  // Shoulder pauldrons
+  gk.fillStyle(0x777788);
+  gk.fillEllipse(W / 2 - 10, 16, 8, 6);
+  gk.fillEllipse(W / 2 + 10, 16, 8, 6);
+  // Legs
+  gk.fillStyle(0x444455);
+  gk.fillRect(W / 2 - 6, 32, 5, 8);
+  gk.fillRect(W / 2 + 1, 32, 5, 8);
+  // Broken sword
+  gk.lineStyle(2, 0x8899aa);
+  gk.lineBetween(W / 2 + 10, 20, W / 2 + 14, 34);
+  gk.generateTexture('npc_knight', W, H);
+  gk.destroy();
+
+  // Wandering Spirit — ghostly, translucent
+  const gs = scene.make.graphics({ add: false });
+  gs.fillStyle(0x8866cc, 0.5);
+  gs.fillEllipse(W / 2, 16, 16, 20);
+  gs.fillStyle(0xaa88ff, 0.3);
+  gs.fillEllipse(W / 2, 14, 12, 16);
+  // Trailing wispy body
+  gs.fillStyle(0x8866cc, 0.25);
+  gs.fillTriangle(W / 2 - 6, 22, W / 2 + 6, 22, W / 2, H);
+  gs.fillStyle(0xaa88ff, 0.15);
+  gs.fillTriangle(W / 2 - 3, 24, W / 2 + 3, 24, W / 2, H - 2);
+  // Face
+  gs.fillStyle(0xddccff, 0.7);
+  gs.fillCircle(W / 2 - 3, 13, 2);
+  gs.fillCircle(W / 2 + 3, 13, 2);
+  gs.fillStyle(0xffffff, 0.5);
+  gs.fillCircle(W / 2 - 3, 12.5, 0.8);
+  gs.fillCircle(W / 2 + 3, 12.5, 0.8);
+  gs.generateTexture('npc_spirit', W, H);
+  gs.destroy();
+
+  // Bone Merchant — skeleton in a cloak, with a bag
+  const gm = scene.make.graphics({ add: false });
+  // Tattered cloak
+  gm.fillStyle(0x6a4828);
+  gm.fillTriangle(W / 2 - 9, 14, W / 2 + 9, 14, W / 2 - 11, H - 2);
+  gm.fillTriangle(W / 2 + 9, 14, W / 2 + 11, H - 2, W / 2 - 11, H - 2);
+  gm.fillStyle(0x5a3818);
+  gm.fillTriangle(W / 2 - 5, 16, W / 2 + 5, 16, W / 2 - 7, H - 4);
+  // Skull head
+  gm.fillStyle(0xd8ccb8);
+  gm.fillEllipse(W / 2, 10, 14, 12);
+  gm.fillStyle(0x0a0404);
+  gm.fillEllipse(W / 2 - 3, 9, 4, 3);
+  gm.fillEllipse(W / 2 + 3, 9, 4, 3);
+  gm.fillStyle(0xffcc44);
+  gm.fillCircle(W / 2 - 3, 9, 1.2);
+  gm.fillCircle(W / 2 + 3, 9, 1.2);
+  // Bag
+  gm.fillStyle(0x7a5838);
+  gm.fillEllipse(W / 2 + 10, 28, 10, 12);
+  gm.fillStyle(0x6a4828);
+  gm.fillEllipse(W / 2 + 10, 27, 7, 8);
+  gm.generateTexture('npc_merchant', W, H);
+  gm.destroy();
 }
