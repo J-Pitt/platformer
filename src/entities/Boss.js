@@ -9,6 +9,18 @@ const PROJECTILE_SPEED = 220;
 const CHASE_SPEED = 65;
 const PATROL_SPEED = 35;
 
+function nearestPlayer(enemy, players) {
+  const arr = Array.isArray(players) ? players : [players];
+  let best = null;
+  let bestDist = Infinity;
+  for (const p of arr) {
+    if (!p || p.isDead) continue;
+    const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, p.x, p.y);
+    if (d < bestDist) { bestDist = d; best = p; }
+  }
+  return best || arr[0];
+}
+
 export class Boss extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'boss_idle');
@@ -88,9 +100,9 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  update(dt, player) {
+  update(dt, players) {
     if (this.isDead) {
-      this.updateProjectiles(dt, player);
+      this.updateProjectiles(dt);
       return;
     }
 
@@ -102,7 +114,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.isHit = false;
 
     if (this.knockbackTimer > 0) {
-      this.updateProjectiles(dt, player);
+      this.updateProjectiles(dt);
       return;
     }
 
@@ -111,9 +123,12 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       if (this.attackTimer <= 0) {
         this.finishAttack();
       }
-      this.updateProjectiles(dt, player);
+      this.updateProjectiles(dt);
       return;
     }
+
+    const player = nearestPlayer(this, players);
+    if (!player) return;
 
     if (!this.activated) {
       const dist = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
@@ -134,7 +149,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     if (player.isDead) {
       this.body.velocity.x = 0;
-      this.updateProjectiles(dt, player);
+      this.updateProjectiles(dt);
       return;
     }
 
@@ -152,7 +167,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       }
     }
 
-    this.updateProjectiles(dt, player);
+    this.updateProjectiles(dt);
   }
 
   enterPhaseTwo() {
@@ -192,23 +207,20 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     hb.body.setSize(56, 48);
     this.meleeHitbox = hb;
 
-    const overlap = this.scene.physics.add.overlap(
-      this.scene.player, hb,
-      () => {
+    const overlaps = [];
+    const allPlayers = this.scene.getActivePlayers();
+    for (const p of allPlayers) {
+      const ov = this.scene.physics.add.overlap(p, hb, () => {
         if (!hb.active) return;
-        this.scene.player.takeDamage(this.damage, this.x);
-        hb.destroy();
-        this.meleeHitbox = null;
-        this.scene.physics.world.removeCollider(overlap);
-      },
-    );
+        p.takeDamage(this.damage, this.x);
+      });
+      overlaps.push(ov);
+    }
 
     this.scene.time.delayedCall(250, () => {
-      if (hb.active) {
-        hb.destroy();
-        this.meleeHitbox = null;
-        this.scene.physics.world.removeCollider(overlap);
-      }
+      if (hb.active) hb.destroy();
+      this.meleeHitbox = null;
+      for (const ov of overlaps) this.scene.physics.world.removeCollider(ov);
     });
   }
 
@@ -266,15 +278,15 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     const waves = [waveL, waveR];
     const overlaps = [];
+    const allPlayers = this.scene.getActivePlayers();
     for (const w of waves) {
-      const ov = this.scene.physics.add.overlap(
-        this.scene.player, w,
-        () => {
+      for (const p of allPlayers) {
+        const ov = this.scene.physics.add.overlap(p, w, () => {
           if (!w.active) return;
-          this.scene.player.takeDamage(this.damage, this.x);
-        },
-      );
-      overlaps.push(ov);
+          p.takeDamage(this.damage, this.x);
+        });
+        overlaps.push(ov);
+      }
     }
 
     this.scene.time.delayedCall(500, () => {
@@ -317,16 +329,18 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     proj.body.velocity.y = Math.sin(angle) * PROJECTILE_SPEED;
     proj._life = 3000;
 
-    const overlap = this.scene.physics.add.overlap(
-      this.scene.player, proj,
-      () => {
+    const projOverlaps = [];
+    const allPlayers = this.scene.getActivePlayers();
+    for (const p of allPlayers) {
+      const ov = this.scene.physics.add.overlap(p, proj, () => {
         if (!proj.active) return;
-        this.scene.player.takeDamage(1, proj.x);
+        p.takeDamage(1, proj.x);
         proj.destroy();
-        this.scene.physics.world.removeCollider(overlap);
-      },
-    );
-    proj._overlap = overlap;
+        for (const o of projOverlaps) this.scene.physics.world.removeCollider(o);
+      });
+      projOverlaps.push(ov);
+    }
+    proj._overlaps = projOverlaps;
 
     this.projectiles.push(proj);
   }
@@ -340,7 +354,9 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       }
       p._life -= dt;
       if (p._life <= 0) {
-        if (p._overlap) this.scene.physics.world.removeCollider(p._overlap);
+        if (p._overlaps) {
+          for (const ov of p._overlaps) this.scene.physics.world.removeCollider(ov);
+        }
         p.destroy();
         this.projectiles.splice(i, 1);
       }
@@ -387,7 +403,9 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
     for (const p of this.projectiles) {
       if (p.active) {
-        if (p._overlap) this.scene.physics.world.removeCollider(p._overlap);
+        if (p._overlaps) {
+          for (const ov of p._overlaps) this.scene.physics.world.removeCollider(ov);
+        }
         p.destroy();
       }
     }

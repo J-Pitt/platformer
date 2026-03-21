@@ -9,11 +9,14 @@ export class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  create() {
+  create(data) {
+    this.coopMode = !!(data && data.coopMode);
+
     this.setupInput();
     this.setupParticleEmitters();
 
     this.inputManager = new InputManager(this);
+    this.inputManager.coopMode = this.coopMode;
 
     const urlParams = new URLSearchParams(
       typeof window !== 'undefined' ? window.location.search : '',
@@ -29,7 +32,12 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0, 0).setDepth(300).setScrollFactor(0);
     }
 
-    this.player = new Player(this, 0, 0);
+    this.player = new Player(this, 0, 0, 0);
+    this.player2 = null;
+    if (this.coopMode) {
+      this.player2 = new Player(this, 0, 0, 1);
+    }
+
     this.levelManager = new LevelManager(this);
     this.hud = new HUD(this);
 
@@ -53,7 +61,6 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
     this.cameras.main.setDeadzone(60, 40);
 
-    // Cinematic edge darkening (Metroidvania readability)
     if (this.textures.exists('screen_vignette')) {
       this.add.image(480, 270, 'screen_vignette')
         .setScrollFactor(0)
@@ -145,6 +152,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.player.update(dt);
+    if (this.player2) this.player2.update(dt);
     if (this.levelManager) this.levelManager.update(dt);
 
     if (this.playerRimLight) {
@@ -155,15 +163,27 @@ export class GameScene extends Phaser.Scene {
       this.gamepadDebugText.setText(InputManager.formatGamepadsDebug());
     }
 
-    // Kill zone — below current room
     const roomH = this.levelManager.roomPixelH;
     if (this.player.y > roomH + 32 && !this.player.isDead) {
       this.player.die();
     }
+    if (this.player2 && this.player2.y > roomH + 32 && !this.player2.isDead) {
+      this.player2.die();
+    }
 
+    // P2 tether: if too far from P1 horizontally, respawn near P1
+    if (this.player2 && !this.player2.isDead && !this.player.isDead) {
+      const dx = Math.abs(this.player2.x - this.player.x);
+      const dy = Math.abs(this.player2.y - this.player.y);
+      if (dx > 700 || dy > 500) {
+        this.respawnPlayer2();
+      }
+    }
+
+    const activePlayers = this.getActivePlayers();
     if (this.enemies) {
       this.enemies.getChildren().forEach((enemy) => {
-        if (enemy.update) enemy.update(dt, this.player);
+        if (enemy.update) enemy.update(dt, activePlayers);
       });
     }
 
@@ -179,10 +199,20 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fade(300, 0, 0, 0, false, (cam, progress) => {
       if (progress >= 1) {
         this.levelManager.loadRoom(roomId, spawnX, spawnY);
+        if (this.player2) {
+          this.player2.setPosition(this.player.x + 20, this.player.y);
+          this.player2.body.velocity.set(0, 0);
+        }
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
       }
     });
+  }
+
+  getActivePlayers() {
+    const list = [this.player];
+    if (this.player2) list.push(this.player2);
+    return list;
   }
 
   respawnPlayer() {
@@ -192,10 +222,32 @@ export class GameScene extends Phaser.Scene {
       if (progress >= 1) {
         this.levelManager.loadRoom(this.levelManager.currentRoomId);
         this.player.respawn();
+        if (this.player2) {
+          this.player2.respawn();
+          this.player2.setPosition(this.player.x + 20, this.player.y);
+        }
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
       }
     });
+  }
+
+  respawnPlayer2() {
+    if (!this.player2) return;
+    this.player2.isDead = false;
+    this.player2.hp = this.player2.maxHp;
+    this.player2.body.allowGravity = true;
+    this.player2.setAlpha(1);
+    this.player2.setScale(1);
+    this.player2.clearTint();
+    this.player2.setTint(0x6688ff);
+    this.player2.setPosition(this.player.x + 20, this.player.y);
+    this.player2.body.velocity.set(0, 0);
+    this.player2.combat.isInvulnerable = true;
+    this.player2.combat.invulnTimer = 1500;
+    this.player2.movement.isDashing = false;
+    this.player2.movement.dashTimer = 0;
+    this.player2.currentAnim = 'idle';
   }
 
   findCheckpointRoom() {

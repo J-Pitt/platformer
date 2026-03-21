@@ -572,23 +572,29 @@ export class LevelManager {
     }
   }
 
+  get allPlayers() {
+    const list = [this.scene.player];
+    if (this.scene.player2) list.push(this.scene.player2);
+    return list;
+  }
+
   setupCollisions() {
-    const player = this.scene.player;
-    this.scene.physics.add.collider(player, this.wallLayer);
-    this.scene.physics.add.collider(player, this.platformGroup);
-    for (const plat of this.movingPlatforms) {
-      if (plat.sprite && plat.sprite.body) this.scene.physics.add.collider(player, plat.sprite);
-    }
-    for (const cp of this.crumblePlatforms) {
-      if (!cp.sprite || !cp.sprite.body) continue;
-      this.scene.physics.add.collider(player, cp.sprite, () => this.startCrumble(cp), null, this);
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.collider(player, this.wallLayer);
+      this.scene.physics.add.collider(player, this.platformGroup);
+      for (const plat of this.movingPlatforms) {
+        if (plat.sprite && plat.sprite.body) this.scene.physics.add.collider(player, plat.sprite);
+      }
+      for (const cp of this.crumblePlatforms) {
+        if (!cp.sprite || !cp.sprite.body) continue;
+        this.scene.physics.add.collider(player, cp.sprite, () => this.startCrumble(cp), null, this);
+      }
+      this.scene.physics.add.overlap(
+        player, this.scene.enemies, this.onPlayerTouchEnemy, null, this,
+      );
     }
     this.scene.physics.add.collider(this.scene.enemies, this.wallLayer);
     this.scene.physics.add.collider(this.scene.enemies, this.platformGroup);
-
-    this.scene.physics.add.overlap(
-      player, this.scene.enemies, this.onPlayerTouchEnemy, null, this,
-    );
   }
 
   positionPlayer(room, spawnX, spawnY) {
@@ -606,6 +612,15 @@ export class LevelManager {
     this.scene.player.checkpointY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
     this.scene.player._checkpointRoom = this.currentRoomId;
     this.scene.player.visitedRooms.add(this.currentRoomId);
+
+    if (this.scene.player2) {
+      this.scene.player2.setPosition(sx + 20, sy);
+      this.scene.player2.body.velocity.set(0, 0);
+      this.scene.player2.spawnX = sx;
+      this.scene.player2.spawnY = sy;
+      this.scene.player2.checkpointX = this.scene.player.checkpointX;
+      this.scene.player2.checkpointY = this.scene.player.checkpointY;
+    }
   }
 
   createDoor(x, y, obj) {
@@ -618,14 +633,15 @@ export class LevelManager {
     door.spawnY = obj.spawnY;
     door.setAlpha(0.5);
 
-    const zone = this.scene.physics.add.overlap(
-      this.scene.player, door,
-      () => {
-        if (this.roomLocked) return;
-        this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
-      },
-    );
-    this.doorZones.push({ door, zone });
+    const onDoor = () => {
+      if (this.roomLocked) return;
+      this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
+    };
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, door, onDoor);
+    }
+    this.doorZones.push({ door });
   }
 
   createAbilityOrb(x, y, obj) {
@@ -657,9 +673,11 @@ export class LevelManager {
       duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
 
-    this.scene.physics.add.overlap(
-      this.scene.player, chest, () => this.openTreasureChest(chest, glow, sparkle),
-    );
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(
+        player, chest, () => this.openTreasureChest(chest, glow, sparkle),
+      );
+    }
     this.abilityOrbs.push({ orb: chest, glow });
   }
 
@@ -669,7 +687,9 @@ export class LevelManager {
 
     const ability = chest.ability;
     const hint = chest.hint;
-    this.scene.player.unlockAbility(ability);
+    for (const p of this.allPlayers) {
+      p.unlockAbility(ability);
+    }
 
     this.scene.physics.pause();
     this.scene.cameras.main.flash(400, 64, 232, 192);
@@ -843,19 +863,22 @@ export class LevelManager {
       floorY,
     };
 
-    this.scene.physics.add.overlap(
-      this.scene.player, trigger, () => this.interactRestPod(state),
-    );
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(
+        player, trigger, () => this.interactRestPod(state),
+      );
+    }
     this.benches.push(state);
   }
 
   interactRestPod(state) {
     if (state._resting) return;
     state._resting = true;
-    const player = this.scene.player;
     const { podBack, floorY } = state;
-    player.setCheckpoint(podBack.x, floorY - 18);
-    player.fullHeal();
+    for (const p of this.allPlayers) {
+      p.setCheckpoint(podBack.x, floorY - 18);
+      p.fullHeal();
+    }
 
     this.scene.cameras.main.flash(200, 0, 128, 96);
     const text = this.scene.add.text(podBack.x, floorY - 86, 'RESTING...', {
@@ -897,33 +920,39 @@ export class LevelManager {
     zone.body.setSize(60, 48);
 
     let playerInZone = false;
-    this.scene.physics.add.overlap(
-      this.scene.player, zone,
-      () => {
-        if (!playerInZone) {
-          playerInZone = true;
-          npc.setPlayerNearby(true);
-        }
-        const input = this.scene.inputManager.state;
-        if ((input.up || input.slashPressed) && !npc.isTalking && !this.scene.dialogueActive) {
-          this.scene.dialogueActive = true;
-          this.scene.physics.pause();
-          npc.interact(() => {
-            this.scene.dialogueActive = false;
-            this.scene.physics.resume();
-          });
-        }
-      },
-    );
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(
+        player, zone,
+        () => {
+          if (!playerInZone) {
+            playerInZone = true;
+            npc.setPlayerNearby(true);
+          }
+          const input = player.getInputState();
+          if ((input.up || input.slashPressed) && !npc.isTalking && !this.scene.dialogueActive) {
+            this.scene.dialogueActive = true;
+            this.scene.physics.pause();
+            npc.interact(() => {
+              this.scene.dialogueActive = false;
+              this.scene.physics.resume();
+            });
+          }
+        },
+      );
+    }
 
     this.scene.time.addEvent({
       delay: 200, loop: true,
       callback: () => {
         if (!zone.active || !this.scene.player) return;
-        const dist = Phaser.Math.Distance.Between(
-          this.scene.player.x, this.scene.player.y, zone.x, zone.y,
-        );
-        if (dist > 50 && playerInZone) {
+        let anyNear = false;
+        for (const player of this.allPlayers) {
+          const dist = Phaser.Math.Distance.Between(
+            player.x, player.y, zone.x, zone.y,
+          );
+          if (dist <= 50) anyNear = true;
+        }
+        if (!anyNear && playerInZone) {
           playerInZone = false;
           npc.setPlayerNearby(false);
         }
@@ -941,16 +970,18 @@ export class LevelManager {
       targets: pickup, y: y - 6, duration: 1200,
       yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
-    this.scene.physics.add.overlap(
-      this.scene.player, pickup, () => {
-        if (!pickup.active) return;
-        if (this.scene.player.hp < this.scene.player.maxHp) {
-          this.scene.player.hp = Math.min(this.scene.player.hp + 1, this.scene.player.maxHp);
-          if (this.scene.hud) this.scene.hud.refresh();
-        }
-        pickup.destroy();
-      },
-    );
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(
+        player, pickup, () => {
+          if (!pickup.active) return;
+          if (player.hp < player.maxHp) {
+            player.hp = Math.min(player.hp + 1, player.maxHp);
+            if (this.scene.hud) this.scene.hud.refresh();
+          }
+          pickup.destroy();
+        },
+      );
+    }
     this.healthPickups.push(pickup);
   }
 
@@ -1083,9 +1114,11 @@ export class LevelManager {
     zone.body.setImmovable(true);
     zone.body.setSize(26, 26);
 
-    this.scene.physics.add.overlap(this.scene.player, zone, () => {
-      this.applyHazardDamage(zone.x);
-    });
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
 
     this.hazardZones.push({
       type: 'pendulum',
@@ -1115,9 +1148,11 @@ export class LevelManager {
     const w = obj.width || 30;
     const h = obj.height || 24;
     zone.body.setSize(w, h);
-    this.scene.physics.add.overlap(this.scene.player, zone, () => {
-      this.applyHazardDamage(zone.x);
-    });
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
 
     this.hazardZones.push({ type: 'spike', sprite: spikes, zone });
   }
@@ -1164,9 +1199,11 @@ export class LevelManager {
     zone.body.allowGravity = false;
     zone.body.setImmovable(true);
     zone.body.setSize(width * TILE_SIZE, 16);
-    this.scene.physics.add.overlap(this.scene.player, zone, () => {
-      this.applyHazardDamage(zone.x);
-    });
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
     this.hazardZones.push({ type: 'magma', zone });
   }
 
@@ -1197,10 +1234,10 @@ export class LevelManager {
     });
   }
 
-  applyHazardDamage(fromX) {
+  applyHazardDamage(player, fromX) {
     if (this.hazardDamageCooldown > 0) return;
     this.hazardDamageCooldown = 180;
-    this.scene.player.takeDamage(1, fromX);
+    player.takeDamage(1, fromX);
   }
 
   update(dt) {

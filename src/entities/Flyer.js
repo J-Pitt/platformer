@@ -4,6 +4,18 @@ const DETECT_RANGE = 220;
 const SWOOP_RANGE = 120;
 const RETURN_SPEED = 60;
 
+function nearestPlayer(enemy, players) {
+  const arr = Array.isArray(players) ? players : [players];
+  let best = null;
+  let bestDist = Infinity;
+  for (const p of arr) {
+    if (!p || p.isDead) continue;
+    const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, p.x, p.y);
+    if (d < bestDist) { bestDist = d; best = p; }
+  }
+  return best || arr[0];
+}
+
 export class Flyer extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'flyer');
@@ -31,7 +43,7 @@ export class Flyer extends Phaser.Physics.Arcade.Sprite {
     this.wingTimer = 0;
   }
 
-  update(dt, player) {
+  update(dt, players) {
     if (this.isDead) return;
 
     this.knockbackTimer = Math.max(0, this.knockbackTimer - dt);
@@ -42,11 +54,12 @@ export class Flyer extends Phaser.Physics.Arcade.Sprite {
 
     this.isHit = false;
 
-    // Wing flap animation
     this.wingTimer += dt;
     const wingScale = 1 + Math.sin(this.wingTimer * 0.008) * 0.1;
     this.scaleX = wingScale;
 
+    const player = nearestPlayer(this, players);
+    if (!player) return;
     const distToPlayer = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
 
     switch (this.state) {

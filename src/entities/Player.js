@@ -4,10 +4,12 @@ import { CombatSystem } from '../systems/Combat.js';
 const MAX_HP = 5;
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y) {
+  constructor(scene, x, y, playerIndex = 0) {
     super(scene, x, y, 'player');
     scene.add.existing(this);
     scene.physics.add.existing(this);
+
+    this.playerIndex = playerIndex;
 
     this.body.setSize(16, 28);
     this.body.setOffset(16, 14);
@@ -32,6 +34,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.currentAnim = 'idle';
     this.setupAnimations();
+
+    if (playerIndex === 1) {
+      this.setTint(0x6688ff);
+    }
   }
 
   setupAnimations() {
@@ -52,10 +58,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  getInputState() {
+    const mgr = this.scene.inputManager;
+    return this.playerIndex === 1 ? mgr.state2 : mgr.state;
+  }
+
   update(dt) {
     if (this.isDead) return;
 
-    const input = this.scene.inputManager.state;
+    const input = this.getInputState();
 
     this.movement.update(dt, input);
     this.combat.update(dt, input);
@@ -140,17 +151,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.velocity.set(0, 0);
     this.body.allowGravity = false;
 
-    this.scene.tweens.add({
-      targets: this,
-      alpha: 0,
-      scaleX: 1.5,
-      scaleY: 1.5,
-      duration: 600,
-      ease: 'Power2',
-      onComplete: () => {
-        this.scene.respawnPlayer();
-      },
-    });
+    if (this.playerIndex === 1) {
+      this.scene.tweens.add({
+        targets: this,
+        alpha: 0, scaleX: 1.5, scaleY: 1.5,
+        duration: 400, ease: 'Power2',
+        onComplete: () => { this.scene.respawnPlayer2(); },
+      });
+    } else {
+      this.scene.tweens.add({
+        targets: this,
+        alpha: 0, scaleX: 1.5, scaleY: 1.5,
+        duration: 600, ease: 'Power2',
+        onComplete: () => { this.scene.respawnPlayer(); },
+      });
+    }
   }
 
   respawn() {
@@ -160,6 +175,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setAlpha(1);
     this.setScale(1);
     this.clearTint();
+    if (this.playerIndex === 1) this.setTint(0x6688ff);
     this.setPosition(this.checkpointX, this.checkpointY);
     this.body.velocity.set(0, 0);
     this.combat.isInvulnerable = false;
@@ -176,6 +192,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.combat.invulnTimer = 0;
     this.setAlpha(1);
     this.clearTint();
+    if (this.playerIndex === 1) this.setTint(0x6688ff);
     if (this.combat.isSlashing) {
       this.combat.endSlash();
     }

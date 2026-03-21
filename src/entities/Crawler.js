@@ -3,6 +3,18 @@ const CHASE_SPEED = 100;
 const DETECT_RANGE = 200;
 const TURN_CHECK_OFFSET = 18;
 
+function nearestPlayer(enemy, players) {
+  const arr = Array.isArray(players) ? players : [players];
+  let best = null;
+  let bestDist = Infinity;
+  for (const p of arr) {
+    if (!p || p.isDead) continue;
+    const d = Phaser.Math.Distance.Between(enemy.x, enemy.y, p.x, p.y);
+    if (d < bestDist) { bestDist = d; best = p; }
+  }
+  return best || arr[0];
+}
+
 export class Crawler extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'crawler');
@@ -24,7 +36,7 @@ export class Crawler extends Phaser.Physics.Arcade.Sprite {
     this.hitCooldown = 0;
   }
 
-  update(dt, player) {
+  update(dt, players) {
     if (this.isDead) return;
 
     this.knockbackTimer = Math.max(0, this.knockbackTimer - dt);
@@ -33,6 +45,9 @@ export class Crawler extends Phaser.Physics.Arcade.Sprite {
     if (this.knockbackTimer > 0) return;
 
     this.isHit = false;
+
+    const player = nearestPlayer(this, players);
+    if (!player) return;
 
     const distToPlayer = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
     const playerOnSameLevel = Math.abs(this.y - player.y) < 40;
@@ -46,7 +61,6 @@ export class Crawler extends Phaser.Physics.Arcade.Sprite {
     if (this.state === 'patrol') {
       this.body.velocity.x = this.direction * PATROL_SPEED;
 
-      // Turn at edges - check if there's ground ahead
       const checkX = this.x + this.direction * TURN_CHECK_OFFSET;
       const checkY = this.y + 20;
       const tile = this.scene.levelManager.getTileAt(checkX, checkY);
