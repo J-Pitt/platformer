@@ -163,18 +163,19 @@ export class InputManager {
 
     const kbLeft = cursors.left.isDown || keys.a.isDown;
     const kbRight = cursors.right.isDown || keys.d.isDown;
-    const kbUp = cursors.up.isDown || keys.w.isDown;
+    const kbUp = cursors.up.isDown;
     const kbDown = cursors.down.isDown || keys.s.isDown;
 
     const kbJumpPressed = Phaser.Input.Keyboard.JustDown(cursors.up)
       || Phaser.Input.Keyboard.JustDown(keys.space)
-      || Phaser.Input.Keyboard.JustDown(keys.z)
-      || Phaser.Input.Keyboard.JustDown(keys.w);
-    const kbJumpHeld = cursors.up.isDown || keys.space.isDown || keys.z.isDown || keys.w.isDown;
+      || Phaser.Input.Keyboard.JustDown(keys.z);
+    const kbJumpHeld = cursors.up.isDown || keys.space.isDown || keys.z.isDown;
     const kbDashPressed = Phaser.Input.Keyboard.JustDown(keys.x)
-      || Phaser.Input.Keyboard.JustDown(keys.shift);
+      || Phaser.Input.Keyboard.JustDown(keys.shift)
+      || Phaser.Input.Keyboard.JustDown(keys.q);
     const kbSlashPressed = Phaser.Input.Keyboard.JustDown(keys.c)
-      || Phaser.Input.Keyboard.JustDown(keys.j);
+      || Phaser.Input.Keyboard.JustDown(keys.j)
+      || Phaser.Input.Keyboard.JustDown(keys.w);
 
     let gpLeft = false, gpRight = false, gpUp = false, gpDown = false;
     let gpJumpPressed = false, gpJumpHeld = false;

@@ -64,6 +64,7 @@ export class GameScene extends Phaser.Scene {
       a: this.input.keyboard.addKey('A'),
       s: this.input.keyboard.addKey('S'),
       d: this.input.keyboard.addKey('D'),
+      q: this.input.keyboard.addKey('Q'),
       space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
       z: this.input.keyboard.addKey('Z'),
       x: this.input.keyboard.addKey('X'),
