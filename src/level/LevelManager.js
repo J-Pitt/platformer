@@ -751,7 +751,9 @@ export class LevelManager {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(204).setAlpha(0);
     modalElements.push(hintText);
 
-    const continueText = this.scene.add.text(cx, cy + 60, '[ PRESS ANY KEY ]', {
+    const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
+    const promptLabel = isMobile ? '[ TAP TO CONTINUE ]' : '[ PRESS ANY KEY ]';
+    const continueText = this.scene.add.text(cx, cy + 60, promptLabel, {
       fontSize: '12px', fontFamily: 'monospace', color: '#6a5838',
       stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(204).setAlpha(0);
@@ -773,12 +775,16 @@ export class LevelManager {
       yoyo: true, repeat: -1,
     });
 
+    let dismissed = false;
     const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
       this.scene.input.keyboard.off('keydown', dismiss);
       if (this._chestPadListener) {
         this.scene.input.gamepad.off('down', this._chestPadListener);
         this._chestPadListener = null;
       }
+      this.scene.input.off('pointerdown', dismiss);
       this.scene.tweens.add({
         targets: modalElements, alpha: 0, duration: 250,
         onComplete: () => {
@@ -790,6 +796,7 @@ export class LevelManager {
 
     this.scene.time.delayedCall(500, () => {
       this.scene.input.keyboard.on('keydown', dismiss);
+      this.scene.input.on('pointerdown', dismiss);
       if (this.scene.input.gamepad) {
         this._chestPadListener = dismiss;
         this.scene.input.gamepad.on('down', dismiss);
