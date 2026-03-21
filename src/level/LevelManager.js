@@ -907,8 +907,10 @@ export class LevelManager {
         const input = this.scene.inputManager.state;
         if ((input.up || input.slashPressed) && !npc.isTalking && !this.scene.dialogueActive) {
           this.scene.dialogueActive = true;
+          this.scene.physics.pause();
           npc.interact(() => {
             this.scene.dialogueActive = false;
+            this.scene.physics.resume();
           });
         }
       },

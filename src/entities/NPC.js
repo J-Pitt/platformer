@@ -69,6 +69,12 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     if (this.dialogue.length === 0) return;
     this.isTalking = true;
     if (this.promptIcon) this.promptIcon.setAlpha(0);
+
+    const player = this.scene.player;
+    if (player && player.body) {
+      player.body.setVelocity(0, 0);
+    }
+
     this.showDialogue(onClose);
   }
 
