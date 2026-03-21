@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1a1008" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon-192.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon-192.svg" />
+  <title>Abyssal Depths</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #000; overflow: hidden; touch-action: none; }
+    #game-container { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    canvas { image-rendering: pixelated; }
+
+    /* ── On-screen touch gamepad ── */
+    #touch-controls {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    #touch-controls.visible { display: block; }
+
+    .touch-btn {
+      position: absolute;
+      pointer-events: auto;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-weight: bold;
+      color: rgba(68,255,102,0.55);
+      text-shadow: 0 0 6px rgba(68,255,102,0.3);
+      background: rgba(26,16,8,0.45);
+      border: 2px solid rgba(68,255,102,0.25);
+      transition: background 0.08s, border-color 0.08s;
+    }
+    .touch-btn.active {
+      background: rgba(68,255,102,0.18);
+      border-color: rgba(68,255,102,0.55);
+      color: rgba(68,255,102,0.9);
+    }
+
+    /* D-pad */
+    .dpad-container {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+    }
+    .dpad-container .touch-btn { width: 56px; height: 56px; font-size: 22px; }
+    #dpad-up    { left: 58px; top: 0; }
+    #dpad-down  { left: 58px; top: 116px; }
+    #dpad-left  { left: 0; top: 58px; }
+    #dpad-right { left: 116px; top: 58px; }
+
+    /* Action buttons */
+    .action-container {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+    }
+    .action-container .touch-btn { width: 60px; height: 60px; font-size: 13px; letter-spacing: 0.5px; }
+    #btn-jump  { right: 64px; bottom: 112px; }
+    #btn-slash { right: 128px; bottom: 48px; }
+    #btn-dash  { right: 0; bottom: 48px; }
+
+    /* Landscape small phones: shrink a bit */
+    @media (max-height: 400px) {
+      .dpad-container { bottom: 8px; left: 8px; }
+      .dpad-container .touch-btn { width: 44px; height: 44px; font-size: 18px; }
+      #dpad-up    { left: 46px; top: 0; }
+      #dpad-down  { left: 46px; top: 92px; }
+      #dpad-left  { left: 0; top: 46px; }
+      #dpad-right { left: 92px; top: 46px; }
+
+      .action-container { bottom: 8px; right: 8px; }
+      .action-container .touch-btn { width: 48px; height: 48px; font-size: 11px; }
+      #btn-jump  { right: 52px; bottom: 90px; }
+      #btn-slash { right: 104px; bottom: 38px; }
+      #btn-dash  { right: 0; bottom: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <div id="touch-controls">
+    <div class="dpad-container">
+      <div id="dpad-up" class="touch-btn" data-btn="up">▲</div>
+      <div id="dpad-down" class="touch-btn" data-btn="down">▼</div>
+      <div id="dpad-left" class="touch-btn" data-btn="left">◀</div>
+      <div id="dpad-right" class="touch-btn" data-btn="right">▶</div>
+    </div>
+    <div class="action-container">
+      <div id="btn-jump" class="touch-btn" data-btn="jump">JUMP</div>
+      <div id="btn-slash" class="touch-btn" data-btn="slash">ATK</div>
+      <div id="btn-dash" class="touch-btn" data-btn="dash">DASH</div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

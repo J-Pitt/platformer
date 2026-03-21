@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="80" fill="#1a1008"/>
+  <circle cx="256" cy="220" r="80" fill="#d4c8a8"/>
+  <circle cx="256" cy="228" r="70" fill="#9a8868"/>
+  <circle cx="230" cy="215" r="20" fill="#000"/>
+  <circle cx="282" cy="215" r="20" fill="#000"/>
+  <circle cx="230" cy="215" r="13" fill="#44ff66"/>
+  <circle cx="282" cy="215" r="13" fill="#44ff66"/>
+  <rect x="186" y="140" width="140" height="40" rx="8" fill="#d4a020"/>
+  <polygon points="196,155 214,110 232,155" fill="#d4a020"/>
+  <polygon points="232,155 256,92 280,155" fill="#d4a020"/>
+  <polygon points="280,155 298,110 316,155" fill="#d4a020"/>
+  <circle cx="214" cy="126" r="8" fill="#44ff66"/>
+  <circle cx="256" cy="108" r="10" fill="#44ff66"/>
+  <circle cx="298" cy="126" r="8" fill="#44ff66"/>
+  <text x="256" y="400" text-anchor="middle" font-family="monospace" font-size="52" fill="#44ff66" font-weight="bold">ABYSSAL</text>
+  <text x="256" y="445" text-anchor="middle" font-family="monospace" font-size="30" fill="#8a7858">DEPTHS</text>
+</svg>

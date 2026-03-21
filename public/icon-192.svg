@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="32" fill="#1a1008"/>
+  <circle cx="96" cy="88" r="36" fill="#d4c8a8"/>
+  <circle cx="96" cy="92" r="32" fill="#9a8868"/>
+  <circle cx="82" cy="84" r="10" fill="#000"/>
+  <circle cx="110" cy="84" r="10" fill="#000"/>
+  <circle cx="82" cy="84" r="6" fill="#44ff66"/>
+  <circle cx="110" cy="84" r="6" fill="#44ff66"/>
+  <rect x="68" y="52" width="56" height="18" rx="4" fill="#d4a020"/>
+  <polygon points="72,58 80,38 88,58" fill="#d4a020"/>
+  <polygon points="88,58 96,32 104,58" fill="#d4a020"/>
+  <polygon points="104,58 112,38 120,58" fill="#d4a020"/>
+  <circle cx="80" cy="46" r="4" fill="#44ff66"/>
+  <circle cx="96" cy="40" r="5" fill="#44ff66"/>
+  <circle cx="112" cy="46" r="4" fill="#44ff66"/>
+  <text x="96" y="160" text-anchor="middle" font-family="monospace" font-size="22" fill="#44ff66" font-weight="bold">ABYSSAL</text>
+</svg>
