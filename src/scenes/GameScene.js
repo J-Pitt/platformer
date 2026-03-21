@@ -120,6 +120,11 @@ export class GameScene extends Phaser.Scene {
     const dt = Math.min(delta, 33.33);
 
     this.inputManager.update();
+
+    if (this.hud && this.hud.mapOverlay && this.hud.mapOverlay.visible) {
+      return;
+    }
+
     this.player.update(dt);
     if (this.levelManager) this.levelManager.update(dt);
 
@@ -150,6 +155,7 @@ export class GameScene extends Phaser.Scene {
   transitionToRoom(roomId, spawnX, spawnY) {
     if (this.transitioning) return;
     this.transitioning = true;
+    if (this.hud && this.hud.mapOverlay) this.hud.mapOverlay.hide();
 
     this.cameras.main.fade(300, 0, 0, 0, false, (cam, progress) => {
       if (progress >= 1) {

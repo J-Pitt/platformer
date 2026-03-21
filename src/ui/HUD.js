@@ -1,10 +1,15 @@
+import { MapOverlay } from './MapOverlay.js';
+
 export class HUD {
   constructor(scene) {
     this.scene = scene;
     this.healthOrbs = [];
     this.dashBarBg = null;
     this.dashBarFill = null;
+    this.mapIcon = null;
+    this.mapOverlay = new MapOverlay(scene);
     this.create();
+    this.setupMapInput();
   }
 
   create() {
@@ -23,6 +28,22 @@ export class HUD {
 
     this.dashBarFill = this.scene.add.image(30, 56, 'dash_bar_full')
       .setScrollFactor(0).setDepth(101).setOrigin(0, 0.5).setVisible(false);
+
+    const cam = this.scene.cameras.main;
+    this.mapIcon = this.scene.add.image(cam.width - 30, 30, 'map_icon')
+      .setScrollFactor(0).setDepth(100).setScale(1.4).setVisible(false)
+      .setInteractive({ useHandCursor: true });
+
+    this.mapIcon.on('pointerdown', () => {
+      this.mapOverlay.toggle();
+    });
+  }
+
+  setupMapInput() {
+    this.scene.input.keyboard.on('keydown-M', () => {
+      if (!this.scene.player.hasMap) return;
+      this.mapOverlay.toggle();
+    });
   }
 
   update() {
@@ -38,6 +59,10 @@ export class HUD {
       const pct = player.movement.dashCooldownPercent;
       this.dashBarFill.setScale(pct, 1);
       this.dashBarFill.setAlpha(pct >= 1 ? 1 : 0.5);
+    }
+
+    if (player.hasMap && this.mapIcon) {
+      this.mapIcon.setVisible(true);
     }
   }
 

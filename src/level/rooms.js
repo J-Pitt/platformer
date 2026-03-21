@@ -302,6 +302,9 @@ function buildRoom3() {
   // Rock formations in floor
   fillRect(tiles, 19, 22, 19, 25, 1);
 
+  // Hidden alcove top-left for the map chest
+  fillRow(tiles, 4, 2, 5, 2);
+
   // Door opening on right
   clearRect(tiles, 9, W - 1, 12, W - 1);
   // Door opening on left
@@ -316,6 +319,7 @@ function buildRoom3() {
     objects: [
       { type: 'door', targetRoom: 'room2', x: W - 2, y: 10, spawnX: 2, spawnY: 4 },
       { type: 'door', targetRoom: 'room6', x: 1, y: 19, spawnX: 3, spawnY: 19 },
+      { type: 'ability_orb', ability: 'map', x: 3, y: 3, hint: 'Press M or tap the map icon' },
       { type: 'moving_platform', x: 30, y: 12, axis: 'x', range: 44, speed: 1.2, phase: 0.4, spin: 0.6 },
       { type: 'crumble_platform', x: 24, y: 10, collapseDelay: 520, respawnDelay: 2600 },
       { type: 'crumble_platform', x: 28, y: 10, collapseDelay: 380, respawnDelay: 2600 },

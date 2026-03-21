@@ -27,6 +27,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.checkpointX = x;
     this.checkpointY = y;
 
+    this.hasMap = false;
+    this.visitedRooms = new Set();
+
     this.currentAnim = 'idle';
     this.setupAnimations();
   }
@@ -195,6 +198,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'dash':
         this.movement.abilities.dash = true;
         break;
+      case 'map':
+        this.hasMap = true;
+        break;
     }
   }
 
@@ -203,6 +209,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'slash': return this.combat.hasSlash;
       case 'wallJump': return this.movement.abilities.wallJump;
       case 'dash': return this.movement.abilities.dash;
+      case 'map': return this.hasMap;
       default: return false;
     }
   }

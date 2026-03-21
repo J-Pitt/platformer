@@ -1695,6 +1695,31 @@ function generateUITextures(scene) {
   g4.fillRoundedRect(0, 0, 48, 8, 4);
   g4.generateTexture('dash_bar_empty', 48, 8);
   g4.destroy();
+
+  // Map icon (scroll/parchment look)
+  const gm = scene.make.graphics({ add: false });
+  const mw = 28, mh = 28;
+  // Parchment background
+  gm.fillStyle(0x8a7858, 0.9);
+  gm.fillRoundedRect(3, 4, 22, 20, 3);
+  gm.fillStyle(0xa8956a, 0.8);
+  gm.fillRoundedRect(5, 6, 18, 16, 2);
+  // Grid lines (map markings)
+  gm.lineStyle(1, 0x665538, 0.6);
+  gm.lineBetween(8, 10, 22, 10);
+  gm.lineBetween(8, 14, 22, 14);
+  gm.lineBetween(8, 18, 22, 18);
+  gm.lineBetween(12, 7, 12, 20);
+  gm.lineBetween(18, 7, 18, 20);
+  // "You are here" dot
+  gm.fillStyle(0x44ff66);
+  gm.fillCircle(14, 14, 2.5);
+  // Scroll rolls top + bottom
+  gm.fillStyle(0x7a6848);
+  gm.fillRoundedRect(2, 2, 24, 4, 2);
+  gm.fillRoundedRect(2, 22, 24, 4, 2);
+  gm.generateTexture('map_icon', mw, mh);
+  gm.destroy();
 }
 
 function generateOrbTexture(scene) {

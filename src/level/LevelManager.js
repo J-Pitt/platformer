@@ -602,6 +602,7 @@ export class LevelManager {
     this.scene.player.checkpointX = room.playerSpawn.x * TILE_SIZE + TILE_SIZE / 2;
     this.scene.player.checkpointY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
     this.scene.player._checkpointRoom = this.currentRoomId;
+    this.scene.player.visitedRooms.add(this.currentRoomId);
   }
 
   createDoor(x, y, obj) {
@@ -697,7 +698,7 @@ export class LevelManager {
     const cx = cam.width / 2;
     const cy = cam.height / 2;
 
-    const names = { slash: 'SLASH', wallJump: 'WALL JUMP', dash: 'DASH' };
+    const names = { slash: 'SLASH', wallJump: 'WALL JUMP', dash: 'DASH', map: 'DUNGEON MAP' };
     const abilityName = names[ability] || ability.toUpperCase();
 
     const modalElements = [];
