@@ -18,6 +18,7 @@ export class CombatSystem {
     this.slashHitbox = null;
     this.slashTween = null;
     this.hasSlash = false;
+    this.hasSpear = false;
 
     this.invulnTimer = 0;
     this.isInvulnerable = false;
@@ -116,10 +117,11 @@ export class CombatSystem {
       },
     });
 
-    const size = { w: 44, h: 26 };
+    const reach = this.hasSpear ? 1.5 : 1;
+    const size = { w: Math.round(44 * reach), h: Math.round(26 * reach) };
     if (this.slashDirection === 'up' || this.slashDirection === 'down') {
-      size.w = 26;
-      size.h = 44;
+      size.w = Math.round(26 * reach);
+      size.h = Math.round(44 * reach);
     }
 
     this.slashHitbox = this.scene.physics.add.image(this.player.x, this.player.y);
@@ -175,7 +177,8 @@ export class CombatSystem {
   onSlashHitEnemy(hitbox, enemy) {
     if (!enemy.active || enemy.isHit) return;
 
-    enemy.takeDamage(1, hitbox.slashDirection);
+    const dmg = this.hasSpear ? 2 : 1;
+    enemy.takeDamage(dmg, hitbox.slashDirection);
 
     this.scene.physics.pause();
     setTimeout(() => {

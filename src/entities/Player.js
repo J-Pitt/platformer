@@ -223,6 +223,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'dash':
         this.movement.abilities.dash = true;
         break;
+      case 'doubleJump':
+        this.movement.abilities.doubleJump = true;
+        break;
+      case 'spear':
+        this.combat.hasSpear = true;
+        break;
       case 'map':
         this.hasMap = true;
         break;
@@ -234,6 +240,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'slash': return this.combat.hasSlash;
       case 'wallJump': return this.movement.abilities.wallJump;
       case 'dash': return this.movement.abilities.dash;
+      case 'doubleJump': return this.movement.abilities.doubleJump;
+      case 'spear': return this.combat.hasSpear;
       case 'map': return this.hasMap;
       default: return false;
     }

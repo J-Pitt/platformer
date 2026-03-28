@@ -26,15 +26,30 @@ export class TitleScene extends Phaser.Scene {
       stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5);
 
-    const mkOpt = (y, label) => this.add.text(cx, cy + y, label, {
-      fontSize: '19px', fontFamily: 'monospace', color: '#d4c8a8',
-      stroke: '#000', strokeThickness: 4,
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const touchEl = document.getElementById('touch-controls');
+    if (touchEl) touchEl.classList.remove('visible');
+
+    const mkOpt = (y, label) => {
+      const txt = this.add.text(cx, cy + y, label, {
+        fontSize: '19px', fontFamily: 'monospace', color: '#d4c8a8',
+        stroke: '#000', strokeThickness: 4,
+        padding: { top: 6, bottom: 6, left: 16, right: 16 },
+      }).setOrigin(0.5);
+      const hitPadX = 40, hitPadY = 8;
+      txt.setInteractive(
+        new Phaser.Geom.Rectangle(
+          -hitPadX, -hitPadY,
+          txt.width + hitPadX * 2, txt.height + hitPadY * 2,
+        ),
+        Phaser.Geom.Rectangle.Contains,
+      );
+      return txt;
+    };
 
     const opt1 = mkOpt(8, '1 PLAYER');
     const opt2 = mkOpt(38, '2 PLAYERS (LOCAL + GAMEPAD)');
-    const opt3 = mkOpt(68, 'ONLINE — HOST (GET CODE)');
-    const opt4 = mkOpt(98, 'ONLINE — JOIN (ENTER CODE)');
+    const opt3 = mkOpt(68, 'ONLINE \u2014 HOST (GET CODE)');
+    const opt4 = mkOpt(98, 'ONLINE \u2014 JOIN (ENTER CODE)');
 
     const hint = this.add.text(cx, cy + 132, '↑↓ select · ENTER · Online needs: npm run server + Redis (.env)', {
       fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',

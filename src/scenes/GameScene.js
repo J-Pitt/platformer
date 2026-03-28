@@ -19,6 +19,9 @@ export class GameScene extends Phaser.Scene {
     this.setupInput();
     this.setupParticleEmitters();
 
+    const touchEl = document.getElementById('touch-controls');
+    if (touchEl) touchEl.classList.remove('visible');
+
     this.inputManager = new InputManager(this);
     if (this.online) {
       this.inputManager.setOnlineMode(true, data.online.isHost ? 0 : 1);

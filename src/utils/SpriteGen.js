@@ -25,6 +25,7 @@ export function generateAllTextures(scene) {
   generateCrawlerTexture(scene);
   generateFlyerTexture(scene);
   generateBossTextures(scene);
+  generateBruteTexture(scene);
   generateTileTextures(scene);
   generateBackgroundTextures(scene);
   generateParallaxTextures(scene);
@@ -716,6 +717,84 @@ function drawBossBody(g, W, H, attacking) {
   }
 }
 
+function generateBruteTexture(scene) {
+  const W = 64, H = 56;
+  const g = scene.make.graphics({ add: false });
+  const cx = W / 2;
+
+  // Massive torso
+  g.fillStyle(0x2a1a0a);
+  g.fillRoundedRect(cx - 22, 16, 44, 28, 4);
+  g.fillStyle(0x3a2814);
+  g.fillRoundedRect(cx - 20, 18, 40, 24, 3);
+
+  // Armor plates
+  g.fillStyle(0x4a3a28);
+  g.fillRect(cx - 18, 20, 36, 4);
+  g.fillRect(cx - 18, 28, 36, 4);
+  g.fillRect(cx - 18, 36, 36, 4);
+  g.lineStyle(1.5, 0x5a4a38, 0.6);
+  g.lineBetween(cx - 16, 22, cx + 16, 22);
+  g.lineBetween(cx - 16, 30, cx + 16, 30);
+  g.lineBetween(cx - 16, 38, cx + 16, 38);
+
+  // Massive shoulder pauldrons
+  g.fillStyle(0x4a4a50);
+  g.fillEllipse(cx - 24, 20, 20, 14);
+  g.fillEllipse(cx + 24, 20, 20, 14);
+  g.fillStyle(0x5a5a60);
+  g.fillEllipse(cx - 24, 19, 14, 8);
+  g.fillEllipse(cx + 24, 19, 14, 8);
+  // Spikes on shoulders
+  g.fillStyle(0x6a6a70);
+  g.fillTriangle(cx - 30, 18, cx - 27, 8, cx - 24, 18);
+  g.fillTriangle(cx + 30, 18, cx + 27, 8, cx + 24, 18);
+
+  // Thick legs
+  g.fillStyle(0x2a1a0a);
+  g.fillRect(cx - 14, 42, 10, 14);
+  g.fillRect(cx + 4, 42, 10, 14);
+  g.fillStyle(0x3a2814);
+  g.fillRect(cx - 12, 44, 6, 10);
+  g.fillRect(cx + 6, 44, 6, 10);
+
+  // Skull head (bigger, angrier)
+  g.fillStyle(0xd0c4b0);
+  g.fillEllipse(cx, 10, 24, 18);
+  g.fillStyle(0xc0b4a0);
+  g.fillEllipse(cx, 12, 20, 14);
+  // Jaw
+  g.fillStyle(0xb0a490);
+  g.fillRect(cx - 8, 16, 16, 6);
+  g.lineStyle(1, 0x8a7a68, 0.8);
+  for (let i = 0; i < 5; i++) {
+    g.lineBetween(cx - 6 + i * 3, 18, cx - 6 + i * 3, 22);
+  }
+  // Eye sockets
+  g.fillStyle(0x0a0404);
+  g.fillEllipse(cx - 6, 8, 8, 6);
+  g.fillEllipse(cx + 6, 8, 8, 6);
+  // Glowing red eyes
+  g.fillStyle(0xff3322);
+  g.fillCircle(cx - 6, 8, 3);
+  g.fillCircle(cx + 6, 8, 3);
+  g.fillStyle(0xff8844);
+  g.fillCircle(cx - 6, 7.5, 1.5);
+  g.fillCircle(cx + 6, 7.5, 1.5);
+
+  // Spiked crown / helmet
+  g.fillStyle(0x555560);
+  g.fillRect(cx - 10, 1, 20, 5);
+  g.fillTriangle(cx - 10, 3, cx - 7, -4, cx - 4, 3);
+  g.fillTriangle(cx - 2, 3, cx, -6, cx + 2, 3);
+  g.fillTriangle(cx + 4, 3, cx + 7, -4, cx + 10, 3);
+  g.fillStyle(0xff2244);
+  g.fillCircle(cx, -3, 2);
+
+  g.generateTexture('brute', W, H);
+  g.destroy();
+}
+
 function lerpRgb(c1, c2, t) {
   const r1 = (c1 >> 16) & 0xff; const g1 = (c1 >> 8) & 0xff; const b1 = c1 & 0xff;
   const r2 = (c2 >> 16) & 0xff; const g2 = (c2 >> 8) & 0xff; const b2 = c2 & 0xff;
@@ -827,7 +906,7 @@ function generateTileTextures(scene) {
   gm.generateTexture('tile_wall_mossy', 32, 32);
   gm.destroy();
 
-  /** Side-view stone beam: lit top face + shaded front + contact shadow (reads 3D) */
+  /** Island-style thick platform: rounded top, earthy body, shaded underside */
   const makePlat = (key, hue) => {
     const g2 = scene.make.graphics({ add: false });
     const topHi = hue === 0 ? 0x8a7858 : 0x887858;
@@ -836,64 +915,45 @@ function generateTileTextures(scene) {
     const faceLo = 0x2a1c10;
     const edge = 0x140e06;
 
-    // Contact shadow on “ground” (row 11–12)
-    g2.fillStyle(0x000000);
-    g2.setAlpha(0.45);
-    g2.fillRect(1, 10, 30, 2);
-    g2.setAlpha(1);
-
-    // Front face of slab (bulk) — vertical gradient
-    for (let y = 4; y <= 9; y++) {
-      const t = (y - 4) / 5;
+    for (let y = 6; y < 28; y++) {
+      const t = (y - 6) / 22;
       g2.fillStyle(lerpRgb(faceHi, faceLo, t));
-      g2.fillRect(0, y, 32, 1);
+      g2.fillRect(1, y, 30, 1);
     }
-    // Right-side occlusion on face
+    g2.fillStyle(faceLo);
+    g2.fillEllipse(16, 28, 28, 8);
     g2.fillStyle(0x000000);
     g2.setAlpha(0.22);
-    g2.fillRect(26, 4, 6, 6);
+    g2.fillRect(26, 6, 6, 22);
     g2.setAlpha(1);
-    // Left highlight on face edge
     g2.fillStyle(0xffffff);
     g2.setAlpha(0.08);
-    g2.fillRect(0, 4, 2, 6);
+    g2.fillRect(0, 4, 3, 20);
     g2.setAlpha(1);
-
-    // Stepped treads (cavern — worn stone route)
     g2.fillStyle(topMid);
-    g2.fillRect(0, 4, 32, 1);
+    g2.fillRect(0, 4, 32, 4);
     g2.fillStyle(topHi);
-    g2.fillRect(0, 3, 11, 2);
-    g2.fillRect(10, 2, 12, 3);
-    g2.fillRect(22, 1, 10, 4);
+    g2.fillRoundedRect(0, 2, 32, 6, { tl: 4, tr: 4, bl: 0, br: 0 });
     g2.fillStyle(0xffffff);
-    g2.setAlpha(0.22);
-    g2.fillRect(0, 2, 32, 1);
+    g2.setAlpha(0.18);
+    g2.fillRect(2, 2, 28, 2);
     g2.setAlpha(1);
-
-    g2.fillStyle(0x000000);
-    g2.setAlpha(0.25);
-    g2.fillRect(0, 4, 32, 1);
-    g2.setAlpha(1);
-
     g2.fillStyle(TEAL_GLOW);
-    g2.setAlpha(0.12);
+    g2.setAlpha(0.1);
     g2.fillRect(4, 1, 24, 1);
     g2.setAlpha(1);
-
-    // Micro chisel / wear
     g2.lineStyle(1, edge, 0.5);
-    g2.lineBetween(6, 5, 8, 9);
-    g2.lineBetween(22, 5, 20, 8);
+    g2.lineBetween(6, 8, 8, 24);
+    g2.lineBetween(22, 8, 20, 22);
+    g2.lineBetween(14, 10, 16, 26);
     g2.fillStyle(0x000000);
-    g2.setAlpha(0.35);
-    g2.fillRect(0, 11, 32, 1);
+    g2.setAlpha(0.4);
+    g2.fillRect(1, 28, 30, 4);
     g2.setAlpha(1);
-
     g2.lineStyle(1, 0x000000, 0.85);
-    g2.strokeRect(0, 0, 32, 12);
+    g2.strokeRoundedRect(0, 0, 32, 32, 3);
 
-    g2.generateTexture(key, 32, 12);
+    g2.generateTexture(key, 32, 32);
     g2.destroy();
   };
   makePlat('tile_platform', 0);
@@ -920,34 +980,29 @@ function generateTileTextures(scene) {
     const P = terracePalettes[theme];
     const { faceHi, faceLo, topMid, topHi, rim, edge, speck } = P;
 
-    g3.fillStyle(0x000000);
-    g3.setAlpha(0.5);
-    g3.fillRect(1, 10, 30, 2);
-    g3.setAlpha(1);
-
-    const x0 = 0;
-    const x1 = 32;
-
-    for (let y = 4; y <= 9; y++) {
-      const t = (y - 4) / 5;
+    // Body gradient
+    for (let y = 6; y < 28; y++) {
+      const t = (y - 6) / 22;
       g3.fillStyle(lerpRgb(faceHi, faceLo, t));
-      g3.fillRect(x0, y, x1 - x0, 1);
+      g3.fillRect(0, y, 32, 1);
     }
+    // Rounded bottom
+    g3.fillStyle(faceLo);
+    g3.fillEllipse(16, 28, 28, 8);
+    // Right occlusion
     g3.fillStyle(0x000000);
     g3.setAlpha(0.2);
-    g3.fillRect(24, 4, 8, 6);
+    g3.fillRect(24, 6, 8, 22);
     g3.setAlpha(1);
 
-    // Stepped walking surface (3 treads — reads as ground / stairs, not a flat bar)
+    // Walking surface (thick, rounded top)
     g3.fillStyle(topMid);
-    g3.fillRect(0, 4, 32, 1);
+    g3.fillRect(0, 4, 32, 4);
     g3.fillStyle(topHi);
-    g3.fillRect(0, 3, 11, 2);
-    g3.fillRect(10, 2, 12, 3);
-    g3.fillRect(22, 1, 10, 4);
+    g3.fillRoundedRect(0, 2, 32, 6, { tl: 4, tr: 4, bl: 0, br: 0 });
     g3.fillStyle(0xffffff);
     g3.setAlpha(0.18);
-    g3.fillRect(0, 2, 32, 1);
+    g3.fillRect(2, 2, 28, 2);
     g3.setAlpha(0.12);
     g3.fillRect(10, 2, 12, 1);
     g3.fillRect(22, 1, 10, 1);
@@ -967,57 +1022,58 @@ function generateTileTextures(scene) {
       g3.setAlpha(1);
     }
 
-    g3.fillStyle(0x000000);
-    g3.setAlpha(0.28);
-    g3.fillRect(x0, 4, x1 - x0, 1);
-    g3.setAlpha(1);
+    // Cracks in body
+    g3.lineStyle(1, edge, 0.4);
+    g3.lineBetween(8, 8, 10, 24);
+    g3.lineBetween(22, 8, 20, 22);
 
     if (variant === 'left') {
       g3.fillStyle(0xffffff);
       g3.setAlpha(0.12);
-      g3.fillRect(0, 1, 5, 3);
+      g3.fillRect(0, 2, 5, 24);
       g3.setAlpha(1);
       g3.lineStyle(1, lerpRgb(topHi, 0xffffff, 0.2), 0.5);
-      g3.lineBetween(0, 2, 0, 9);
+      g3.lineBetween(0, 2, 0, 28);
     }
     if (variant === 'right') {
       g3.fillStyle(0xffffff);
       g3.setAlpha(0.1);
-      g3.fillRect(27, 1, 5, 3);
+      g3.fillRect(27, 2, 5, 24);
       g3.setAlpha(1);
       g3.lineStyle(1, lerpRgb(faceHi, 0x000000, 0.3), 0.55);
-      g3.lineBetween(31, 2, 31, 9);
+      g3.lineBetween(31, 2, 31, 28);
     }
 
     if (variant === 'mid2') {
       g3.lineStyle(1, lerpRgb(faceLo, faceHi, 0.5), 0.55);
-      g3.lineBetween(8, 5, 10, 9);
-      g3.lineBetween(22, 5, 20, 9);
+      g3.lineBetween(8, 8, 10, 24);
+      g3.lineBetween(22, 8, 20, 24);
       g3.fillStyle(faceLo);
-      g3.fillRect(14, 5, 4, 4);
+      g3.fillRect(14, 10, 4, 14);
     }
     if (variant === 'solo') {
       g3.fillStyle(faceLo);
-      g3.fillRect(4, 9, 4, 2);
-      g3.fillRect(24, 9, 4, 2);
+      g3.fillRect(4, 20, 4, 6);
+      g3.fillRect(24, 20, 4, 6);
       g3.lineStyle(1, edge, 0.4);
-      g3.lineBetween(6, 11, 6, 12);
-      g3.lineBetween(26, 11, 26, 12);
+      g3.lineBetween(6, 26, 6, 30);
+      g3.lineBetween(26, 26, 26, 30);
     }
 
+    // Bottom shadow
     g3.fillStyle(0x000000);
     g3.setAlpha(0.45);
-    g3.fillRect(x0, 11, x1 - x0, 1);
+    g3.fillRect(0, 28, 32, 4);
     g3.setAlpha(1);
 
     g3.lineStyle(1, edge, 0.35);
     if (variant === 'solo') {
-      g3.lineBetween(2, 3, 2, 9);
-      g3.lineBetween(30, 3, 30, 9);
+      g3.lineBetween(2, 4, 2, 28);
+      g3.lineBetween(30, 4, 30, 28);
     }
 
     g3.lineStyle(1, 0x000000, 0.78);
-    g3.strokeRect(0, 0, 32, 12);
+    g3.strokeRoundedRect(0, 0, 32, 32, 3);
 
     return g3;
   };
@@ -1028,7 +1084,7 @@ function generateTileTextures(scene) {
       const g3 = drawTerracePlatform(v, th);
       const base = terraceKeys[th];
       const key = v === 'mid' ? base : `${base}_${v}`;
-      g3.generateTexture(key, 32, 12);
+      g3.generateTexture(key, 32, 32);
       g3.destroy();
     });
   });
@@ -1948,49 +2004,49 @@ function generateDoorTexture(scene) {
 }
 
 function generateHazardTextures(scene) {
-  // Obsidian moving platform
+  // Obsidian moving platform (island-thick)
   const op = scene.make.graphics({ add: false });
-  for (let y = 0; y < 12; y++) {
-    op.fillStyle(lerpRgb(0x2a2436, 0x0a0810, y / 11));
+  for (let y = 0; y < 32; y++) {
+    op.fillStyle(lerpRgb(0x2a2436, 0x0a0810, y / 31));
     op.fillRect(0, y, 32, 1);
   }
   op.fillStyle(0x8a7a96);
   op.setAlpha(0.18);
-  op.fillRect(2, 1, 28, 2);
+  op.fillRect(2, 1, 28, 4);
   op.setAlpha(1);
   op.lineStyle(1, 0x5c3a76, 0.55);
-  op.lineBetween(6, 3, 12, 9);
-  op.lineBetween(16, 2, 25, 8);
+  op.lineBetween(6, 4, 12, 24);
+  op.lineBetween(16, 3, 25, 22);
   op.fillStyle(0x000000);
   op.setAlpha(0.4);
-  op.fillRect(0, 10, 32, 2);
+  op.fillRect(0, 26, 32, 6);
   op.setAlpha(1);
   op.lineStyle(1, 0x000000, 0.9);
-  op.strokeRect(0, 0, 32, 12);
-  op.generateTexture('obsidian_platform', 32, 12);
+  op.strokeRoundedRect(0, 0, 32, 32, 3);
+  op.generateTexture('obsidian_platform', 32, 32);
   op.destroy();
 
-  // Crumbling stone platform
+  // Crumbling stone platform (island-thick)
   const cp = scene.make.graphics({ add: false });
-  for (let y = 0; y < 12; y++) {
-    cp.fillStyle(lerpRgb(0x4a4a56, 0x1a1a24, y / 11));
+  for (let y = 0; y < 32; y++) {
+    cp.fillStyle(lerpRgb(0x4a4a56, 0x1a1a24, y / 31));
     cp.fillRect(0, y, 32, 1);
   }
   cp.fillStyle(0xffffff);
   cp.setAlpha(0.1);
-  cp.fillRect(1, 1, 30, 2);
+  cp.fillRect(1, 1, 30, 4);
   cp.setAlpha(1);
   cp.lineStyle(1, 0x1a1a22, 0.8);
-  cp.lineBetween(7, 3, 10, 9);
-  cp.lineBetween(15, 2, 14, 10);
-  cp.lineBetween(24, 4, 19, 10);
+  cp.lineBetween(7, 4, 10, 24);
+  cp.lineBetween(15, 3, 14, 26);
+  cp.lineBetween(24, 5, 19, 26);
   cp.fillStyle(0x000000);
   cp.setAlpha(0.35);
-  cp.fillRect(0, 10, 32, 2);
+  cp.fillRect(0, 26, 32, 6);
   cp.setAlpha(1);
   cp.lineStyle(1, 0x000000, 0.85);
-  cp.strokeRect(0, 0, 32, 12);
-  cp.generateTexture('crumble_platform', 32, 12);
+  cp.strokeRoundedRect(0, 0, 32, 32, 3);
+  cp.generateTexture('crumble_platform', 32, 32);
   cp.destroy();
 
   // Pendulum anchor

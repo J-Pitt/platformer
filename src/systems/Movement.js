@@ -31,9 +31,12 @@ export class MovementSystem {
     this.isWallSliding = false;
     this.wasOnGround = false;
 
+    this.airJumpsUsed = 0;
+
     this.abilities = {
       wallJump: false,
       dash: false,
+      doubleJump: false,
     };
   }
 
@@ -56,6 +59,7 @@ export class MovementSystem {
     if (onGround) {
       this.coyoteTimer = COYOTE_TIME;
       this.wasOnGround = true;
+      this.airJumpsUsed = 0;
     } else {
       this.coyoteTimer = Math.max(0, this.coyoteTimer - dt);
     }
@@ -111,6 +115,11 @@ export class MovementSystem {
         p.setFlipX(this.wallDir > 0);
         p.facing = -this.wallDir;
         this.emitWallJumpParticles();
+      } else if (this.abilities.doubleJump && this.airJumpsUsed < 1) {
+        body.velocity.y = JUMP_VELOCITY * 0.85;
+        this.jumpBufferTimer = 0;
+        this.airJumpsUsed++;
+        this.emitJumpParticles();
       }
     }
 

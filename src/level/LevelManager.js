@@ -3,6 +3,7 @@ import { organicDecorRng } from './organicCaveGen.js';
 import { Crawler } from '../entities/Crawler.js';
 import { Flyer } from '../entities/Flyer.js';
 import { Boss } from '../entities/Boss.js';
+import { Brute } from '../entities/Brute.js';
 import { NPC } from '../entities/NPC.js';
 
 export class LevelManager {
@@ -578,10 +579,10 @@ export class LevelManager {
             platKey = pickTerrace('tile_platform_crystal');
           }
 
-          const plat = this.platformGroup.create(x, y - 10, platKey);
-          plat.setDisplaySize(TILE_SIZE, 12);
+          const plat = this.platformGroup.create(x, y, platKey);
+          plat.setDisplaySize(TILE_SIZE, TILE_SIZE);
           plat.setDepth(3);
-          plat.body.setSize(TILE_SIZE, 12);
+          plat.body.setSize(TILE_SIZE, TILE_SIZE);
           plat.body.checkCollision.down = false;
           plat.body.checkCollision.left = false;
           plat.body.checkCollision.right = false;
@@ -648,6 +649,7 @@ export class LevelManager {
         case 'crawler': this.createCrawler(px, py); break;
         case 'flyer': this.createFlyer(px, py); break;
         case 'boss': this.createBoss(px, py); break;
+        case 'brute': this.createBrute(px, py); break;
         case 'npc': this.createNPC(px, py, obj); break;
         case 'health_pickup': this.createHealthPickup(px, py); break;
         case 'moving_platform': this.createMovingPlatform(px, py, obj); break;
@@ -1021,6 +1023,11 @@ export class LevelManager {
     this.scene.enemies.add(boss);
   }
 
+  createBrute(x, y) {
+    const brute = new Brute(this.scene, x, y);
+    this.scene.enemies.add(brute);
+  }
+
   createNPC(x, y, obj) {
     const npc = new NPC(this.scene, x, y, obj.npcType, obj.dialogue);
     this.scene.physics.add.collider(npc, this.wallLayer);
@@ -1208,10 +1215,11 @@ export class LevelManager {
   }
 
   createMovingPlatform(x, y, obj) {
-    const plat = this.scene.physics.add.image(x, y - 10, 'obsidian_platform');
+    const plat = this.scene.physics.add.image(x, y, 'obsidian_platform');
+    plat.setDisplaySize(TILE_SIZE, TILE_SIZE);
     plat.body.allowGravity = false;
     plat.body.setImmovable(true);
-    plat.body.setSize(TILE_SIZE, 12);
+    plat.body.setSize(TILE_SIZE, TILE_SIZE);
     plat.body.checkCollision.down = false;
     plat.body.checkCollision.left = false;
     plat.body.checkCollision.right = false;
@@ -1220,7 +1228,7 @@ export class LevelManager {
     this.movingPlatforms.push({
       sprite: plat,
       baseX: x,
-      baseY: y - 10,
+      baseY: y,
       axis: obj.axis || 'x',
       range: obj.range || 64,
       speed: obj.speed || 0.9,
@@ -1284,10 +1292,11 @@ export class LevelManager {
   }
 
   createCrumblePlatform(x, y, obj) {
-    const sprite = this.scene.physics.add.image(x, y - 10, 'crumble_platform');
+    const sprite = this.scene.physics.add.image(x, y, 'crumble_platform');
+    sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
     sprite.body.allowGravity = false;
     sprite.body.setImmovable(true);
-    sprite.body.setSize(TILE_SIZE, 12);
+    sprite.body.setSize(TILE_SIZE, TILE_SIZE);
     sprite.body.checkCollision.down = false;
     sprite.body.checkCollision.left = false;
     sprite.body.checkCollision.right = false;

@@ -137,6 +137,12 @@ export class Flyer extends Phaser.Physics.Arcade.Sprite {
       this.scene.enemyDeathEmitter.emitParticleAt(this.x, this.y, 10);
     }
 
+    for (const p of this.scene.getActivePlayers()) {
+      if (!p.isDead && p.hp < p.maxHp) {
+        p.hp = Math.min(p.hp + 1, p.maxHp);
+      }
+    }
+
     this.scene.tweens.add({
       targets: this,
       alpha: 0,

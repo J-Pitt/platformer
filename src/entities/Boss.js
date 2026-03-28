@@ -418,6 +418,12 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     }
     this.scene.cameras.main.shake(500, 0.025);
 
+    for (const p of this.scene.getActivePlayers()) {
+      if (!p.isDead) {
+        p.hp = p.maxHp;
+      }
+    }
+
     this.scene.tweens.add({
       targets: this,
       alpha: 0, scaleX: 0.5, scaleY: 0.5,

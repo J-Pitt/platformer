@@ -106,9 +106,14 @@ export class Crawler extends Phaser.Physics.Arcade.Sprite {
     this.body.velocity.set(0, 0);
     this.body.allowGravity = false;
 
-    // Death particles
     if (this.scene.enemyDeathEmitter) {
       this.scene.enemyDeathEmitter.emitParticleAt(this.x, this.y, 12);
+    }
+
+    for (const p of this.scene.getActivePlayers()) {
+      if (!p.isDead && p.hp < p.maxHp) {
+        p.hp = Math.min(p.hp + 1, p.maxHp);
+      }
     }
 
     this.scene.tweens.add({
