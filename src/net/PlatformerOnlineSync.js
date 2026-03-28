@@ -82,9 +82,10 @@ export class PlatformerOnlineSync {
   }
 
   async syncTick() {
-    if (this._stopped) return;
+    if (this._stopped || this._inFlight) return;
+    this._inFlight = true;
     const scene = this.scene;
-    if (!scene.levelManager?.currentRoomId) return;
+    if (!scene.levelManager?.currentRoomId) { this._inFlight = false; return; }
 
     try {
       const fresh = await getPlatformerRoom(this.roomId);
@@ -104,13 +105,15 @@ export class PlatformerOnlineSync {
       });
     } catch (e) {
       console.warn('[PlatformerOnlineSync]', e.message || e);
+    } finally {
+      this._inFlight = false;
     }
   }
 
   start() {
     if (this._timer) return;
     this._timer = this.scene.time.addEvent({
-      delay: 110,
+      delay: 300,
       loop: true,
       callback: () => {
         void this.syncTick();
