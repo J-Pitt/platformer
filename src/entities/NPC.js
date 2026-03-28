@@ -11,6 +11,19 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     this.body.setOffset(6, 8);
     this.setDepth(5);
 
+    if (npcType === 'hermit') {
+      this.setScale(1.18);
+      this.refreshBody();
+      this.setDepth(6);
+    }
+    if (npcType === 'merchant') {
+      this.setScale(1.12);
+      this.setAlpha(1);
+      this.clearTint();
+      this.refreshBody();
+      this.setDepth(6);
+    }
+
     this.npcType = npcType;
     this.dialogue = dialogue || [];
     this.dialogueIndex = 0;
@@ -19,13 +32,13 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     this.playerNearby = false;
 
     this.createPrompt();
-    this.addIdleAnimation();
+    if (npcType !== 'hermit' && npcType !== 'merchant') this.addIdleAnimation();
   }
 
   createPrompt() {
-    this.promptIcon = this.scene.add.text(this.x, this.y - 28, '▼', {
-      fontSize: '14px', fontFamily: 'monospace', color: '#44ff66',
-      stroke: '#000', strokeThickness: 3,
+    this.promptIcon = this.scene.add.text(this.x, this.y - 30, '[E]', {
+      fontSize: '12px', fontFamily: 'monospace', color: '#66ff88',
+      stroke: '#000', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10).setAlpha(0);
 
     this.scene.tweens.add({
@@ -148,8 +161,8 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
     const hasMore = this.dialogueIndex < this.dialogue.length - 1;
     const promptStr = hasMore
-      ? (isMobile ? '[ TAP FOR MORE ▶ ]' : '[ SPACE / TAP ▶ ]')
-      : (isMobile ? '[ TAP TO CLOSE ]' : '[ SPACE TO CLOSE ]');
+      ? (isMobile ? '[ TAP FOR MORE ▶ ]' : '[ SPACE OR E ▶ ]')
+      : (isMobile ? '[ TAP TO CLOSE ]' : '[ SPACE OR E TO CLOSE ]');
     const prompt = this.scene.add.text(
       cx + panelW / 2 - 14, panelY + panelH / 2 - 12, promptStr, {
         fontSize: '9px', fontFamily: 'monospace', color: '#6a5838',
@@ -174,6 +187,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
 
       dismissed = true;
       this.scene.input.keyboard.off('keydown-SPACE', advance);
+      this.scene.input.keyboard.off('keydown-E', advance);
       this.scene.input.off('pointerdown', advance);
 
       for (const el of elements) {
@@ -195,6 +209,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
 
     this.scene.time.delayedCall(200, () => {
       this.scene.input.keyboard.on('keydown-SPACE', advance);
+      this.scene.input.keyboard.on('keydown-E', advance);
       this.scene.input.on('pointerdown', advance);
     });
   }

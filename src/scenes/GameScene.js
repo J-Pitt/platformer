@@ -2,7 +2,8 @@ import { Player } from '../entities/Player.js';
 import { LevelManager } from '../level/LevelManager.js';
 import { HUD } from '../ui/HUD.js';
 import { InputManager } from '../systems/InputManager.js';
-import { TILE_SIZE } from '../level/rooms.js';
+import { PlatformerOnlineSync } from '../net/PlatformerOnlineSync.js';
+import { TILE_SIZE, rooms } from '../level/rooms.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -10,13 +11,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(data) {
+    this.online = data?.online ?? null;
     this.coopMode = !!(data && data.coopMode);
+    this.onlineSync = null;
+    this._pendingNetRoom = null;
 
     this.setupInput();
     this.setupParticleEmitters();
 
     this.inputManager = new InputManager(this);
-    this.inputManager.coopMode = this.coopMode;
+    if (this.online) {
+      this.inputManager.setOnlineMode(true, data.online.isHost ? 0 : 1);
+    } else {
+      this.inputManager.coopMode = this.coopMode;
+    }
 
     const urlParams = new URLSearchParams(
       typeof window !== 'undefined' ? window.location.search : '',
@@ -34,7 +42,12 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(this, 0, 0, 0);
     this.player2 = null;
-    if (this.coopMode) {
+    if (this.online) {
+      this.player2 = new Player(this, 0, 0, 1);
+      const host = !!data.online.isHost;
+      this.player.remoteMode = !host;
+      this.player2.remoteMode = host;
+    } else if (this.coopMode) {
       this.player2 = new Player(this, 0, 0, 1);
     }
 
@@ -55,10 +68,15 @@ export class GameScene extends Phaser.Scene {
 
     this.levelManager.loadRoom('room1');
 
+    if (this.online) {
+      this.onlineSync = new PlatformerOnlineSync(this, this.online);
+      this.onlineSync.start();
+    }
+
     this.input.keyboard.on('keydown-P', () => this.togglePause());
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
 
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+    this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
     this.cameras.main.setDeadzone(60, 40);
 
     if (this.textures.exists('screen_vignette')) {
@@ -84,6 +102,7 @@ export class GameScene extends Phaser.Scene {
       c: this.input.keyboard.addKey('C'),
       j: this.input.keyboard.addKey('J'),
       shift: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
+      e: this.input.keyboard.addKey('E'),
     };
   }
 
@@ -128,7 +147,19 @@ export class GameScene extends Phaser.Scene {
     this.enemyDeathEmitter.setDepth(10);
   }
 
+  localFollowTarget() {
+    if (this.online && !this.online.isHost) return this.player2;
+    return this.player;
+  }
+
   update(time, delta) {
+    if (this._pendingNetRoom && !this.transitioning) {
+      const p = this._pendingNetRoom;
+      this._pendingNetRoom = null;
+      this.transitionToRoom(p.roomId, p.spawnX, p.spawnY);
+      return;
+    }
+
     if (this.transitioning) return;
 
     const dt = Math.min(delta, 33.33);
@@ -171,8 +202,8 @@ export class GameScene extends Phaser.Scene {
       this.player2.die();
     }
 
-    // P2 tether: if too far from P1 horizontally, respawn near P1
-    if (this.player2 && !this.player2.isDead && !this.player.isDead) {
+    // P2 tether: local co-op only (online uses free range + net sync)
+    if (this.player2 && !this.online && !this.player2.isDead && !this.player.isDead) {
       const dx = Math.abs(this.player2.x - this.player.x);
       const dy = Math.abs(this.player2.y - this.player.y);
       if (dx > 700 || dy > 500) {
@@ -203,6 +234,8 @@ export class GameScene extends Phaser.Scene {
           this.player2.setPosition(this.player.x + 20, this.player.y);
           this.player2.body.velocity.set(0, 0);
         }
+        this.onlineSync?.queueHostLead(roomId, spawnX, spawnY);
+        this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
       }

@@ -1,3 +1,5 @@
+import { buildOrganicCaveRoom } from './organicCaveGen.js';
+
 export const TILE_SIZE = 32;
 
 function makeRoom(w, h) {
@@ -72,9 +74,13 @@ function buildRoom1() {
   fillRect(tiles, 8, 18, 17, 19, 1);  // narrow wall — player runs under, spikes punish jumping
   fillRect(tiles, 7, 49, 10, 50, 1);  // thin pillar near climb top — spike wall on face
 
-  // Floor terrain bumps (adds variety to the flat floor)
-  fillRect(tiles, 20, 15, 21, 17, 1);
+  // Floor terrain bumps (keep clear of cols 15+ so the route to the ravine / east door stays walkable)
+  fillRect(tiles, 20, 9, 21, 13, 1);
   fillRect(tiles, 20, 8, 21, 9, 1);
+
+  // Carved hall under the ruin — low ceiling strips (tunnel leading deeper)
+  fillRect(tiles, 2, 16, 5, 34, 1);
+  fillRect(tiles, 2, 38, 4, 52, 1);
 
   // Door gap in east wall
   clearRect(tiles, 17, W - 1, 22, W - 1);
@@ -117,24 +123,11 @@ function buildRoom1() {
       { type: 'moving_platform', x: 28, y: 18, axis: 'x', range: 64, speed: 1.0, phase: 1.5, spin: 0 },
       { type: 'wood_bridge', x: 27, y: f },
       { type: 'wood_bridge', x: 44, y: f - 1 },
-      { type: 'pine_tree', x: 5, y: f },
-      { type: 'pine_tree', x: 14, y: f },
-      { type: 'pine_tree', x: 50, y: f - 2 },
-      { type: 'pine_tree', x: 35, y: 14 },
-      { type: 'snow_rock', x: 10, y: f },
-      { type: 'snow_rock', x: 20, y: f },
-      { type: 'snow_rock', x: 33, y: f - 1 },
-      { type: 'snow_rock', x: 48, y: f - 2 },
-      { type: 'mountain_banner', x: 9, y: 12 },
-      { type: 'mountain_banner', x: 38, y: 10 },
-      { type: 'birds_silhouette', x: 16, y: 3 },
-      { type: 'birds_silhouette', x: 40, y: 2 },
+      { type: 'chain', x: 6, y: 1 },
       { type: 'chain', x: 22, y: 1 },
       { type: 'chain', x: 34, y: 1 },
       { type: 'chain', x: 46, y: 1 },
-      { type: 'tomb_light_beam', x: 12, y: 4 },
-      { type: 'tomb_light_beam', x: 30, y: 4 },
-      { type: 'tomb_light_beam', x: 46, y: 4 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
       { type: 'stalactite_sm', x: 12, y: 1 },
       { type: 'stalactite_sm', x: 28, y: 1 },
       { type: 'stalactite', x: 42, y: 1 },
@@ -170,12 +163,13 @@ function buildRoom1() {
     ],
     lighting: {
       beams: [
-        { x: 8, y: 0, angle: -12, key: 'warm', alpha: 0.18, scale: 1.4 },
-        { x: 28, y: 0, angle: -8, key: 'warm', alpha: 0.12, scale: 1.1 },
-        { x: 44, y: 0, angle: -15, key: 'warm', alpha: 0.14, scale: 1.2 },
+        { x: 6, y: 0, angle: -8, key: 'warm', alpha: 0.22, scale: 1.5 },
+        { x: 24, y: 0, angle: 0, key: 'warm', alpha: 0.18, scale: 1.35 },
+        { x: 42, y: 0, angle: 10, key: 'warm', alpha: 0.2, scale: 1.45 },
+        { x: 50, y: 0, angle: -6, key: 'warm', alpha: 0.16, scale: 1.2 },
       ],
-      ambientColor: 0xffe8c0,
-      ambientAlpha: 0.04,
+      ambientColor: 0xc4a882,
+      ambientAlpha: 0.05,
     },
     ambience: 'mountain',
   };
@@ -203,6 +197,10 @@ function buildRoom2() {
   fillRow(tiles, 6, 10, 12, 2);     // step 11: center (orb is at row 5 above)
   fillRow(tiles, 4, 1, 6, 2);       // top-left landing (room3 door)
   fillRow(tiles, 4, 16, 20, 2);     // top-right landing (room4 door)
+
+  // Mine-shaft roof — mostly closed stone with a narrow light well
+  fillRect(tiles, 1, 1, 3, W - 2, 1);
+  clearRect(tiles, 1, 9, 3, 12);
 
   // Bottom floor with gaps
   fillRect(tiles, H - 2, 1, H - 1, 7, 1);
@@ -259,11 +257,11 @@ function buildRoom2() {
       { type: 'stalactite_sm', x: 19, y: 1 },
       { type: 'vine', x: 8, y: 4 },
       { type: 'vine', x: 14, y: 4 },
-      { type: 'pine_tree', x: 4, y: 28 },
-      { type: 'pine_tree', x: 18, y: 28 },
-      { type: 'snow_rock', x: 11, y: 28 },
-      { type: 'mountain_banner', x: 12, y: 8 },
-      { type: 'birds_silhouette', x: 8, y: 6 },
+      { type: 'stalactite_sm', x: 8, y: 1 },
+      { type: 'stalactite_sm', x: 14, y: 1 },
+      { type: 'glow_spore', x: 8, y: 8 },
+      { type: 'glow_spore', x: 14, y: 10 },
+      { type: 'chain', x: 11, y: 4 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -283,11 +281,12 @@ function buildRoom2() {
     ],
     lighting: {
       beams: [
-        { x: 10, y: 0, angle: 0, key: 'cool', alpha: 0.14, scale: 1.6 },
-        { x: 6, y: 0, angle: -5, key: 'cool', alpha: 0.08, scale: 1.0 },
+        { x: 10, y: 0, angle: 0, key: 'warm', alpha: 0.2, scale: 1.65 },
+        { x: 6, y: 0, angle: -5, key: 'warm', alpha: 0.14, scale: 1.15 },
+        { x: 16, y: 0, angle: 6, key: 'warm', alpha: 0.12, scale: 1.1 },
       ],
-      ambientColor: 0xaaccee,
-      ambientAlpha: 0.03,
+      ambientColor: 0x8899aa,
+      ambientAlpha: 0.045,
     },
     ambience: 'mountain_shaft',
   };
@@ -315,6 +314,12 @@ function buildRoom3() {
 
   // Rock formations in floor
   fillRect(tiles, 19, 22, 19, 25, 1);
+
+  // Burrow ceiling + maze ribs (hallway weave, gaps stay ≤2 tiles vertical between routes)
+  fillRect(tiles, 2, 8, 5, 26, 1);
+  fillRect(tiles, 2, 30, 5, 42, 1);
+  fillRect(tiles, 3, 14, 6, 22, 1);
+  // Single main crawl: floor route stays continuous (no extra maze ribs)
 
   // Hidden alcove top-left for the map chest
   fillRow(tiles, 4, 2, 5, 2);
@@ -404,17 +409,18 @@ function buildRoom3() {
       { type: 'cb_detail_roots', x: 36, y: 1, count: 3 },
       { type: 'cb_detail_bricks', x: 6, y: 12, w: 10, h: 6 },
       { type: 'cb_detail_bricks', x: 28, y: 10, w: 12, h: 8 },
+      { type: 'cb_detail_bricks', x: 16, y: 6, w: 8, h: 10 },
     ],
     lighting: {
       beams: [
-        { x: 10, y: 0, angle: 5, key: 'cool', alpha: 0.10, scale: 1.0 },
-        { x: 25, y: 0, angle: -5, key: 'cool', alpha: 0.08, scale: 0.9 },
-        { x: 38, y: 0, angle: 3, key: 'cool', alpha: 0.10, scale: 1.1 },
+        { x: 10, y: 0, angle: 5, key: 'cool', alpha: 0.08, scale: 0.95 },
+        { x: 25, y: 0, angle: -5, key: 'cool', alpha: 0.06, scale: 0.85 },
+        { x: 38, y: 0, angle: 3, key: 'cool', alpha: 0.08, scale: 1.0 },
       ],
       ambientColor: 0x22ffaa,
-      ambientAlpha: 0.03,
+      ambientAlpha: 0.04,
     },
-    ambience: 'fungal',
+    ambience: 'tunnel_fungal',
   };
 }
 
@@ -464,6 +470,11 @@ function buildRoom4() {
   fillRect(tiles, 6, 11, 12, 11, 1);
   fillRect(tiles, 6, 32, 12, 32, 1);
 
+  // Crystal tunnel — low roof bands + choke points
+  fillRect(tiles, 2, 9, 5, 24, 1);
+  fillRect(tiles, 2, 28, 5, 44, 1);
+  fillRect(tiles, 3, 16, 6, 36, 1);
+
   // Door openings
   clearRect(tiles, 17, 0, 19, 0);   // left to room2
   clearRect(tiles, 17, W - 1, 19, W - 1);  // right to room5
@@ -477,7 +488,7 @@ function buildRoom4() {
     objects: [
       { type: 'ability_orb', ability: 'dash', x: 45, y: 7, hint: 'Press X or Shift to dash' },
       { type: 'door', targetRoom: 'room2', x: 1, y: 19, spawnX: 19, spawnY: 4 },
-      { type: 'door', targetRoom: 'room5', x: W - 2, y: 19, spawnX: 2, spawnY: 21 },
+      { type: 'door', targetRoom: 'room5', x: W - 2, y: 19, spawnX: 12, spawnY: 21 },
       { type: 'magma_pool', x: 23, y: 20, width: 8 },
       { type: 'moving_platform', x: 19, y: 17, axis: 'x', range: 36, speed: 1.5, phase: 0.2, spin: 1.5 },
       { type: 'moving_platform', x: 27, y: 13, axis: 'x', range: 34, speed: 1.35, phase: 2.1, spin: -1.3 },
@@ -558,12 +569,12 @@ function buildRoom4() {
       beams: [
         { x: 12, y: 0, angle: -10, key: 'cool', alpha: 0.12, scale: 1.2 },
         { x: 28, y: 0, angle: 8, key: 'cool', alpha: 0.10, scale: 1.0 },
-        { x: 40, y: 0, angle: -6, key: 'cool', alpha: 0.14, scale: 1.3 },
+        { x: 40, y: 0, angle: -6, key: 'cool', alpha: 0.11, scale: 1.2 },
       ],
       ambientColor: 0xaa66ff,
-      ambientAlpha: 0.04,
+      ambientAlpha: 0.045,
     },
-    ambience: 'crystal',
+    ambience: 'tunnel_crystal',
   };
 }
 
@@ -597,6 +608,10 @@ function buildRoom5() {
   fillRect(tiles, 3, 10, 12, 10, 1);
   fillRect(tiles, 3, 29, 12, 29, 1);
 
+  // Buried arena — ceiling slabs over side aisles
+  fillRect(tiles, 2, 5, 5, 16, 1);
+  fillRect(tiles, 2, 24, 5, 35, 1);
+
   // Door opening left
   clearRect(tiles, 17, 0, 20, 0);
   // Door opening right to room8
@@ -607,7 +622,7 @@ function buildRoom5() {
     width: W,
     height: H,
     tiles,
-    playerSpawn: { x: 10, y: 21 },
+    playerSpawn: { x: 12, y: 21 },
     objects: [
       { type: 'door', targetRoom: 'room4', x: 1, y: 21, spawnX: 47, spawnY: 19 },
       { type: 'door', targetRoom: 'room8', x: W - 2, y: 21, spawnX: 46, spawnY: 23 },
@@ -628,7 +643,7 @@ function buildRoom5() {
       { type: 'moving_platform', x: 29, y: 6, axis: 'y', range: 128, speed: 1.0, phase: 1.5, spin: 0 },
       { type: 'crumble_platform', x: 15, y: 12, collapseDelay: 320, respawnDelay: 2200 },
       { type: 'crumble_platform', x: 25, y: 12, collapseDelay: 400, respawnDelay: 2200 },
-      { type: 'npc', npcType: 'merchant', x: 5, y: 21, dialogue: [
+      { type: 'npc', npcType: 'merchant', x: 14, y: 21, dialogue: [
         'Heh heh... a living one. Do not look at me like that — I was alive once, too.',
         'I trade in old things. Relics. Memories. Bones of the forgotten. This chamber was the Guardian\'s proving ground.',
         'Champions came here to prove their worth before entering the Crucible. Most did not survive. Those that did wished they hadn\'t.',
@@ -682,7 +697,7 @@ function buildRoom5() {
       { type: 'fg_torch_bracket', x: W - 2, y: 16 },
     ],
     closeBgDetails: [
-      { type: 'cb_detail_bricks', x: 2, y: 4, w: 14, h: 12 },
+      { type: 'cb_detail_bricks', x: 8, y: 4, w: 12, h: 10 },
       { type: 'cb_detail_bricks', x: 24, y: 2, w: 14, h: 14 },
       { type: 'cb_rune_mark', x: 8, y: 6 },
       { type: 'cb_rune_mark', x: 20, y: 10 },
@@ -697,10 +712,10 @@ function buildRoom5() {
         { x: 30, y: 0, angle: 12, key: 'warm', alpha: 0.10, scale: 1.0 },
       ],
       ambientColor: 0xcc4488,
-      ambientAlpha: 0.05,
+      ambientAlpha: 0.055,
     },
     locked: true,
-    ambience: 'guardian',
+    ambience: 'tunnel_guardian',
   };
 }
 
@@ -732,6 +747,11 @@ function buildRoom6() {
   // Pillars / walls
   fillRect(tiles, 4, 20, 9, 21, 1);
   fillRect(tiles, 4, 40, 9, 41, 1);
+
+  // Aqueduct tunnel — roof over the walkway
+  fillRect(tiles, 2, 6, 5, 18, 1);
+  fillRect(tiles, 2, 24, 5, 32, 1);
+  fillRect(tiles, 2, 38, 5, 52, 1);
 
   // Terrain bumps
   fillRect(tiles, 18, 5, 19, 7, 1);
@@ -817,15 +837,16 @@ function buildRoom6() {
       { type: 'gravel_patch', x: 12, y: f },
       { type: 'gravel_patch', x: 36, y: f },
       { type: 'gravel_patch', x: 54, y: f },
-      { type: 'pine_tree', x: 4, y: f },
-      { type: 'pine_tree', x: 26, y: f },
-      { type: 'pine_tree', x: 50, y: f },
-      { type: 'snow_rock', x: 10, y: f },
-      { type: 'snow_rock', x: 34, y: f },
-      { type: 'snow_rock', x: 56, y: f },
-      { type: 'tomb_light_beam', x: 15, y: 4 },
-      { type: 'tomb_light_beam', x: 35, y: 4 },
-      { type: 'tomb_light_beam', x: 50, y: 4 },
+      { type: 'stalactite_sm', x: 2, y: 1 },
+      { type: 'stalactite_sm', x: 20, y: 1 },
+      { type: 'stalactite_sm', x: 36, y: 1 },
+      { type: 'stalactite_sm', x: 52, y: 1 },
+      { type: 'glow_spore', x: 15, y: 4 },
+      { type: 'glow_spore', x: 35, y: 4 },
+      { type: 'glow_spore', x: 50, y: 4 },
+      { type: 'hanging_moss', x: 12, y: 2 },
+      { type: 'hanging_moss', x: 30, y: 2 },
+      { type: 'hanging_moss', x: 46, y: 2 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -854,9 +875,9 @@ function buildRoom6() {
         { x: 48, y: 0, angle: -10, key: 'warm', alpha: 0.16, scale: 1.3 },
       ],
       ambientColor: 0xffaa60,
-      ambientAlpha: 0.04,
+      ambientAlpha: 0.045,
     },
-    ambience: 'cavern',
+    ambience: 'tunnel',
   };
 }
 
@@ -883,6 +904,10 @@ function buildRoom7() {
   // Narrow pillars (obstacle weaving)
   fillRect(tiles, 10, 10, 18, 11, 1);
   fillRect(tiles, 6, 20, 14, 21, 1);
+
+  // Bone corridor roof (rows 1–3 only — row 4 holds top landings)
+  fillRect(tiles, 1, 1, 3, W - 2, 1);
+  clearRect(tiles, 1, 12, 3, 17);
 
   // Terrain bumps
   fillRect(tiles, 25, 18, 26, 20, 1);
@@ -961,8 +986,10 @@ function buildRoom7() {
       { type: 'glow_spore', x: 8, y: 10 },
       { type: 'glow_spore', x: 18, y: 6 },
       { type: 'glow_spore', x: 26, y: 3 },
-      { type: 'mountain_banner', x: 12, y: 12 },
-      { type: 'mountain_banner', x: 22, y: 8 },
+      { type: 'chain', x: 12, y: 4 },
+      { type: 'chain', x: 22, y: 3 },
+      { type: 'ruin_arch', x: 10, y: 8 },
+      { type: 'ruin_arch', x: 20, y: 6 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -989,9 +1016,9 @@ function buildRoom7() {
         { x: 26, y: 0, angle: -8, key: 'cool', alpha: 0.10, scale: 0.9 },
       ],
       ambientColor: 0xaaccee,
-      ambientAlpha: 0.03,
+      ambientAlpha: 0.04,
     },
-    ambience: 'mountain_shaft',
+    ambience: 'tunnel',
   };
 }
 
@@ -1036,6 +1063,10 @@ function buildRoom8() {
   clearRect(tiles, 0, 23, 0, 26);
   fillRow(tiles, 4, 22, 27, 2);
 
+  // Vaulted cavern ceiling (thin band — keep mid-level platforms clear)
+  fillRect(tiles, 2, 6, 4, 20, 1);
+  fillRect(tiles, 2, 30, 4, 44, 1);
+
   return {
     name: 'The Crucible',
     width: W,
@@ -1044,7 +1075,7 @@ function buildRoom8() {
     playerSpawn: { x: 4, y: f },
     objects: [
       { type: 'door', targetRoom: 'room7', x: 1, y: f, spawnX: 26, spawnY: 5 },
-      { type: 'door', targetRoom: 'room5', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
+      { type: 'door', targetRoom: 'room5', x: W - 2, y: f, spawnX: 12, spawnY: 21 },
       { type: 'door', targetRoom: 'room9', x: W / 2, y: 2, spawnX: 3, spawnY: 17 },
       // Central lava
       { type: 'magma_pool', x: 16, y: 24, width: 18 },
@@ -1149,10 +1180,10 @@ function buildRoom8() {
         { x: 38, y: 0, angle: 12, key: 'warm', alpha: 0.12, scale: 1.2 },
       ],
       ambientColor: 0xff4444,
-      ambientAlpha: 0.05,
+      ambientAlpha: 0.055,
     },
     locked: true,
-    ambience: 'guardian',
+    ambience: 'tunnel_guardian',
   };
 }
 
@@ -1177,6 +1208,10 @@ function buildRoom9() {
   // Pillars framing the arena (boss aesthetic)
   fillRect(tiles, 4, 10, 14, 10, 1);
   fillRect(tiles, 4, W - 11, 14, W - 11, 1);
+
+  // Throne antechamber — low stone dome
+  fillRect(tiles, 2, 4, 5, W - 2, 1);
+  clearRect(tiles, 3, 18, 4, 25);
 
   // Small terrain bumps on the floor
   fillRect(tiles, f, 14, f + 1, 15, 1);
@@ -1246,10 +1281,10 @@ function buildRoom9() {
         { x: W - 11, y: 0, angle: 15, key: 'warm', alpha: 0.14, scale: 1.4 },
       ],
       ambientColor: 0xff2244,
-      ambientAlpha: 0.06,
+      ambientAlpha: 0.065,
     },
     locked: true,
-    ambience: 'guardian',
+    ambience: 'tunnel_guardian',
   };
 }
 
@@ -1263,4 +1298,5 @@ export const rooms = {
   room7: buildRoom7(),
   room8: buildRoom8(),
   room9: buildRoom9(),
+  room_organic: buildOrganicCaveRoom({ width: 56, height: 26, seed: 1337 }),
 };

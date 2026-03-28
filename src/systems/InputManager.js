@@ -21,6 +21,9 @@ export class InputManager {
     this.shown = false;
     this.hintShown = false;
     this.coopMode = false;
+    this.onlineMode = false;
+    /** 0 = local is P1 (green), 1 = local is P2 (blue) */
+    this.localPlayerSlot = 0;
 
     this.touch = new TouchControls();
 
@@ -36,6 +39,7 @@ export class InputManager {
       jumpHeld: false,
       dashPressed: false,
       slashPressed: false,
+      interactPressed: false,
     };
 
     this.state2 = {
@@ -47,6 +51,7 @@ export class InputManager {
       jumpHeld: false,
       dashPressed: false,
       slashPressed: false,
+      interactPressed: false,
     };
 
     const onConnected = (e) => {
@@ -76,6 +81,12 @@ export class InputManager {
 
     this.refreshGamepads();
     this._maybeShowHint();
+  }
+
+  setOnlineMode(enabled, localPlayerSlot) {
+    this.onlineMode = !!enabled;
+    this.localPlayerSlot = localPlayerSlot === 1 ? 1 : 0;
+    if (this.onlineMode) this.coopMode = false;
   }
 
   /** Scan navigator.getGamepads() every time — required for Firefox (snapshot updates each poll). */
@@ -197,10 +208,13 @@ export class InputManager {
     gpSlashPressed = (this.btnDown(pad, GP_WEST) && !prevButtons[GP_WEST])
       || (this.btnDown(pad, GP_L1) && !prevButtons[GP_L1]);
 
+    const gpInteractPressed = this.btnDown(pad, GP_NORTH) && !prevButtons[GP_NORTH];
+
     return {
       left: gpLeft, right: gpRight, up: gpUp, down: gpDown,
       jumpPressed: gpJumpPressed, jumpHeld: gpJumpHeld,
       dashPressed: gpDashPressed, slashPressed: gpSlashPressed,
+      interactPressed: gpInteractPressed,
     };
   }
 
@@ -224,6 +238,8 @@ export class InputManager {
       || Phaser.Input.Keyboard.JustDown(keys.j)
       || Phaser.Input.Keyboard.JustDown(keys.w);
 
+    const kbInteractPressed = keys.e && Phaser.Input.Keyboard.JustDown(keys.e);
+
     let tLeft = false, tRight = false, tUp = false, tDown = false;
     let tJumpPressed = false, tJumpHeld = false;
     let tDashPressed = false, tSlashPressed = false;
@@ -242,7 +258,39 @@ export class InputManager {
 
     const pad = this.getGamepad();
 
-    if (this.coopMode) {
+    if (this.onlineMode) {
+      let gpState = null;
+      if (pad) {
+        if (!this.shown) this.showControllerConnected(pad.id);
+        gpState = this.readGamepadState(pad, this.prevButtons);
+        this.storePrevButtons(pad);
+      }
+
+      const local = {
+        left: kbLeft || tLeft || (gpState && gpState.left),
+        right: kbRight || tRight || (gpState && gpState.right),
+        up: kbUp || tUp || (gpState && gpState.up),
+        down: kbDown || tDown || (gpState && gpState.down),
+        jumpPressed: kbJumpPressed || tJumpPressed || (gpState && gpState.jumpPressed),
+        jumpHeld: kbJumpHeld || tJumpHeld || (gpState && gpState.jumpHeld),
+        dashPressed: kbDashPressed || tDashPressed || (gpState && gpState.dashPressed),
+        slashPressed: kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed),
+        interactPressed: kbInteractPressed || (gpState && gpState.interactPressed),
+      };
+
+      const z = () => ({
+        left: false, right: false, up: false, down: false,
+        jumpPressed: false, jumpHeld: false, dashPressed: false, slashPressed: false, interactPressed: false,
+      });
+
+      if (this.localPlayerSlot === 0) {
+        Object.assign(this.state, local);
+        Object.assign(this.state2, z());
+      } else {
+        Object.assign(this.state2, local);
+        Object.assign(this.state, z());
+      }
+    } else if (this.coopMode) {
       // Co-op: keyboard + touch -> P1, gamepad -> P2
       this.state.left = kbLeft || tLeft;
       this.state.right = kbRight || tRight;
@@ -252,6 +300,7 @@ export class InputManager {
       this.state.jumpHeld = kbJumpHeld || tJumpHeld;
       this.state.dashPressed = kbDashPressed || tDashPressed;
       this.state.slashPressed = kbSlashPressed || tSlashPressed;
+      this.state.interactPressed = kbInteractPressed;
 
       if (pad) {
         if (!this.shown) this.showControllerConnected(pad.id);
@@ -264,6 +313,7 @@ export class InputManager {
         this.state2.jumpHeld = gp.jumpHeld;
         this.state2.dashPressed = gp.dashPressed;
         this.state2.slashPressed = gp.slashPressed;
+        this.state2.interactPressed = gp.interactPressed;
         this.storePrevButtons(pad);
       } else {
         this.state2.left = false;
@@ -274,6 +324,7 @@ export class InputManager {
         this.state2.jumpHeld = false;
         this.state2.dashPressed = false;
         this.state2.slashPressed = false;
+        this.state2.interactPressed = false;
       }
     } else {
       // Solo: keyboard + touch + gamepad all -> P1
@@ -292,6 +343,8 @@ export class InputManager {
       this.state.jumpHeld = kbJumpHeld || tJumpHeld || (gpState && gpState.jumpHeld);
       this.state.dashPressed = kbDashPressed || tDashPressed || (gpState && gpState.dashPressed);
       this.state.slashPressed = kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed);
+      this.state.interactPressed = kbInteractPressed
+        || (gpState && gpState.interactPressed);
     }
 
     return this.state;

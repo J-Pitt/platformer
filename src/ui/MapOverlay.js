@@ -10,6 +10,7 @@ const ROOM_META = {
   room7: { label: 'Bone Corridor',    col: 4, row: 2 },
   room8: { label: 'The Crucible',     col: 4, row: 1 },
   room9: { label: 'Bone Tyrant',      col: 5, row: 1 },
+  room_organic: { label: 'Wind Cavern', col: 6, row: 1 },
 };
 
 const CONNECTIONS = [
@@ -22,6 +23,7 @@ const CONNECTIONS = [
   ['room6', 'room7'],
   ['room7', 'room8'],
   ['room8', 'room9'],
+  ['room1', 'room_organic'],
 ];
 
 const PIXEL_PER_TILE_BASE = 3;

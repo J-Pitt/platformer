@@ -2452,31 +2452,50 @@ function generateDepthLayersTextures(scene) {
 function generateNPCTextures(scene) {
   const W = 32, H = 40;
 
-  // Old Hermit — hooded, hunched, with a staff
+  // Old Hermit — hooded, hunched, with a staff (high contrast so he reads clearly)
   const gh = scene.make.graphics({ add: false });
-  // Robe
-  gh.fillStyle(0x4a3828);
-  gh.fillTriangle(W / 2 - 10, 14, W / 2 + 10, 14, W / 2 - 12, H - 4);
-  gh.fillTriangle(W / 2 + 10, 14, W / 2 + 12, H - 4, W / 2 - 12, H - 4);
-  gh.fillStyle(0x3a2818);
-  gh.fillTriangle(W / 2 - 6, 16, W / 2 + 6, 16, W / 2 - 8, H - 6);
-  gh.fillTriangle(W / 2 + 6, 16, W / 2 + 8, H - 6, W / 2 - 8, H - 6);
+  const cx = W / 2;
+  // Silhouette / rim (reads against busy backgrounds)
+  gh.lineStyle(3, 0x0a0604, 1);
+  gh.strokeTriangle(cx - 11, 14, cx + 11, 14, cx - 13, H - 3);
+  gh.strokeTriangle(cx + 11, 14, cx + 13, H - 3, cx - 13, H - 3);
+  gh.lineStyle(2, 0x1a1410, 1);
+  gh.strokeEllipse(cx, 12, 20, 17);
+  // Robe — warmer, lighter folds
+  gh.fillStyle(0x5c4430);
+  gh.fillTriangle(cx - 10, 14, cx + 10, 14, cx - 12, H - 4);
+  gh.fillTriangle(cx + 10, 14, cx + 12, H - 4, cx - 12, H - 4);
+  gh.fillStyle(0x4a3420);
+  gh.fillTriangle(cx - 6, 16, cx + 6, 16, cx - 8, H - 6);
+  gh.fillTriangle(cx + 6, 16, cx + 8, H - 6, cx - 8, H - 6);
+  gh.fillStyle(0x6a5844);
+  gh.fillTriangle(cx - 4, 18, cx + 4, 18, cx - 5, H - 10);
+  gh.fillTriangle(cx + 4, 18, cx + 5, H - 10, cx - 5, H - 10);
   // Hood
-  gh.fillStyle(0x5a4838);
-  gh.fillEllipse(W / 2, 12, 18, 16);
-  gh.fillStyle(0x3a2818);
-  gh.fillEllipse(W / 2, 13, 14, 12);
-  // Eyes (faint green glow)
-  gh.fillStyle(0x44cc66);
-  gh.fillCircle(W / 2 - 3, 13, 1.5);
-  gh.fillCircle(W / 2 + 3, 13, 1.5);
-  // Staff
-  gh.lineStyle(2.5, 0x7a6848);
-  gh.lineBetween(W / 2 + 12, 8, W / 2 + 10, H - 2);
-  gh.fillStyle(0x44ff66);
-  gh.fillCircle(W / 2 + 12, 7, 3);
-  gh.fillStyle(0x88ffaa, 0.4);
-  gh.fillCircle(W / 2 + 12, 7, 5);
+  gh.fillStyle(0x6e5a48);
+  gh.fillEllipse(cx, 12, 18, 16);
+  gh.fillStyle(0x4a3628);
+  gh.fillEllipse(cx, 13, 14, 12);
+  gh.fillStyle(0x2a1c14);
+  gh.fillEllipse(cx, 13, 10, 9);
+  // Eyes (brighter green)
+  gh.fillStyle(0x66ff88);
+  gh.fillCircle(cx - 3, 13, 2);
+  gh.fillCircle(cx + 3, 13, 2);
+  gh.fillStyle(0xccffdd);
+  gh.fillCircle(cx - 3.2, 12.6, 0.7);
+  gh.fillCircle(cx + 2.8, 12.6, 0.7);
+  // Staff — wood + strong crystal
+  gh.lineStyle(3, 0x2a2018);
+  gh.lineBetween(cx + 12, 8, cx + 10, H - 2);
+  gh.lineStyle(2.5, 0x8a7860);
+  gh.lineBetween(cx + 12, 8, cx + 10, H - 2);
+  gh.fillStyle(0x66ff99);
+  gh.fillCircle(cx + 12, 7, 4);
+  gh.fillStyle(0xaaffcc, 0.55);
+  gh.fillCircle(cx + 12, 7, 7);
+  gh.fillStyle(0xffffff, 0.35);
+  gh.fillCircle(cx + 11, 6, 2);
   gh.generateTexture('npc_hermit', W, H);
   gh.destroy();
 
@@ -2534,28 +2553,41 @@ function generateNPCTextures(scene) {
   gs.generateTexture('npc_spirit', W, H);
   gs.destroy();
 
-  // Bone Merchant — skeleton in a cloak, with a bag
+  // Bone Merchant — solid silhouette (readable next to dark vignettes)
   const gm = scene.make.graphics({ add: false });
+  const mx = W / 2;
+  gm.lineStyle(2.5, 0x0a0604, 1);
+  gm.strokeTriangle(mx - 10, 14, mx + 10, 14, mx - 12, H - 3);
+  gm.strokeTriangle(mx + 10, 14, mx + 12, H - 3, mx - 12, H - 3);
+  gm.strokeEllipse(mx, 10, 16, 13);
   // Tattered cloak
-  gm.fillStyle(0x6a4828);
-  gm.fillTriangle(W / 2 - 9, 14, W / 2 + 9, 14, W / 2 - 11, H - 2);
-  gm.fillTriangle(W / 2 + 9, 14, W / 2 + 11, H - 2, W / 2 - 11, H - 2);
-  gm.fillStyle(0x5a3818);
-  gm.fillTriangle(W / 2 - 5, 16, W / 2 + 5, 16, W / 2 - 7, H - 4);
-  // Skull head
-  gm.fillStyle(0xd8ccb8);
-  gm.fillEllipse(W / 2, 10, 14, 12);
-  gm.fillStyle(0x0a0404);
-  gm.fillEllipse(W / 2 - 3, 9, 4, 3);
-  gm.fillEllipse(W / 2 + 3, 9, 4, 3);
-  gm.fillStyle(0xffcc44);
-  gm.fillCircle(W / 2 - 3, 9, 1.2);
-  gm.fillCircle(W / 2 + 3, 9, 1.2);
-  // Bag
   gm.fillStyle(0x7a5838);
-  gm.fillEllipse(W / 2 + 10, 28, 10, 12);
+  gm.fillTriangle(mx - 9, 14, mx + 9, 14, mx - 11, H - 2);
+  gm.fillTriangle(mx + 9, 14, mx + 11, H - 2, mx - 11, H - 2);
+  gm.fillStyle(0x5a4020);
+  gm.fillTriangle(mx - 5, 16, mx + 5, 16, mx - 7, H - 4);
+  gm.fillStyle(0x8a6848);
+  gm.fillTriangle(mx - 3, 18, mx + 3, 18, mx - 4, H - 8);
+  // Skull head
+  gm.fillStyle(0xeee4d4);
+  gm.fillEllipse(mx, 10, 14, 12);
+  gm.fillStyle(0xc8b8a0);
+  gm.fillEllipse(mx, 11, 11, 9);
+  gm.fillStyle(0x0a0404);
+  gm.fillEllipse(mx - 3, 9, 4, 3);
+  gm.fillEllipse(mx + 3, 9, 4, 3);
+  gm.fillStyle(0xffe088);
+  gm.fillCircle(mx - 3, 9, 1.4);
+  gm.fillCircle(mx + 3, 9, 1.4);
+  gm.lineStyle(1.5, 0x2a2018, 1);
+  gm.strokeEllipse(mx, 10, 14, 12);
+  // Bag
+  gm.fillStyle(0x8a6848);
+  gm.fillEllipse(mx + 10, 28, 10, 12);
   gm.fillStyle(0x6a4828);
-  gm.fillEllipse(W / 2 + 10, 27, 7, 8);
+  gm.fillEllipse(mx + 10, 27, 7, 8);
+  gm.lineStyle(1.5, 0x1a1008, 1);
+  gm.strokeEllipse(mx + 10, 28, 10, 12);
   gm.generateTexture('npc_merchant', W, H);
   gm.destroy();
 }

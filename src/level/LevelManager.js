@@ -1,4 +1,5 @@
 import { rooms, TILE_SIZE } from './rooms.js';
+import { organicDecorRng } from './organicCaveGen.js';
 import { Crawler } from '../entities/Crawler.js';
 import { Flyer } from '../entities/Flyer.js';
 import { Boss } from '../entities/Boss.js';
@@ -46,7 +47,12 @@ export class LevelManager {
   loadRoom(roomId, spawnX, spawnY) {
     this.clearCurrentRoom();
 
-    const room = rooms[roomId];
+    let room = rooms[roomId];
+    if (!room) {
+      console.warn(`[LevelManager] Unknown room "${roomId}", using room1`);
+      roomId = 'room1';
+      room = rooms.room1;
+    }
     if (!room) return;
 
     this.currentRoomId = roomId;
@@ -77,69 +83,27 @@ export class LevelManager {
     const rph = room.height * TILE_SIZE;
     const amb = room.ambience || 'cavern';
 
-    if (amb === 'mountain' || amb === 'mountain_shaft') {
-      const sky = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, 'bg_sky_mountain');
-      sky.setScrollFactor(0.02, 0.03);
-      sky.setDepth(-14);
-      sky.setAlpha(0.88);
-      this.parallaxLayers.push(sky);
-
-      const far = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, 'bg_far_mountain');
-      far.setScrollFactor(0.06, 0.08);
-      far.setDepth(-12);
-      far.setAlpha(0.66);
-      this.parallaxLayers.push(far);
-
-      const mid = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, 'bg_mid_mountain');
-      mid.setScrollFactor(0.14, 0.18);
-      mid.setDepth(-8);
-      mid.setAlpha(0.52);
-      this.parallaxLayers.push(mid);
-
-      this.addCloseBackgroundLayer(room);
-
-      // Cool wash — separates BG color from teal interactables
-      const coolWash = this.scene.add.rectangle(rpw / 2, rph / 2, rpw, rph, 0x1a1428, 0.09);
-      coolWash.setScrollFactor(1, 1);
-      coolWash.setDepth(-7);
-      coolWash.setBlendMode(Phaser.BlendModes.MULTIPLY);
-      this.parallaxLayers.push(coolWash);
-
-      const mist = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, 'bg_fog_mist');
-      mist.setScrollFactor(0.06, 0.04);
-      mist.setDepth(-7);
-      mist.setAlpha(amb === 'mountain_shaft' ? 0.32 : 0.18);
-      mist.setBlendMode(Phaser.BlendModes.MULTIPLY);
-      this.parallaxLayers.push(mist);
-
-      // Darken ground zone so platforms / character pop forward
-      const groundHaze = this.scene.add.rectangle(rpw / 2, rph - 72, rpw, 176, 0x050508, 0.26);
-      groundHaze.setScrollFactor(1, 1);
-      groundHaze.setDepth(-6);
-      groundHaze.setBlendMode(Phaser.BlendModes.MULTIPLY);
-      this.parallaxLayers.push(groundHaze);
-
-      const overlay = this.scene.add.rectangle(rpw / 2, rph / 2, rpw, rph, 0x080610, amb === 'mountain_shaft' ? 0.4 : 0.32);
-      overlay.setScrollFactor(1, 1);
-      overlay.setDepth(-5);
-      this.parallaxLayers.push(overlay);
-      this.addForegroundFraming(room);
-      return;
-    }
-
     const bgKeys = {
       cavern: { far: 'bg_far_cavern', mid: 'bg_mid_cavern' },
+      mountain: { far: 'bg_far_cavern', mid: 'bg_mid_cavern' },
+      mountain_shaft: { far: 'bg_far_cavern', mid: 'bg_mid_cavern' },
       shaft: { far: 'bg_far_cavern', mid: 'bg_mid_cavern' },
       fungal: { far: 'bg_far_fungal', mid: 'bg_mid_fungal' },
       crystal: { far: 'bg_far_crystal', mid: 'bg_mid_cavern' },
       guardian: { far: 'bg_far_crystal', mid: 'bg_mid_cavern' },
+      tunnel: { far: 'bg_far_cavern', mid: 'bg_mid_cavern' },
+      tunnel_fungal: { far: 'bg_far_fungal', mid: 'bg_mid_fungal' },
+      tunnel_crystal: { far: 'bg_far_crystal', mid: 'bg_mid_cavern' },
+      tunnel_guardian: { far: 'bg_far_crystal', mid: 'bg_mid_cavern' },
     };
 
     const keys = bgKeys[amb] || bgKeys.cavern;
 
     // Deepest sky/void layer — farthest parallax (guide: multiple BG layers)
     const skyColor = {
-      cavern: 0x040210, fungal: 0x020a06, crystal: 0x06020e, guardian: 0x080210, shaft: 0x040210,
+      cavern: 0x020108, fungal: 0x020a06, crystal: 0x06020e, guardian: 0x080210, shaft: 0x020108,
+      mountain: 0x020108, mountain_shaft: 0x020108,
+      tunnel: 0x010206, tunnel_fungal: 0x010504, tunnel_crystal: 0x03010a, tunnel_guardian: 0x040208,
     };
     const sky = this.scene.add.rectangle(rpw / 2, rph / 2, rpw, rph, skyColor[amb] || 0x040210);
     sky.setScrollFactor(0.01, 0.01);
@@ -155,7 +119,8 @@ export class LevelManager {
     const mid = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, keys.mid);
     mid.setScrollFactor(0.14, 0.16);
     mid.setDepth(-6);
-    mid.setAlpha(0.88);
+    const midAlpha = amb.startsWith('tunnel') ? 0.62 : 0.88;
+    mid.setAlpha(midAlpha);
     this.parallaxLayers.push(mid);
 
     this.addCloseBackgroundLayer(room);
@@ -163,23 +128,39 @@ export class LevelManager {
     const mist = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, 'bg_fog_mist');
     mist.setScrollFactor(0.05, 0.04);
     mist.setDepth(-5);
-    mist.setAlpha(amb === 'fungal' ? 0.58 : 0.55);
+    let mistA = 0.72;
+    if (amb === 'fungal' || amb === 'tunnel_fungal') mistA = 0.82;
+    else if (amb === 'crystal' || amb === 'tunnel_crystal') mistA = 0.78;
+    else if (amb.startsWith('tunnel')) mistA = 0.8;
+    mist.setAlpha(mistA);
     mist.setBlendMode(Phaser.BlendModes.MULTIPLY);
     this.parallaxLayers.push(mist);
 
     const tints = {
       cavern: 0x120828,
+      mountain: 0x100820,
+      mountain_shaft: 0x0a1020,
       shaft: 0x081028,
       fungal: 0x082818,
       crystal: 0x180828,
       guardian: 0x140820,
+      tunnel: 0x060818,
+      tunnel_fungal: 0x041810,
+      tunnel_crystal: 0x100818,
+      tunnel_guardian: 0x120818,
     };
     const tintAlpha = {
-      cavern: 0.38,
-      shaft: 0.4,
-      fungal: 0.45,
-      crystal: 0.42,
-      guardian: 0.44,
+      cavern: 0.5,
+      mountain: 0.48,
+      mountain_shaft: 0.52,
+      shaft: 0.5,
+      fungal: 0.52,
+      crystal: 0.5,
+      guardian: 0.52,
+      tunnel: 0.58,
+      tunnel_fungal: 0.6,
+      tunnel_crystal: 0.58,
+      tunnel_guardian: 0.62,
     };
     const overlay = this.scene.add.rectangle(
       rpw / 2, rph / 2, rpw, rph,
@@ -194,8 +175,14 @@ export class LevelManager {
       fungal: { color: 0x22ffaa, alpha: 0.09 },
       crystal: { color: 0xaa66ff, alpha: 0.1 },
       cavern: { color: 0x4488cc, alpha: 0.07 },
+      mountain: { color: 0x5588aa, alpha: 0.06 },
+      mountain_shaft: { color: 0x5588cc, alpha: 0.07 },
       shaft: { color: 0x5588cc, alpha: 0.08 },
       guardian: { color: 0xcc4488, alpha: 0.09 },
+      tunnel: { color: 0x3366aa, alpha: 0.06 },
+      tunnel_fungal: { color: 0x18aa66, alpha: 0.07 },
+      tunnel_crystal: { color: 0x7744cc, alpha: 0.08 },
+      tunnel_guardian: { color: 0xaa3366, alpha: 0.07 },
     };
     const cc = castCfg[amb];
     if (cc) {
@@ -206,7 +193,75 @@ export class LevelManager {
       this.parallaxLayers.push(cast);
     }
 
+    this.addUndergroundVignette(room, { strength: 'tunnel', amb: room.ambience || 'cavern' });
+
     this.addForegroundFraming(room);
+  }
+
+  /**
+   * Drawn at depth 0 so it sits ON TOP of the close parallax (-2) — otherwise tunnel tint at -3 was invisible.
+   * Still below tiles (3) and player (5). strength: 'tunnel' | 'shaft'
+   */
+  addUndergroundVignette(room, opts) {
+    const rpw = room.width * TILE_SIZE;
+    const rph = room.height * TILE_SIZE;
+    const strength = opts.strength;
+    const isTunnel = strength === 'tunnel';
+    const isEntrance = strength === 'entrance';
+    const amb = opts.amb || '';
+    const depth = 0;
+
+    if (isEntrance) {
+      const topH = rph * 0.32;
+      const top = this.scene.add.rectangle(rpw / 2, topH * 0.4, rpw, topH, 0x060810, 0.38);
+      top.setScrollFactor(1, 1);
+      top.setDepth(depth);
+      this.parallaxLayers.push(top);
+      const sideW = Math.min(80, rpw * 0.07);
+      const leftE = this.scene.add.rectangle(sideW / 2, rph / 2, sideW, rph, 0x000000, 0.22);
+      leftE.setScrollFactor(1, 1);
+      leftE.setDepth(depth);
+      this.parallaxLayers.push(leftE);
+      const rightE = this.scene.add.rectangle(rpw - sideW / 2, rph / 2, sideW, rph, 0x000000, 0.22);
+      rightE.setScrollFactor(1, 1);
+      rightE.setDepth(depth);
+      this.parallaxLayers.push(rightE);
+      return;
+    }
+
+    const topH = rph * (isTunnel ? 0.46 : 0.38);
+    const topColor = isTunnel
+      ? (amb.includes('crystal') ? 0x0a0618 : amb.includes('fungal') ? 0x040a08 : 0x050508)
+      : 0x04060a;
+    const topAlpha = isTunnel ? 0.72 : 0.5;
+    const top = this.scene.add.rectangle(rpw / 2, topH * 0.42, rpw, topH, topColor, topAlpha);
+    top.setScrollFactor(1, 1);
+    top.setDepth(depth);
+    this.parallaxLayers.push(top);
+
+    const sideW = Math.min(120, Math.max(56, rpw * 0.1));
+    const sideAlpha = isTunnel ? 0.55 : 0.4;
+    const left = this.scene.add.rectangle(sideW / 2, rph / 2, sideW, rph, 0x000000, sideAlpha);
+    left.setScrollFactor(1, 1);
+    left.setDepth(depth);
+    this.parallaxLayers.push(left);
+    const right = this.scene.add.rectangle(rpw - sideW / 2, rph / 2, sideW, rph, 0x000000, sideAlpha);
+    right.setScrollFactor(1, 1);
+    right.setDepth(depth);
+    this.parallaxLayers.push(right);
+
+    const floorH = isTunnel ? 140 : 100;
+    const floorBand = this.scene.add.rectangle(rpw / 2, rph - floorH * 0.35, rpw, floorH, 0x000000, isTunnel ? 0.38 : 0.28);
+    floorBand.setScrollFactor(1, 1);
+    floorBand.setDepth(depth);
+    this.parallaxLayers.push(floorBand);
+
+    if (isTunnel) {
+      const crush = this.scene.add.rectangle(rpw / 2, rph * 0.38, rpw * 0.88, rph * 0.42, 0x000000, 0.18);
+      crush.setScrollFactor(1, 1);
+      crush.setDepth(depth);
+      this.parallaxLayers.push(crush);
+    }
   }
 
   /** Close background: scrolls with stage, no hard outline — reads as “wall behind” playfield */
@@ -217,31 +272,39 @@ export class LevelManager {
     const rph = room.height * TILE_SIZE;
     const amb = room.ambience || 'cavern';
     const keyMap = {
-      mountain: 'bg_close_mountain',
-      mountain_shaft: 'bg_close_mountain',
+      mountain: 'bg_close_cavern',
+      mountain_shaft: 'bg_close_cavern',
       fungal: 'bg_close_fungal',
       crystal: 'bg_close_crystal',
       guardian: 'bg_close_crystal',
       cavern: 'bg_close_cavern',
       shaft: 'bg_close_cavern',
+      tunnel: 'bg_close_cavern',
+      tunnel_fungal: 'bg_close_fungal',
+      tunnel_crystal: 'bg_close_crystal',
+      tunnel_guardian: 'bg_close_crystal',
     };
     const key = keyMap[amb] || 'bg_close_cavern';
 
     const close = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, key);
     close.setScrollFactor(1, 1);
     close.setDepth(-2);
-    close.setAlpha(0.62);
+    close.setAlpha(0.9);
     this.parallaxLayers.push(close);
 
     // Directional ambient light wash on the close background (themed per room)
     const lightCfg = {
-      mountain: { color: 0xccaa88, alpha: 0.10 },
-      mountain_shaft: { color: 0x8899bb, alpha: 0.07 },
+      mountain: { color: 0x886644, alpha: 0.06 },
+      mountain_shaft: { color: 0x6688aa, alpha: 0.06 },
       fungal: { color: 0x44cc88, alpha: 0.09 },
       crystal: { color: 0x8866cc, alpha: 0.10 },
       guardian: { color: 0xcc6688, alpha: 0.09 },
       cavern: { color: 0x6688aa, alpha: 0.07 },
       shaft: { color: 0x6688aa, alpha: 0.07 },
+      tunnel: { color: 0x446688, alpha: 0.05 },
+      tunnel_fungal: { color: 0x338866, alpha: 0.06 },
+      tunnel_crystal: { color: 0x6644aa, alpha: 0.06 },
+      tunnel_guardian: { color: 0x884466, alpha: 0.06 },
     };
     const lc = lightCfg[amb] || lightCfg.cavern;
     const light = this.scene.add.rectangle(rpw * 0.25, rph * 0.4, rpw * 0.55, rph * 0.85, lc.color, lc.alpha);
@@ -256,9 +319,9 @@ export class LevelManager {
   addForegroundFraming(room) {
     const rpw = room.width * TILE_SIZE;
     const rph = room.height * TILE_SIZE;
-    const floorY = rph - 6;
+    const floorY = rph - 6; // used if grass framing is re-enabled
 
-    if (this.scene.textures.exists('fg_grass_clump')) {
+    if (false && this.scene.textures.exists('fg_grass_clump')) {
       const xs = [56, 112, 168, rpw - 168, rpw - 112, rpw - 56];
       for (let i = 0; i < xs.length; i++) {
         const g = this.scene.add.image(xs[i], floorY, 'fg_grass_clump');
@@ -285,7 +348,7 @@ export class LevelManager {
       }
     }
 
-    if (this.scene.textures.exists('fg_branch_strip')) {
+    if (false && this.scene.textures.exists('fg_branch_strip')) {
       const topY = 14;
       const left = this.scene.add.image(72, topY, 'fg_branch_strip');
       left.setOrigin(0.5, 0);
@@ -472,16 +535,22 @@ export class LevelManager {
         const y = row * TILE_SIZE + TILE_SIZE / 2;
 
         if (tile === 1) {
-          const isTop = row > 0 && room.tiles[row - 1][col] !== 1;
-          const wallHash = Math.abs(row * 131 + col * 17) % 3;
-          const wallKeys = ['tile_wall', 'tile_wall_2', 'tile_wall_3'];
-          const key = isTop ? 'tile_wall_mossy' : wallKeys[wallHash];
+          const key = room.organicWallStyle
+            ? this.pickOrganicWallKey(room.tiles, row, col)
+            : (() => {
+              const isTop = row > 0 && room.tiles[row - 1][col] !== 1;
+              const wallHash = Math.abs(row * 131 + col * 17) % 3;
+              const wallKeys = ['tile_wall', 'tile_wall_2', 'tile_wall_3'];
+              return isTop ? 'tile_wall_mossy' : wallKeys[wallHash];
+            })();
           const wall = this.wallLayer.create(x, y, key);
           wall.setDisplaySize(TILE_SIZE, TILE_SIZE);
           wall.setDepth(3);
           wall.refreshBody();
         } else if (tile === 3) {
-          const usePath = room.ambience === 'fungal' || room.ambience === 'crystal' || room.ambience === 'guardian';
+          const a = room.ambience || '';
+          const usePath = a === 'fungal' || a === 'crystal' || a === 'guardian'
+            || a === 'tunnel_fungal' || a === 'tunnel_crystal' || a === 'tunnel_guardian';
           const key = usePath ? 'tile_ground_path' : 'tile_stair_block';
           const step = this.wallLayer.create(x, y, key);
           step.setDisplaySize(TILE_SIZE, TILE_SIZE);
@@ -503,9 +572,9 @@ export class LevelManager {
           };
           if (amb === 'mountain' || amb === 'mountain_shaft') {
             platKey = pickTerrace('tile_platform_mountain');
-          } else if (amb === 'fungal') {
+          } else if (amb === 'fungal' || amb === 'tunnel_fungal') {
             platKey = pickTerrace('tile_platform_fungal');
-          } else if (amb === 'crystal' || amb === 'guardian') {
+          } else if (amb === 'crystal' || amb === 'guardian' || amb === 'tunnel_crystal' || amb === 'tunnel_guardian') {
             platKey = pickTerrace('tile_platform_crystal');
           }
 
@@ -520,12 +589,55 @@ export class LevelManager {
         }
       }
     }
+    if (room.organicDecor) {
+      this.placeOrganicCaveDecor(room);
+    }
+  }
+
+  /** Neighbor bitmask autotile for organic cave walls (rock vs air; platforms excluded). */
+  pickOrganicWallKey(tiles, row, col) {
+    const H = tiles.length;
+    const W = tiles[0].length;
+    const rock = (r, c) => {
+      if (r < 0 || r >= H || c < 0 || c >= W) return true;
+      const t = tiles[r][c];
+      return t === 1 || t === 3;
+    };
+    const air = (r, c) => !rock(r, c);
+    const airN = air(row - 1, col);
+    const airS = air(row + 1, col);
+    const airW = air(row, col - 1);
+    const airE = air(row, col + 1);
+    if (airN) return 'tile_wall_mossy';
+    if (airS && (airW || airE)) return 'tile_wall_3';
+    if (airW !== airE) return 'tile_wall_2';
+    const wallHash = Math.abs(row * 131 + col * 17) % 3;
+    return ['tile_wall', 'tile_wall_2', 'tile_wall_3'][wallHash];
+  }
+
+  placeOrganicCaveDecor(room) {
+    const { tiles } = room;
+    if (!tiles?.length) return;
+    const H = tiles.length;
+    const W = tiles[0].length;
+    const rng = organicDecorRng(room.organicDecorSeed ?? 0);
+    for (let r = 1; r < H - 2; r += 1) {
+      for (let c = 1; c < W - 1; c += 1) {
+        if (tiles[r][c] !== 1) continue;
+        if (tiles[r + 1][c] !== 0) continue;
+        if (rng() > 0.028) continue;
+        const px = c * TILE_SIZE + TILE_SIZE / 2;
+        const py = r * TILE_SIZE + TILE_SIZE * 0.42;
+        const key = rng() > 0.58 ? 'stalactite' : 'stalactite_sm';
+        this.createDecoration(px, py, key);
+      }
+    }
   }
 
   spawnObjects(room) {
     this.scene.enemies = this.scene.physics.add.group();
 
-    for (const obj of room.objects) {
+    for (const obj of room.objects || []) {
       const px = obj.x * TILE_SIZE + TILE_SIZE / 2;
       const py = obj.y * TILE_SIZE + TILE_SIZE / 2;
 
@@ -612,8 +724,8 @@ export class LevelManager {
     this.scene.player.checkpointY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
     this.scene.player._checkpointRoom = this.currentRoomId;
     this.scene.player.visitedRooms.add(this.currentRoomId);
-
     if (this.scene.player2) {
+      this.scene.player2.visitedRooms.add(this.currentRoomId);
       this.scene.player2.setPosition(sx + 20, sy);
       this.scene.player2.body.velocity.set(0, 0);
       this.scene.player2.spawnX = sx;
@@ -635,6 +747,7 @@ export class LevelManager {
 
     const onDoor = () => {
       if (this.roomLocked) return;
+      if (this.scene.onlineSync && !this.scene.onlineSync.isHost) return;
       this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
     };
 
@@ -912,14 +1025,33 @@ export class LevelManager {
     const npc = new NPC(this.scene, x, y, obj.npcType, obj.dialogue);
     this.scene.physics.add.collider(npc, this.wallLayer);
     this.scene.physics.add.collider(npc, this.platformGroup);
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.collider(player, npc);
+    }
 
     const zone = this.scene.physics.add.image(x, y, 'particle_dust');
     zone.setVisible(false);
     zone.body.allowGravity = false;
     zone.body.setImmovable(true);
-    zone.body.setSize(60, 48);
+    zone.body.setSize(96, 48);
 
     let playerInZone = false;
+    const tryInteract = (player) => {
+      if (npc.isTalking || this.scene.dialogueActive) return;
+      const body = player.body;
+      if (!body || !body.blocked.down) return;
+      const dist = Phaser.Math.Distance.Between(player.x, player.y, npc.x, npc.y);
+      if (dist > 62) return;
+      const input = player.getInputState();
+      if (!input.interactPressed) return;
+      this.scene.dialogueActive = true;
+      this.scene.physics.pause();
+      npc.interact(() => {
+        this.scene.dialogueActive = false;
+        this.scene.physics.resume();
+      });
+    };
+
     for (const player of this.allPlayers) {
       this.scene.physics.add.overlap(
         player, zone,
@@ -928,15 +1060,7 @@ export class LevelManager {
             playerInZone = true;
             npc.setPlayerNearby(true);
           }
-          const input = player.getInputState();
-          if ((input.up || input.slashPressed) && !npc.isTalking && !this.scene.dialogueActive) {
-            this.scene.dialogueActive = true;
-            this.scene.physics.pause();
-            npc.interact(() => {
-              this.scene.dialogueActive = false;
-              this.scene.physics.resume();
-            });
-          }
+          tryInteract(player);
         },
       );
     }
@@ -950,11 +1074,13 @@ export class LevelManager {
           const dist = Phaser.Math.Distance.Between(
             player.x, player.y, zone.x, zone.y,
           );
-          if (dist <= 50) anyNear = true;
+          if (dist <= 58) anyNear = true;
         }
-        if (!anyNear && playerInZone) {
-          playerInZone = false;
-          npc.setPlayerNearby(false);
+        if (!anyNear) {
+          if (playerInZone) {
+            playerInZone = false;
+            npc.setPlayerNearby(false);
+          }
         }
       },
     });
@@ -1282,10 +1408,14 @@ export class LevelManager {
 
     const config = {
       cavern: { particle: 'particle_dust', quantity: 2, frequency: 150, alpha: { start: 0.3, end: 0 }, speedY: { min: 10, max: 30 } },
+      tunnel: { particle: 'particle_dust', quantity: 3, frequency: 120, alpha: { start: 0.32, end: 0 }, speedY: { min: 8, max: 24 } },
       shaft: { particle: 'particle_dust', quantity: 2, frequency: 200, alpha: { start: 0.2, end: 0 }, speedY: { min: -30, max: -8 } },
       fungal: { particle: 'particle_teal', quantity: 2, frequency: 100, alpha: { start: 0.4, end: 0 }, speedY: { min: -20, max: -5 } },
+      tunnel_fungal: { particle: 'particle_teal', quantity: 3, frequency: 85, alpha: { start: 0.38, end: 0 }, speedY: { min: -18, max: -4 } },
       crystal: { particle: 'particle_teal', quantity: 2, frequency: 180, alpha: { start: 0.3, end: 0 }, speedY: { min: -10, max: 10 } },
+      tunnel_crystal: { particle: 'particle_teal', quantity: 3, frequency: 150, alpha: { start: 0.28, end: 0 }, speedY: { min: -8, max: 8 } },
       guardian: { particle: 'particle_white', quantity: 2, frequency: 120, alpha: { start: 0.25, end: 0 }, speedY: { min: -25, max: -8 } },
+      tunnel_guardian: { particle: 'particle_white', quantity: 3, frequency: 100, alpha: { start: 0.22, end: 0 }, speedY: { min: -22, max: -6 } },
       mountain: { particle: 'particle_white', quantity: 2, frequency: 90, alpha: { start: 0.35, end: 0 }, speedY: { min: 15, max: 45 } },
       mountain_shaft: { particle: 'particle_dust', quantity: 2, frequency: 140, alpha: { start: 0.22, end: 0 }, speedY: { min: -35, max: -10 } },
     };
@@ -1301,7 +1431,8 @@ export class LevelManager {
     this.fogParticles.setDepth(-1);
 
     // Water drips from ceiling in cavern/shaft rooms
-    if (type === 'cavern' || type === 'shaft' || type === 'guardian' || type === 'mountain_shaft') {
+    if (type === 'cavern' || type === 'shaft' || type === 'guardian' || type === 'mountain_shaft'
+      || type === 'tunnel' || type === 'tunnel_fungal' || type === 'tunnel_crystal' || type === 'tunnel_guardian') {
       const dripCount = Math.floor(rpw / 200);
       for (let i = 0; i < dripCount; i++) {
         const dx = 80 + Math.random() * (rpw - 160);

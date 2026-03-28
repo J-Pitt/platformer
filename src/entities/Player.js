@@ -33,6 +33,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.visitedRooms = new Set();
 
     this.currentAnim = 'idle';
+    /** When true, position/velocity come from network; skip local input physics. */
+    this.remoteMode = false;
+
     this.setupAnimations();
 
     if (playerIndex === 1) {
@@ -65,6 +68,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   update(dt) {
     if (this.isDead) return;
+
+    if (this.remoteMode) {
+      this.updateAnimation();
+      return;
+    }
 
     const input = this.getInputState();
 
