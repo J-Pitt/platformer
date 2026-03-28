@@ -1,11 +1,18 @@
 /**
  * Platformer online rooms — same shape as truthordare room API (create / join / get / state).
- * Point VITE_PLATFORMER_ROOM_API_BASE at the room server (default http://localhost:3002).
+ * In dev, Vite proxies /platformer/room to localhost:3002.
+ * In prod, VITE_PLATFORMER_ROOM_API_BASE points at the deployed room server.
  */
 
+const PROD_ROOM_SERVER = 'https://platformer-room-server.fly.dev';
+
 function getApiBase() {
-  const b = import.meta.env.VITE_PLATFORMER_ROOM_API_BASE || 'http://localhost:3002';
-  return String(b).replace(/\/$/, '');
+  if (import.meta.env.VITE_PLATFORMER_ROOM_API_BASE) {
+    return String(import.meta.env.VITE_PLATFORMER_ROOM_API_BASE).replace(/\/$/, '');
+  }
+  const isLocal = typeof location !== 'undefined' &&
+    /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  return isLocal ? '' : PROD_ROOM_SERVER;
 }
 
 const ROOM_PATH = '/platformer/room';

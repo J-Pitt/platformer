@@ -3,18 +3,20 @@
  * Default port 3002. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in .env (copy env.example).
  */
 
-import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
-config({ path: join(__dirname, '..', '.env') });
+try {
+  const { config } = await import('dotenv');
+  config({ path: join(__dirname, '..', '.env') });
+} catch {}
 
 import express from 'express';
 import cors from 'cors';
 import { Redis } from '@upstash/redis';
 import { randomUUID } from 'crypto';
 
-const PORT = Number(process.env.PLATFORMER_ROOM_PORT || process.env.ROOM_SERVER_PORT) || 3002;
+const PORT = Number(process.env.PORT || process.env.PLATFORMER_ROOM_PORT) || 3002;
 const REST_URL = process.env.UPSTASH_REDIS_REST_URL || '';
 const REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const REDIS_KEY_PREFIX = 'platformer:';
@@ -28,12 +30,15 @@ if (!REST_URL || !REST_TOKEN) {
 const redis = new Redis({ url: REST_URL, token: REST_TOKEN });
 
 const ALLOWED_ORIGINS = [
+  'https://main.d1mvd9eeikcm44.amplifyapp.com',
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:3000',
 ];
+if (process.env.ALLOWED_ORIGIN) ALLOWED_ORIGINS.push(process.env.ALLOWED_ORIGIN);
 const isLocalOrigin = (o) => !o || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(o);
+const isAmplifyOrigin = (o) => o && /\.amplifyapp\.com$/.test(new URL(o).hostname);
 
 function roomKey(roomId) {
   return `${REDIS_KEY_PREFIX}room:${roomId}`;
@@ -60,8 +65,8 @@ const app = express();
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || ALLOWED_ORIGINS.includes(origin) || isLocalOrigin(origin)) return cb(null, true);
-      return cb(null, ALLOWED_ORIGINS[0]);
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || isLocalOrigin(origin) || isAmplifyOrigin(origin)) return cb(null, true);
+      return cb(null, false);
     },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type'],

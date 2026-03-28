@@ -8,5 +8,11 @@ export default defineConfig({
   },
   server: {
     open: true,
+    proxy: {
+      '/platformer/room': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+      },
+    },
   },
 });
