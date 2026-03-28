@@ -5,6 +5,9 @@ const POGO_BOUNCE = -320;
 const HIT_FREEZE_DURATION = 60;
 const DAMAGE_INVULN_DURATION = 1000;
 const PLAYER_KNOCKBACK = 160;
+const KICK_DURATION = 250;
+const KICK_COOLDOWN = 500;
+const KICK_KNOCKBACK = 360;
 
 export class CombatSystem {
   constructor(player) {
@@ -19,6 +22,13 @@ export class CombatSystem {
     this.slashTween = null;
     this.hasSlash = false;
     this.hasSpear = false;
+    this.hasKick = false;
+
+    this.isKicking = false;
+    this.kickTimer = 0;
+    this.kickCooldownTimer = 0;
+    this.kickHitbox = null;
+    this.kickSprite = null;
 
     this.invulnTimer = 0;
     this.isInvulnerable = false;
@@ -26,6 +36,7 @@ export class CombatSystem {
 
   update(dt, input) {
     this.slashCooldownTimer = Math.max(0, this.slashCooldownTimer - dt);
+    this.kickCooldownTimer = Math.max(0, this.kickCooldownTimer - dt);
 
     if (this.isInvulnerable) {
       this.invulnTimer -= dt;
@@ -46,8 +57,22 @@ export class CombatSystem {
       return;
     }
 
+    if (this.isKicking) {
+      this.kickTimer -= dt;
+      if (this.kickTimer <= 0) {
+        this.endKick();
+      } else {
+        this.positionKickHitbox();
+      }
+      return;
+    }
+
     if (this.hasSlash && input.slashPressed && this.slashCooldownTimer <= 0) {
       this.startSlash(input);
+    }
+
+    if (this.hasKick && input.kickPressed && this.kickCooldownTimer <= 0 && !this.isSlashing) {
+      this.startKick();
     }
   }
 
@@ -197,6 +222,88 @@ export class CombatSystem {
     }
   }
 
+  startKick() {
+    this.isKicking = true;
+    this.kickTimer = KICK_DURATION;
+    this.kickCooldownTimer = KICK_COOLDOWN;
+
+    const p = this.player;
+    const dir = p.facing;
+    this.kickSprite = this.scene.add.image(p.x, p.y, 'kick_effect');
+    this.kickSprite.setDepth(11);
+    this.kickSprite.setBlendMode(Phaser.BlendModes.ADD);
+    this.kickSprite.setAlpha(0.85);
+    this.kickSprite.setFlipX(dir < 0);
+
+    this.scene.tweens.add({
+      targets: this.kickSprite,
+      scaleX: { from: 0.6, to: 1.3 },
+      scaleY: { from: 0.8, to: 1.1 },
+      alpha: { from: 0.85, to: 0.3 },
+      duration: KICK_DURATION,
+      ease: 'Cubic.easeOut',
+    });
+
+    this.kickHitbox = this.scene.physics.add.image(p.x, p.y);
+    this.kickHitbox.body.setSize(36, 22);
+    this.kickHitbox.body.allowGravity = false;
+    this.kickHitbox.setVisible(false);
+    this.kickHitbox.kickDir = dir;
+
+    this.positionKickHitbox();
+
+    if (this.scene.enemies) {
+      this.kickOverlap = this.scene.physics.add.overlap(
+        this.kickHitbox, this.scene.enemies,
+        this.onKickHitEnemy, null, this,
+      );
+    }
+
+    p.body.velocity.x += dir * 80;
+  }
+
+  positionKickHitbox() {
+    if (!this.kickHitbox) return;
+    const p = this.player;
+    const offX = p.facing * 24;
+    this.kickHitbox.setPosition(p.x + offX, p.y + 6);
+    if (this.kickSprite) {
+      this.kickSprite.setPosition(p.x + offX, p.y + 4);
+    }
+  }
+
+  endKick() {
+    this.isKicking = false;
+    if (this.kickSprite) {
+      this.scene.tweens.killTweensOf(this.kickSprite);
+      this.kickSprite.destroy();
+      this.kickSprite = null;
+    }
+    if (this.kickHitbox) { this.kickHitbox.destroy(); this.kickHitbox = null; }
+    if (this.kickOverlap) {
+      this.scene.physics.world.removeCollider(this.kickOverlap);
+      this.kickOverlap = null;
+    }
+  }
+
+  onKickHitEnemy(hitbox, enemy) {
+    if (!enemy.active || enemy.isHit) return;
+    enemy.takeDamage(1, hitbox.kickDir > 0 ? 'right' : 'left');
+
+    this.scene.physics.pause();
+    setTimeout(() => {
+      if (this.scene && this.scene.physics) this.scene.physics.resume();
+    }, HIT_FREEZE_DURATION);
+
+    this.scene.cameras.main.shake(60, 0.01);
+    const kb = KICK_KNOCKBACK;
+    if (enemy.body) {
+      enemy.body.velocity.x = hitbox.kickDir * kb;
+      enemy.body.velocity.y = -120;
+    }
+    this.player.body.velocity.x = -hitbox.kickDir * 100;
+  }
+
   takeDamage(amount) {
     if (this.isInvulnerable || this.player.movement.isDashing) return false;
 
@@ -227,5 +334,6 @@ export class CombatSystem {
 
   destroy() {
     this.endSlash();
+    this.endKick();
   }
 }

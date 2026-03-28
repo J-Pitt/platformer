@@ -3,6 +3,7 @@ import {
   joinPlatformerRoom,
   getPlatformerRoom,
 } from '../net/platformerRoomApi.js';
+import * as SaveGame from '../persistence/SaveGame.js';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -26,6 +27,28 @@ export class TitleScene extends Phaser.Scene {
       stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5);
 
+    const summary = SaveGame.getSummary();
+    if (summary) {
+      const sub = summary.savedAt
+        ? `${summary.roomName} · ${new Date(summary.savedAt).toLocaleString()}`
+        : summary.roomName;
+      this.add.text(
+        cx,
+        cy - 44,
+        `${summary.playerName} — ${sub}\nSaved in this browser — highlight CONTINUE to resume`,
+        {
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          color: '#5a8068',
+          stroke: '#000',
+          strokeThickness: 2,
+          align: 'center',
+          lineSpacing: 5,
+          wordWrap: { width: cam.width - 40 },
+        },
+      ).setOrigin(0.5);
+    }
+
     const touchEl = document.getElementById('touch-controls');
     if (touchEl) touchEl.classList.remove('visible');
 
@@ -35,7 +58,8 @@ export class TitleScene extends Phaser.Scene {
         stroke: '#000', strokeThickness: 4,
         padding: { top: 6, bottom: 6, left: 16, right: 16 },
       }).setOrigin(0.5);
-      const hitPadX = 40, hitPadY = 8;
+      const hitPadX = 40;
+      const hitPadY = 8;
       txt.setInteractive(
         new Phaser.Geom.Rectangle(
           -hitPadX, -hitPadY,
@@ -46,12 +70,72 @@ export class TitleScene extends Phaser.Scene {
       return txt;
     };
 
-    const opt1 = mkOpt(8, '1 PLAYER');
-    const opt2 = mkOpt(38, '2 PLAYERS (LOCAL + GAMEPAD)');
-    const opt3 = mkOpt(68, 'ONLINE \u2014 HOST (GET CODE)');
-    const opt4 = mkOpt(98, 'ONLINE \u2014 JOIN (ENTER CODE)');
+    const fadeToGame = (payload) => {
+      this.cameras.main.fade(300, 0, 0, 0, false, (_cam, progress) => {
+        if (progress >= 1) {
+          this.scene.start('GameScene', payload);
+        }
+      });
+    };
 
-    const hint = this.add.text(cx, cy + 132, '↑↓ select · ENTER · Online needs: npm run server + Redis (.env)', {
+    const menuEntries = [];
+
+    if (SaveGame.hasSavedGame()) {
+      menuEntries.push({
+        label: 'CONTINUE',
+        onSelect: () => fadeToGame({ fromSave: true }),
+      });
+    }
+
+    menuEntries.push({
+      label: '1 PLAYER (NEW GAME)',
+      onSelect: () => {
+        const nm = window.prompt('Player name', SaveGame.getStoredPlayerName() || 'Traveler');
+        if (nm === null) return;
+        SaveGame.setStoredPlayerName(nm.trim() || 'Traveler');
+        fadeToGame({ profileName: SaveGame.getStoredPlayerName() });
+      },
+    });
+
+    menuEntries.push({
+      label: '2 PLAYERS (LOCAL + GAMEPAD)',
+      onSelect: () => fadeToGame({ coopMode: true }),
+    });
+
+    menuEntries.push({
+      label: 'ONLINE \u2014 HOST (GET CODE)',
+      onSelect: () => startOnlineHost(),
+    });
+
+    menuEntries.push({
+      label: 'ONLINE \u2014 JOIN (ENTER CODE)',
+      onSelect: () => startOnlineJoin(),
+    });
+
+    if (SaveGame.hasSavedGame()) {
+      menuEntries.push({
+        label: 'ERASE SAVE',
+        onSelect: () => {
+          if (window.confirm('Delete saved progress from this browser?')) {
+            SaveGame.clearSavedGame();
+            this.scene.restart();
+          }
+        },
+      });
+    }
+
+    const rowH = 30;
+    const totalH = (menuEntries.length - 1) * rowH;
+    let y0 = 8 - totalH / 2;
+
+    const options = [];
+    for (let i = 0; i < menuEntries.length; i++) {
+      const t = mkOpt(y0 + i * rowH, menuEntries[i].label);
+      options.push(t);
+      menuEntries[i]._txt = t;
+    }
+
+    const hint = this.add.text(cx, cy + 118, '↑↓ select · ENTER · Progress saves in browser (solo) · Online needs server + Redis', {
       fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',
       stroke: '#000', strokeThickness: 2,
       align: 'center',
@@ -59,8 +143,8 @@ export class TitleScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.selectedIndex = 0;
-    const options = [opt1, opt2, opt3, opt4];
-    const arrow = this.add.text(cx - 120, opt1.y, '>', {
+    const nOpt = options.length;
+    const arrow = this.add.text(cx - 120, options[0].y, '>', {
       fontSize: '22px', fontFamily: 'monospace', color: '#44ff66',
       stroke: '#000', strokeThickness: 4,
     }).setOrigin(0.5);
@@ -72,18 +156,6 @@ export class TitleScene extends Phaser.Scene {
       });
     };
     updateSelection();
-
-    const fadeToGame = (payload) => {
-      this.cameras.main.fade(300, 0, 0, 0, false, (_cam, progress) => {
-        if (progress >= 1) {
-          this.scene.start('GameScene', payload);
-        }
-      });
-    };
-
-    const launchLocal = (coopMode) => {
-      fadeToGame({ coopMode });
-    };
 
     const startOnlineHost = () => {
       const name = window.prompt('Your display name', 'Host');
@@ -164,30 +236,29 @@ export class TitleScene extends Phaser.Scene {
     };
 
     const runSelection = () => {
-      switch (this.selectedIndex) {
-        case 0: launchLocal(false); break;
-        case 1: launchLocal(true); break;
-        case 2: startOnlineHost(); break;
-        case 3: startOnlineJoin(); break;
-        default: break;
-      }
+      const e = menuEntries[this.selectedIndex];
+      if (e) e.onSelect();
     };
 
-    opt1.on('pointerdown', () => { this.selectedIndex = 0; runSelection(); });
-    opt2.on('pointerdown', () => { this.selectedIndex = 1; runSelection(); });
-    opt3.on('pointerdown', () => { this.selectedIndex = 2; runSelection(); });
-    opt4.on('pointerdown', () => { this.selectedIndex = 3; runSelection(); });
-    opt1.on('pointerover', () => { this.selectedIndex = 0; updateSelection(); });
-    opt2.on('pointerover', () => { this.selectedIndex = 1; updateSelection(); });
-    opt3.on('pointerover', () => { this.selectedIndex = 2; updateSelection(); });
-    opt4.on('pointerover', () => { this.selectedIndex = 3; updateSelection(); });
+    for (let i = 0; i < nOpt; i++) {
+      const idx = i;
+      options[i].on('pointerdown', () => {
+        this.selectedIndex = idx;
+        updateSelection();
+        runSelection();
+      });
+      options[i].on('pointerover', () => {
+        this.selectedIndex = idx;
+        updateSelection();
+      });
+    }
 
     this.input.keyboard.on('keydown-UP', () => {
-      this.selectedIndex = (this.selectedIndex + 3) % 4;
+      this.selectedIndex = (this.selectedIndex + nOpt - 1) % nOpt;
       updateSelection();
     });
     this.input.keyboard.on('keydown-DOWN', () => {
-      this.selectedIndex = (this.selectedIndex + 1) % 4;
+      this.selectedIndex = (this.selectedIndex + 1) % nOpt;
       updateSelection();
     });
     this.input.keyboard.on('keydown-ENTER', runSelection);

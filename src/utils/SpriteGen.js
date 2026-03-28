@@ -39,6 +39,9 @@ export function generateAllTextures(scene) {
   generateHazardTextures(scene);
   generateDepthLayersTextures(scene);
   generateNPCTextures(scene);
+  generateCoinTextures(scene);
+  generateTeleportTexture(scene);
+  generateKickTextures(scene);
 }
 
 /** Royal blade + gold guard + pommel (hx,hy = hand / crossguard center) */
@@ -120,11 +123,13 @@ function drawAttackSword(g, cx, dir, frame) {
 /**
  * @param {object} [opts]
  * @param {{ dir: 'h'|'u'|'d', frame: number }} [opts.attack] — swing pose (right-facing base)
+ * @param {boolean} [opts.armed] — draw sword (false = bare-handed skeleton)
  */
 function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
   const cx = PW / 2;
   const sway = cloakSway || 0;
   const attack = opts.attack;
+  const armed = opts.armed !== false;
 
   // Tattered royal cape
   g.fillStyle(0x1a0828);
@@ -139,10 +144,27 @@ function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
   g.lineBetween(cx + 5 + sway, 40, cx + 3 + sway, 37);
 
   const swordBehind = !attack || attack.frame < 2;
-  if (!attack) {
-    drawBigSwordIdle(g, cx, sway);
-  } else if (swordBehind) {
-    drawAttackSword(g, cx, attack.dir, attack.frame);
+  if (armed) {
+    if (!attack) {
+      drawBigSwordIdle(g, cx, sway);
+    } else if (swordBehind) {
+      drawAttackSword(g, cx, attack.dir, attack.frame);
+    }
+  } else {
+    // Bare bone arms when unarmed
+    const armSway = sway * 0.3;
+    g.lineStyle(2, BONE_SHADOW);
+    g.lineBetween(cx - 9, 17, cx - 14 + armSway, 28);
+    g.lineStyle(1.5, BONE);
+    g.lineBetween(cx - 14 + armSway, 28, cx - 12 + armSway, 34);
+    g.fillStyle(BONE);
+    g.fillCircle(cx - 12 + armSway, 34, 2);
+    g.lineStyle(2, BONE_SHADOW);
+    g.lineBetween(cx + 9, 17, cx + 14 + armSway, 28);
+    g.lineStyle(1.5, BONE);
+    g.lineBetween(cx + 14 + armSway, 28, cx + 12 + armSway, 34);
+    g.fillStyle(BONE);
+    g.fillCircle(cx + 12 + armSway, 34, 2);
   }
 
   // Bone legs
@@ -235,66 +257,86 @@ function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
   g.lineStyle(1, CROWN_DARK, 0.5);
   g.lineBetween(cx - 8, 5, cx + 8, 5);
 
-  if (attack && !swordBehind) {
+  if (armed && attack && !swordBehind) {
     drawAttackSword(g, cx, attack.dir, attack.frame);
   }
 }
 
 function generatePlayerFrames(scene) {
-  // Idle
-  const gi = scene.make.graphics({ add: false });
-  drawPlayerBody(gi, [
+  const idleLegs = [
     { hipOff: -4, kneeOff: 0, footOff: -1 },
     { hipOff: 4, kneeOff: 0, footOff: 1 },
-  ], 0);
-  gi.generateTexture('player_idle', PW, PH);
-  gi.destroy();
-
-  // Run frames (6-frame cycle)
-  const runLegs = [
-    [{ hipOff: -4, kneeOff: -5, footOff: -3 }, { hipOff: 4, kneeOff: 5, footOff: 3 }],   // left forward, right back
-    [{ hipOff: -4, kneeOff: -3, footOff: -1 }, { hipOff: 4, kneeOff: 3, footOff: 2 }],   // transition
-    [{ hipOff: -4, kneeOff: 1, footOff: 0 }, { hipOff: 4, kneeOff: -1, footOff: 0 }],     // passing
-    [{ hipOff: -4, kneeOff: 5, footOff: 3 }, { hipOff: 4, kneeOff: -5, footOff: -3 }],   // right forward, left back
-    [{ hipOff: -4, kneeOff: 3, footOff: 2 }, { hipOff: 4, kneeOff: -3, footOff: -1 }],   // transition
-    [{ hipOff: -4, kneeOff: -1, footOff: 0 }, { hipOff: 4, kneeOff: 1, footOff: 0 }],     // passing
   ];
-
-  for (let i = 0; i < 6; i++) {
-    const g = scene.make.graphics({ add: false });
-    drawPlayerBody(g, runLegs[i], Math.sin(i * Math.PI / 3) * 2);
-    g.generateTexture(`player_run_${i}`, PW, PH);
-    g.destroy();
-  }
-
-  // Jump (ascending - legs tucked)
-  const gj = scene.make.graphics({ add: false });
-  drawPlayerBody(gj, [
+  const runLegs = [
+    [{ hipOff: -4, kneeOff: -5, footOff: -3 }, { hipOff: 4, kneeOff: 5, footOff: 3 }],
+    [{ hipOff: -4, kneeOff: -3, footOff: -1 }, { hipOff: 4, kneeOff: 3, footOff: 2 }],
+    [{ hipOff: -4, kneeOff: 1, footOff: 0 }, { hipOff: 4, kneeOff: -1, footOff: 0 }],
+    [{ hipOff: -4, kneeOff: 5, footOff: 3 }, { hipOff: 4, kneeOff: -5, footOff: -3 }],
+    [{ hipOff: -4, kneeOff: 3, footOff: 2 }, { hipOff: 4, kneeOff: -3, footOff: -1 }],
+    [{ hipOff: -4, kneeOff: -1, footOff: 0 }, { hipOff: 4, kneeOff: 1, footOff: 0 }],
+  ];
+  const jumpLegs = [
     { hipOff: -4, kneeOff: -3, footOff: 2 },
     { hipOff: 4, kneeOff: 3, footOff: -2 },
-  ], -2);
-  gj.generateTexture('player_jump', PW, PH);
-  gj.destroy();
-
-  // Fall (descending - legs dangling)
-  const gf = scene.make.graphics({ add: false });
-  drawPlayerBody(gf, [
+  ];
+  const fallLegs = [
     { hipOff: -4, kneeOff: 1, footOff: 2 },
     { hipOff: 4, kneeOff: -1, footOff: -1 },
-  ], 3);
-  gf.generateTexture('player_fall', PW, PH);
-  gf.destroy();
-
-  // Wall slide
-  const gw = scene.make.graphics({ add: false });
-  drawPlayerBody(gw, [
+  ];
+  const wallLegs = [
     { hipOff: -3, kneeOff: 2, footOff: 3 },
     { hipOff: 3, kneeOff: 2, footOff: 3 },
-  ], 4);
-  gw.generateTexture('player_wallslide', PW, PH);
-  gw.destroy();
+  ];
 
-  // Dash afterimage — ghostly skeleton silhouette
+  // Generate both unarmed (default) and armed variants
+  const variants = [
+    { suffix: '', armed: false },
+    { suffix: '_armed', armed: true },
+  ];
+
+  for (const { suffix, armed } of variants) {
+    const armOpt = { armed };
+
+    // Idle
+    const gi = scene.make.graphics({ add: false });
+    drawPlayerBody(gi, idleLegs, 0, armOpt);
+    gi.generateTexture(`player_idle${suffix}`, PW, PH);
+    gi.destroy();
+
+    // Run frames (6-frame cycle)
+    for (let i = 0; i < 6; i++) {
+      const g = scene.make.graphics({ add: false });
+      drawPlayerBody(g, runLegs[i], Math.sin(i * Math.PI / 3) * 2, armOpt);
+      g.generateTexture(`player_run${suffix}_${i}`, PW, PH);
+      g.destroy();
+    }
+
+    // Jump
+    const gj = scene.make.graphics({ add: false });
+    drawPlayerBody(gj, jumpLegs, -2, armOpt);
+    gj.generateTexture(`player_jump${suffix}`, PW, PH);
+    gj.destroy();
+
+    // Fall
+    const gf = scene.make.graphics({ add: false });
+    drawPlayerBody(gf, fallLegs, 3, armOpt);
+    gf.generateTexture(`player_fall${suffix}`, PW, PH);
+    gf.destroy();
+
+    // Wall slide
+    const gw = scene.make.graphics({ add: false });
+    drawPlayerBody(gw, wallLegs, 4, armOpt);
+    gw.generateTexture(`player_wallslide${suffix}`, PW, PH);
+    gw.destroy();
+
+    // Default "player" alias
+    const ga = scene.make.graphics({ add: false });
+    drawPlayerBody(ga, idleLegs, 0, armOpt);
+    ga.generateTexture(suffix ? `player${suffix}` : 'player', PW, PH);
+    ga.destroy();
+  }
+
+  // Dash afterimage (shared — no sword detail needed at this size)
   const gd = scene.make.graphics({ add: false });
   gd.fillStyle(BONE_DARK);
   gd.setAlpha(0.3);
@@ -309,15 +351,6 @@ function generatePlayerFrames(scene) {
   gd.lineBetween(PW / 2 - 7, 2, PW / 2 + 7, 2);
   gd.generateTexture('player_afterimage', PW, PH);
   gd.destroy();
-
-  // "player" key as alias for idle (used by default)
-  const ga = scene.make.graphics({ add: false });
-  drawPlayerBody(ga, [
-    { hipOff: -4, kneeOff: 0, footOff: -1 },
-    { hipOff: 4, kneeOff: 0, footOff: 1 },
-  ], 0);
-  ga.generateTexture('player', PW, PH);
-  ga.destroy();
 }
 
 const IDLE_LEGS = [
@@ -2646,4 +2679,100 @@ function generateNPCTextures(scene) {
   gm.strokeEllipse(mx + 10, 28, 10, 12);
   gm.generateTexture('npc_merchant', W, H);
   gm.destroy();
+}
+
+function generateCoinTextures(scene) {
+  const g = scene.make.graphics({ add: false });
+  g.fillStyle(0xd4a020);
+  g.fillCircle(10, 10, 9);
+  g.fillStyle(0xffc840);
+  g.fillCircle(9, 8, 6);
+  g.fillStyle(0xffe880);
+  g.setAlpha(0.6);
+  g.fillCircle(8, 7, 3);
+  g.setAlpha(1);
+  g.fillStyle(0x8a6a10);
+  g.setAlpha(0.5);
+  g.fillCircle(11, 12, 4);
+  g.setAlpha(1);
+  g.lineStyle(1.5, 0x8a6a10, 0.8);
+  g.strokeCircle(10, 10, 9);
+  g.fillStyle(0xd4a020);
+  g.fillRect(8, 6, 4, 8);
+  g.fillStyle(0xffc840);
+  g.fillRect(8, 7, 4, 2);
+  g.fillRect(8, 11, 4, 2);
+  g.generateTexture('coin', 20, 20);
+  g.destroy();
+
+  const gi = scene.make.graphics({ add: false });
+  gi.fillStyle(0xd4a020);
+  gi.fillCircle(8, 8, 7);
+  gi.fillStyle(0xffc840);
+  gi.fillCircle(7, 7, 4.5);
+  gi.fillStyle(0xffe880);
+  gi.setAlpha(0.5);
+  gi.fillCircle(6, 6, 2);
+  gi.setAlpha(1);
+  gi.lineStyle(1, 0x8a6a10, 0.7);
+  gi.strokeCircle(8, 8, 7);
+  gi.generateTexture('coin_icon', 16, 16);
+  gi.destroy();
+}
+
+function generateTeleportTexture(scene) {
+  const g = scene.make.graphics({ add: false });
+  g.fillStyle(0x2020a0);
+  g.setAlpha(0.3);
+  g.fillEllipse(24, 24, 48, 48);
+  g.setAlpha(0.5);
+  g.fillEllipse(24, 24, 36, 36);
+  g.setAlpha(1);
+  g.fillStyle(0x4466ff);
+  g.setAlpha(0.4);
+  g.fillEllipse(24, 24, 24, 24);
+  g.setAlpha(1);
+  g.fillStyle(0x88aaff);
+  g.setAlpha(0.6);
+  g.fillEllipse(24, 24, 12, 12);
+  g.setAlpha(1);
+  g.fillStyle(0xffffff);
+  g.setAlpha(0.4);
+  g.fillCircle(24, 24, 4);
+  g.setAlpha(1);
+  g.lineStyle(2, 0x4488ff, 0.6);
+  g.strokeCircle(24, 24, 18);
+  g.lineStyle(1, 0x88ccff, 0.4);
+  g.strokeCircle(24, 24, 22);
+  g.generateTexture('teleport_pad', 48, 48);
+  g.destroy();
+}
+
+function generateKickTextures(scene) {
+  const g = scene.make.graphics({ add: false });
+  g.fillStyle(0xffaa44);
+  g.setAlpha(0.7);
+  g.fillEllipse(24, 16, 36, 20);
+  g.fillStyle(0xff6622);
+  g.setAlpha(0.5);
+  g.fillEllipse(28, 16, 24, 14);
+  g.setAlpha(1);
+  g.fillStyle(0xffcc66);
+  g.setAlpha(0.4);
+  g.fillEllipse(32, 16, 12, 8);
+  g.setAlpha(1);
+  g.lineStyle(2, 0xff8844, 0.6);
+  g.lineBetween(8, 10, 38, 14);
+  g.lineBetween(8, 22, 38, 18);
+  g.generateTexture('kick_effect', 48, 32);
+  g.destroy();
+
+  const gk = scene.make.graphics({ add: false });
+  const cx = PW / 2;
+  drawPlayerBody(gk, [
+    { hipOff: -4, kneeOff: -2, footOff: 0 },
+    { hipOff: 4, kneeOff: 8, footOff: 12 },
+  ], -1);
+  gk.generateTexture('player_kick', PW, PH);
+  gk.destroy();
 }

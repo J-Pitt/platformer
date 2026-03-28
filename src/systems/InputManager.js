@@ -40,6 +40,7 @@ export class InputManager {
       dashPressed: false,
       slashPressed: false,
       interactPressed: false,
+      kickPressed: false,
     };
 
     this.state2 = {
@@ -52,6 +53,7 @@ export class InputManager {
       dashPressed: false,
       slashPressed: false,
       interactPressed: false,
+      kickPressed: false,
     };
 
     const onConnected = (e) => {
@@ -239,6 +241,8 @@ export class InputManager {
       || Phaser.Input.Keyboard.JustDown(keys.w);
 
     const kbInteractPressed = keys.e && Phaser.Input.Keyboard.JustDown(keys.e);
+    const kbKickPressed = (keys.f && Phaser.Input.Keyboard.JustDown(keys.f))
+      || (keys.k && Phaser.Input.Keyboard.JustDown(keys.k));
 
     let tLeft = false, tRight = false, tUp = false, tDown = false;
     let tJumpPressed = false, tJumpHeld = false;
@@ -276,11 +280,12 @@ export class InputManager {
         dashPressed: kbDashPressed || tDashPressed || (gpState && gpState.dashPressed),
         slashPressed: kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed),
         interactPressed: kbInteractPressed || (gpState && gpState.interactPressed),
+        kickPressed: kbKickPressed,
       };
 
       const z = () => ({
         left: false, right: false, up: false, down: false,
-        jumpPressed: false, jumpHeld: false, dashPressed: false, slashPressed: false, interactPressed: false,
+        jumpPressed: false, jumpHeld: false, dashPressed: false, slashPressed: false, interactPressed: false, kickPressed: false,
       });
 
       if (this.localPlayerSlot === 0) {
@@ -301,6 +306,7 @@ export class InputManager {
       this.state.dashPressed = kbDashPressed || tDashPressed;
       this.state.slashPressed = kbSlashPressed || tSlashPressed;
       this.state.interactPressed = kbInteractPressed;
+      this.state.kickPressed = kbKickPressed;
 
       if (pad) {
         if (!this.shown) this.showControllerConnected(pad.id);
@@ -345,6 +351,7 @@ export class InputManager {
       this.state.slashPressed = kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed);
       this.state.interactPressed = kbInteractPressed
         || (gpState && gpState.interactPressed);
+      this.state.kickPressed = kbKickPressed;
     }
 
     return this.state;

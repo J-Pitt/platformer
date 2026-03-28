@@ -1,4 +1,5 @@
 import { MapOverlay } from './MapOverlay.js';
+import { rooms } from '../level/rooms.js';
 
 export class HUD {
   constructor(scene) {
@@ -9,6 +10,9 @@ export class HUD {
     this.dashBarFill = null;
     this.mapIcon = null;
     this.mapOverlay = new MapOverlay(scene);
+    this.coinIcon = null;
+    this.coinText = null;
+    this.nameLabel = null;
     this.create();
     this.setupMapInput();
   }
@@ -16,6 +20,16 @@ export class HUD {
   create() {
     const player = this.scene.player;
     const cam = this.scene.cameras.main;
+
+    if (!this.scene.online && !this.scene.coopMode && this.scene.savedPlayerName) {
+      this.nameLabel = this.scene.add.text(cam.width / 2, 10, this.scene.savedPlayerName, {
+        fontSize: '11px',
+        fontFamily: 'monospace',
+        color: '#6a5838',
+        stroke: '#000',
+        strokeThickness: 3,
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(100);
+    }
 
     for (let i = 0; i < player.maxHp; i++) {
       const full = this.scene.add.image(30 + i * 28, 30, 'health_orb')
@@ -61,12 +75,54 @@ export class HUD {
     this.mapIcon.on('pointerdown', () => {
       this.mapOverlay.toggle();
     });
+
+    this.coinIcon = this.scene.add.image(30, 74, 'coin_icon')
+      .setScrollFactor(0).setDepth(100).setScale(1.2);
+    this.coinText = this.scene.add.text(46, 74, '0', {
+      fontSize: '14px', fontFamily: 'monospace', color: '#ffc840',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(100);
   }
 
   setupMapInput() {
+    this._mTaps = [];
     this.scene.input.keyboard.on('keydown-M', () => {
+      const now = Date.now();
+      this._mTaps.push(now);
+      // Keep only taps within last 800ms
+      this._mTaps = this._mTaps.filter(t => now - t < 1500);
+
+      if (this._mTaps.length >= 3) {
+        this._mTaps = [];
+        this.revealFullMap();
+        return;
+      }
+
       if (!this.scene.player.hasMap) return;
       this.mapOverlay.toggle();
+    });
+  }
+
+  revealFullMap() {
+    const player = this.scene.player;
+    const roomIds = Object.keys(rooms);
+    for (const id of roomIds) {
+      player.visitedRooms.add(id);
+    }
+    if (!player.hasMap) player.hasMap = true;
+    if (this.mapOverlay.visible) {
+      this.mapOverlay.rebuild();
+    } else {
+      this.mapOverlay.show();
+    }
+    const cam = this.scene.cameras.main;
+    const txt = this.scene.add.text(cam.width / 2, cam.height / 2 - 60, 'FULL MAP REVEALED', {
+      fontSize: '20px', fontFamily: 'monospace', color: '#ffcc00',
+      stroke: '#000', strokeThickness: 4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(400);
+    this.scene.tweens.add({
+      targets: txt, alpha: 0, y: txt.y - 20, duration: 2000, delay: 1000,
+      onComplete: () => txt.destroy(),
     });
   }
 
@@ -94,6 +150,10 @@ export class HUD {
 
     if (player.hasMap && this.mapIcon) {
       this.mapIcon.setVisible(true);
+    }
+
+    if (this.coinText) {
+      this.coinText.setText(`${player.coins}`);
     }
   }
 

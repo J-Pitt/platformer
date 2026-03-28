@@ -1,16 +1,41 @@
 import { rooms, TILE_SIZE } from '../level/rooms.js';
 
 const ROOM_META = {
-  room1: { label: 'Broken Threshold', col: 0, row: 1 },
-  room2: { label: 'Vertical Shaft',   col: 1, row: 1 },
-  room3: { label: 'Fungal Passage',   col: 2, row: 2 },
-  room4: { label: 'Crystal Hall',     col: 2, row: 0 },
-  room5: { label: 'Guardian Chamber', col: 3, row: 0 },
-  room6: { label: 'Sunken Aqueduct',  col: 3, row: 2 },
-  room7: { label: 'Bone Corridor',    col: 4, row: 2 },
-  room8: { label: 'The Crucible',     col: 4, row: 1 },
-  room9: { label: 'Bone Tyrant',      col: 5, row: 1 },
-  room_organic: { label: 'Wind Cavern', col: 6, row: 1 },
+  room1:  { label: 'Broken Threshold',  col: 0,  row: 1 },
+  room2:  { label: 'Vertical Shaft',    col: 1,  row: 1 },
+  room3:  { label: 'Fungal Passage',    col: 2,  row: 2 },
+  room4:  { label: 'Crystal Hall',      col: 2,  row: 0 },
+  room5:  { label: 'Guardian Chamber',  col: 3,  row: 0 },
+  room6:  { label: 'Sunken Aqueduct',   col: 3,  row: 2 },
+  room7:  { label: 'Bone Corridor',     col: 4,  row: 2 },
+  room8:  { label: 'The Crucible',      col: 4,  row: 1 },
+  room9:  { label: 'Bone Tyrant',       col: 5,  row: 1 },
+  room_organic: { label: 'Wind Cavern', col: 0,  row: 0 },
+  // Frozen Depths
+  room10: { label: 'Frozen Threshold',  col: 6,  row: 1 },
+  room11: { label: 'Glacial Shaft',     col: 7,  row: 1 },
+  room12: { label: 'Crystal Caverns',   col: 7,  row: 0 },
+  room13: { label: 'Frost Warden',      col: 8,  row: 0 },
+  // Molten Core
+  room14: { label: 'Magma Descent',     col: 8,  row: 1 },
+  room15: { label: 'Crucible Depths',   col: 9,  row: 1 },
+  room16: { label: 'Ember Halls',       col: 9,  row: 2 },
+  room17: { label: 'Inferno Guardian',  col: 10, row: 2 },
+  // Shadow Sanctum
+  room18: { label: 'Shadow Gate',       col: 10, row: 1 },
+  room19: { label: 'Phantom Corridors', col: 11, row: 1 },
+  room20: { label: 'Spectral Nave',     col: 11, row: 0 },
+  room21: { label: 'Shadow Warden',     col: 12, row: 0 },
+  // Ancient Library
+  room22: { label: 'Ruined Archives',   col: 12, row: 1 },
+  room23: { label: "Scholar's Tower",   col: 13, row: 1 },
+  room24: { label: 'Forbidden Stacks',  col: 13, row: 2 },
+  room25: { label: 'Archive Sentinel',  col: 14, row: 2 },
+  // Void Nexus
+  room26: { label: 'Void Threshold',    col: 14, row: 1 },
+  room27: { label: 'Nexus Spire',       col: 15, row: 1 },
+  room28: { label: 'Convergence',       col: 15, row: 0 },
+  room29: { label: 'The Void King',     col: 16, row: 0 },
 };
 
 const CONNECTIONS = [
@@ -24,21 +49,55 @@ const CONNECTIONS = [
   ['room7', 'room8'],
   ['room8', 'room9'],
   ['room1', 'room_organic'],
+  // Frozen Depths
+  ['room9',  'room10'],
+  ['room10', 'room11'],
+  ['room11', 'room12'],
+  ['room12', 'room13'],
+  // Molten Core
+  ['room13', 'room14'],
+  ['room14', 'room15'],
+  ['room15', 'room16'],
+  ['room16', 'room17'],
+  // Shadow Sanctum
+  ['room17', 'room18'],
+  ['room18', 'room19'],
+  ['room19', 'room20'],
+  ['room20', 'room21'],
+  // Ancient Library
+  ['room21', 'room22'],
+  ['room22', 'room23'],
+  ['room23', 'room24'],
+  ['room24', 'room25'],
+  // Void Nexus
+  ['room25', 'room26'],
+  ['room26', 'room27'],
+  ['room27', 'room28'],
+  ['room28', 'room29'],
+  // Teleport shortcuts
+  ['room16', 'room20'],
 ];
 
 const PIXEL_PER_TILE_BASE = 3;
 const GAP = 12;
-const ZOOM_LEVELS = [0.5, 0.75, 1, 1.5, 2];
-const DEFAULT_ZOOM_IDX = 2;
+const ZOOM_LEVELS = [0.35, 0.5, 0.75, 1, 1.5, 2];
+const PAN_SPEED = 6;
 
 export class MapOverlay {
   constructor(scene) {
     this.scene = scene;
     this.elements = [];
     this.visible = false;
-    this.zoomIdx = DEFAULT_ZOOM_IDX;
+    this.zoomIdx = 0;
     this.container = null;
     this._keyListeners = [];
+    this._dragging = false;
+    this._dragStartX = 0;
+    this._dragStartY = 0;
+    this._containerStartX = 0;
+    this._containerStartY = 0;
+    this._panKeys = { up: false, down: false, left: false, right: false };
+    this._updateEvent = null;
   }
 
   toggle() {
@@ -49,7 +108,7 @@ export class MapOverlay {
   show() {
     if (this.visible) return;
     this.visible = true;
-    this.zoomIdx = DEFAULT_ZOOM_IDX;
+    this.zoomIdx = this.bestFitZoom();
     this.build();
   }
 
@@ -70,16 +129,51 @@ export class MapOverlay {
     }
     for (const fn of this._keyListeners) {
       this.scene.input.keyboard.off('keydown', fn);
+      this.scene.input.keyboard.off('keyup', fn);
     }
     this._keyListeners = [];
+    if (this._updateEvent) {
+      this.scene.events.off('update', this._updateEvent);
+      this._updateEvent = null;
+    }
+    this._dragging = false;
+    this._panKeys = { up: false, down: false, left: false, right: false };
   }
 
   rebuild() {
+    const oldX = this.container ? this.container.x : null;
+    const oldY = this.container ? this.container.y : null;
     this.cleanup();
-    this.build();
+    this.build(oldX, oldY);
   }
 
-  build() {
+  bestFitZoom() {
+    const cam = this.scene.cameras.main;
+    const margin = 80;
+    const availW = cam.width - margin;
+    const availH = cam.height - margin;
+
+    for (let i = ZOOM_LEVELS.length - 1; i >= 0; i--) {
+      const ppt = PIXEL_PER_TILE_BASE * ZOOM_LEVELS[i];
+      const positions = this.computeRoomPositions(ppt);
+      const bounds = this.getTotalBounds(positions);
+      if (bounds.w <= availW && bounds.h <= availH) return i;
+    }
+    return 0;
+  }
+
+  getTotalBounds(positions) {
+    const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+    for (const rp of Object.values(positions)) {
+      b.minX = Math.min(b.minX, rp.x);
+      b.minY = Math.min(b.minY, rp.y);
+      b.maxX = Math.max(b.maxX, rp.x + rp.w);
+      b.maxY = Math.max(b.maxY, rp.y + rp.h + 20);
+    }
+    return { ...b, w: b.maxX - b.minX, h: b.maxY - b.minY };
+  }
+
+  build(restoreX, restoreY) {
     const cam = this.scene.cameras.main;
     const cx = cam.width / 2;
     const cy = cam.height / 2;
@@ -92,28 +186,28 @@ export class MapOverlay {
     this.elements.push(overlay);
 
     const roomPositions = this.computeRoomPositions(ppt);
+    const allBounds = this.getTotalBounds(roomPositions);
+    const totalW = allBounds.w;
+    const totalH = allBounds.h;
 
-    const allBounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
-    for (const rp of Object.values(roomPositions)) {
-      allBounds.minX = Math.min(allBounds.minX, rp.x);
-      allBounds.minY = Math.min(allBounds.minY, rp.y);
-      allBounds.maxX = Math.max(allBounds.maxX, rp.x + rp.w);
-      allBounds.maxY = Math.max(allBounds.maxY, rp.y + rp.h);
-    }
-    const totalW = allBounds.maxX - allBounds.minX;
-    const totalH = allBounds.maxY - allBounds.minY;
-
-    const currentRP = roomPositions[currentRoom];
     let offX, offY;
-    if (currentRP) {
-      offX = cx - (currentRP.x + currentRP.w / 2 - allBounds.minX);
-      offY = cy - (currentRP.y + currentRP.h / 2 - allBounds.minY);
+    if (restoreX != null && restoreY != null) {
+      offX = restoreX;
+      offY = restoreY;
     } else {
-      offX = cx - totalW / 2;
-      offY = cy - totalH / 2;
+      const currentRP = roomPositions[currentRoom];
+      if (currentRP) {
+        offX = cx - (currentRP.x + currentRP.w / 2 - allBounds.minX);
+        offY = cy - (currentRP.y + currentRP.h / 2 - allBounds.minY);
+      } else {
+        offX = cx - totalW / 2;
+        offY = cy - totalH / 2;
+      }
     }
 
     this.container = this.scene.add.container(offX, offY).setScrollFactor(0).setDepth(301);
+    this._mapTotalW = totalW;
+    this._mapTotalH = totalH;
 
     for (const [a, b] of CONNECTIONS) {
       const aVis = player.visitedRooms.has(a);
@@ -173,7 +267,6 @@ export class MapOverlay {
 
     if (currentRoom && rooms[currentRoom] && player.visitedRooms.has(currentRoom)) {
       const rp = roomPositions[currentRoom];
-      const room = rooms[currentRoom];
       const rx = rp.x - allBounds.minX;
       const ry = rp.y - allBounds.minY;
 
@@ -206,22 +299,16 @@ export class MapOverlay {
     this.elements.push(title);
 
     const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
-    const hint = this.scene.add.text(cx, cam.height - 16,
-      isMobile ? '[ TAP TO CLOSE ]' : '[ M TO CLOSE ]', {
-        fontSize: '11px', fontFamily: 'monospace', color: '#6a5838',
-        stroke: '#000', strokeThickness: 2,
-      }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(302);
+    const hintStr = isMobile ? '[ DRAG TO PAN  ·  TAP TO CLOSE ]' : '[ DRAG / ARROWS TO PAN  ·  M TO CLOSE ]';
+    const hint = this.scene.add.text(cx, cam.height - 16, hintStr, {
+      fontSize: '11px', fontFamily: 'monospace', color: '#6a5838',
+      stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(302);
     this.elements.push(hint);
 
     this.createZoomButtons(cam);
-
-    const zoomKey = (e) => {
-      if (!this.visible) return;
-      if (e.key === '=' || e.key === '+') this.zoomIn();
-      else if (e.key === '-' || e.key === '_') this.zoomOut();
-    };
-    this.scene.input.keyboard.on('keydown', zoomKey);
-    this._keyListeners.push(zoomKey);
+    this.setupDrag(overlay);
+    this.setupPanKeys();
 
     for (const el of this.elements) {
       if (el.setAlpha && !el._noFade) {
@@ -232,6 +319,63 @@ export class MapOverlay {
     }
     this.container.setAlpha(0);
     this.scene.tweens.add({ targets: this.container, alpha: 1, duration: 150 });
+  }
+
+  setupDrag(overlay) {
+    overlay.on('pointerdown', (pointer) => {
+      this._dragging = true;
+      this._dragStartX = pointer.x;
+      this._dragStartY = pointer.y;
+      this._containerStartX = this.container.x;
+      this._containerStartY = this.container.y;
+      this._dragMoved = false;
+    });
+
+    this.scene.input.on('pointermove', (pointer) => {
+      if (!this._dragging || !this.container) return;
+      const dx = pointer.x - this._dragStartX;
+      const dy = pointer.y - this._dragStartY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) this._dragMoved = true;
+      this.container.x = this._containerStartX + dx;
+      this.container.y = this._containerStartY + dy;
+    });
+
+    this.scene.input.on('pointerup', () => {
+      this._dragging = false;
+    });
+  }
+
+  setupPanKeys() {
+    const keys = this._panKeys;
+
+    const onDown = (e) => {
+      if (!this.visible) return;
+      if (e.key === 'ArrowUp' || e.key === 'w') keys.up = true;
+      if (e.key === 'ArrowDown' || e.key === 's') keys.down = true;
+      if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+      if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+      if (e.key === '=' || e.key === '+') this.zoomIn();
+      else if (e.key === '-' || e.key === '_') this.zoomOut();
+    };
+    const onUp = (e) => {
+      if (e.key === 'ArrowUp' || e.key === 'w') keys.up = false;
+      if (e.key === 'ArrowDown' || e.key === 's') keys.down = false;
+      if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+      if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+    };
+
+    this.scene.input.keyboard.on('keydown', onDown);
+    this.scene.input.keyboard.on('keyup', onUp);
+    this._keyListeners.push(onDown, onUp);
+
+    this._updateEvent = () => {
+      if (!this.visible || !this.container) return;
+      if (keys.up) this.container.y += PAN_SPEED;
+      if (keys.down) this.container.y -= PAN_SPEED;
+      if (keys.left) this.container.x += PAN_SPEED;
+      if (keys.right) this.container.x -= PAN_SPEED;
+    };
+    this.scene.events.on('update', this._updateEvent);
   }
 
   createZoomButtons(cam) {
@@ -284,7 +428,6 @@ export class MapOverlay {
       const room = rooms[roomId];
       const w = room ? room.width * ppt : 20;
       const h = room ? room.height * ppt : 16;
-      const key = `${meta.col}_${meta.row}`;
       if (!colGroups[meta.col]) colGroups[meta.col] = {};
       colGroups[meta.col][meta.row] = { roomId, w, h };
       positions[roomId] = { w, h, col: meta.col, row: meta.row };
@@ -292,7 +435,7 @@ export class MapOverlay {
 
     const colWidths = {};
     const rowHeights = {};
-    for (const [roomId, pos] of Object.entries(positions)) {
+    for (const [, pos] of Object.entries(positions)) {
       colWidths[pos.col] = Math.max(colWidths[pos.col] || 0, pos.w);
       rowHeights[pos.row] = Math.max(rowHeights[pos.row] || 0, pos.h);
     }
@@ -313,7 +456,7 @@ export class MapOverlay {
       runY += rowHeights[r] + GAP + 14;
     }
 
-    for (const [roomId, pos] of Object.entries(positions)) {
+    for (const [, pos] of Object.entries(positions)) {
       const cw = colWidths[pos.col];
       const rh = rowHeights[pos.row];
       pos.x = colX[pos.col] + (cw - pos.w) / 2;
@@ -371,6 +514,15 @@ export class MapOverlay {
         } else if (obj.type === 'boss') {
           g.fillStyle(0xff2244, 0.9);
           g.fillCircle(ox, oy, Math.max(3, ppt * 0.8));
+        } else if (obj.type === 'coin') {
+          g.fillStyle(0xffc840, 0.8);
+          g.fillCircle(ox, oy, Math.max(1.5, ppt * 0.3));
+        } else if (obj.type === 'teleport') {
+          g.fillStyle(0x44ccff, 0.8);
+          g.fillCircle(ox, oy, Math.max(2, ppt * 0.5));
+        } else if (obj.type === 'merchant_shop') {
+          g.fillStyle(0xff88ff, 0.8);
+          g.fillCircle(ox, oy, Math.max(2, ppt * 0.5));
         }
       }
     }

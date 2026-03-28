@@ -93,7 +93,7 @@ function buildRoom1() {
     playerSpawn: { x: 4, y: f },
     objects: [
       { type: 'ability_orb', ability: 'slash', x: 45, y: 8, hint: 'Press W, C or J to slash' },
-      { type: 'door', targetRoom: 'room2', x: W - 2, y: f, spawnX: 2, spawnY: 27 },
+      { type: 'door', targetRoom: 'room2', x: W - 2, y: f, spawnX: 2, spawnY: 28 },
       { type: 'npc', npcType: 'hermit', x: 7, y: f, dialogue: [
         'Ah... another soul drawn to the Abyssal Depths. I wondered when the next would come.',
         'This place was once a great kingdom — the Throne of Ur-Karath, they called it. Built deep into the bones of the earth.',
@@ -201,6 +201,8 @@ function buildRoom2() {
   // Mine-shaft roof — mostly closed stone with a narrow light well
   fillRect(tiles, 1, 1, 3, W - 2, 1);
   clearRect(tiles, 1, 9, 3, 12);
+  clearRect(tiles, 3, 1, 3, 6);   // headroom above top-left landing
+  clearRect(tiles, 3, 16, 3, 20); // headroom above top-right landing
 
   // Bottom floor with gaps
   fillRect(tiles, H - 2, 1, H - 1, 7, 1);
@@ -211,6 +213,10 @@ function buildRoom2() {
   clearRect(tiles, H - 4, 0, H - 2, 0);  // bottom-left back to room1
   clearRect(tiles, 3, 0, 5, 0);           // top-left to room3
   clearRect(tiles, 3, W - 1, 5, W - 1);   // top-right to room4
+  // Lips where wall openings left column 0 / W-1 air on platform rows (no floor when stepping into doorway)
+  setTile(tiles, 4, 0, 1);
+  setTile(tiles, 4, W - 1, 1);
+  setTile(tiles, H - 2, 0, 1);
 
   return {
     name: 'Vertical Shaft',
@@ -220,8 +226,8 @@ function buildRoom2() {
     playerSpawn: { x: 4, y: 27 },
     objects: [
       { type: 'ability_orb', ability: 'wallJump', x: 11, y: 14, hint: 'Wall slide then jump!' },
-      { type: 'door', targetRoom: 'room1', x: 1, y: H - 3, spawnX: 52, spawnY: 21 },
-      { type: 'door', targetRoom: 'room3', x: 1, y: 4, spawnX: 38, spawnY: 10 },
+      { type: 'door', targetRoom: 'room1', x: 1, y: H - 2, spawnX: 52, spawnY: 21 },
+      { type: 'door', targetRoom: 'room3', x: 1, y: 4, spawnX: 38, spawnY: 9 },
       { type: 'door', targetRoom: 'room4', x: W - 2, y: 4, spawnX: 2, spawnY: 19 },
       { type: 'bench', x: 11, y: 20 },
       { type: 'npc', npcType: 'knight', x: 14, y: 20, dialogue: [
@@ -238,7 +244,6 @@ function buildRoom2() {
       { type: 'crumble_platform', x: 11, y: 10, collapseDelay: 400, respawnDelay: 2500 },
       { type: 'spike_wall', x: 9, y: 27, width: 128, height: 16 },
       { type: 'magma_pool', x: 9, y: 28, width: 5 },
-      { type: 'moving_platform', x: 11, y: 22, axis: 'y', range: 128, speed: 0.9, phase: 0.5, spin: 0 },
       { type: 'moving_platform', x: 5, y: 18, axis: 'x', range: 64, speed: 0.7, phase: 0, spin: 0 },
       { type: 'flyer', x: 5, y: 22 },
       { type: 'flyer', x: 16, y: 12 },
@@ -249,7 +254,6 @@ function buildRoom2() {
       { type: 'flyer', x: 11, y: 9 },
       { type: 'flyer', x: 16, y: 18 },
       { type: 'magma_pool', x: 11, y: 28, width: 3 },
-      { type: 'moving_platform', x: 11, y: 22, axis: 'y', range: 64, speed: 0.7, phase: 0.3, spin: 0 },
       { type: 'chain', x: 5, y: 1 },
       { type: 'chain', x: 17, y: 1 },
       { type: 'stalactite_sm', x: 3, y: 1 },
@@ -302,6 +306,10 @@ function buildRoom3() {
   fillRect(tiles, 18, 28, 19, 31, 1);
   fillRect(tiles, 17, 36, 19, 38, 1);
 
+  // Stepping platforms (bridge row-18 bumps to the main tier)
+  fillRow(tiles, 16, 6, 8, 2);
+  fillRow(tiles, 16, 28, 31, 2);
+
   // Platforms
   fillRow(tiles, 14, 4, 7, 2);
   fillRow(tiles, 11, 10, 14, 2);
@@ -334,9 +342,9 @@ function buildRoom3() {
     width: W,
     height: H,
     tiles,
-    playerSpawn: { x: 40, y: 10 },
+    playerSpawn: { x: 40, y: 9 },
     objects: [
-      { type: 'door', targetRoom: 'room2', x: W - 2, y: 10, spawnX: 2, spawnY: 4 },
+      { type: 'door', targetRoom: 'room2', x: W - 2, y: 10, spawnX: 2, spawnY: 3 },
       { type: 'door', targetRoom: 'room6', x: 1, y: 19, spawnX: 3, spawnY: 19 },
       { type: 'ability_orb', ability: 'map', x: 3, y: 3, hint: 'Press M or tap the map icon' },
       { type: 'moving_platform', x: 30, y: 12, axis: 'x', range: 44, speed: 1.2, phase: 0.4, spin: 0.6 },
@@ -491,7 +499,7 @@ function buildRoom4() {
     objects: [
       { type: 'ability_orb', ability: 'dash', x: 45, y: 7, hint: 'Press X or Shift to dash' },
       { type: 'door', targetRoom: 'room2', x: 1, y: 19, spawnX: 19, spawnY: 4 },
-      { type: 'door', targetRoom: 'room5', x: W - 2, y: 19, spawnX: 12, spawnY: 21 },
+      { type: 'door', targetRoom: 'room5', x: W - 2, y: 19, spawnX: 3, spawnY: 21 },
       { type: 'magma_pool', x: 23, y: 20, width: 8 },
       { type: 'moving_platform', x: 19, y: 17, axis: 'x', range: 36, speed: 1.5, phase: 0.2, spin: 1.5 },
       { type: 'moving_platform', x: 27, y: 13, axis: 'x', range: 34, speed: 1.35, phase: 2.1, spin: -1.3 },
@@ -596,6 +604,8 @@ function buildRoom5() {
   fillRow(tiles, 18, 2, 6, 2);
   fillRow(tiles, 16, 2, 8, 2);
   fillRow(tiles, 14, 3, 8, 2);
+  // Right-side step (bridges raised floor at row 20 to row 16)
+  fillRow(tiles, 18, 33, 37, 2);
   // Platforms for verticality (row 16 ledge overlaps entry stairs — one fillRow)
   fillRow(tiles, 12, 10, 14, 2);
   fillRow(tiles, 16, 16, 23, 2);
@@ -625,7 +635,7 @@ function buildRoom5() {
     width: W,
     height: H,
     tiles,
-    playerSpawn: { x: 12, y: 21 },
+    playerSpawn: { x: 3, y: 21 },
     objects: [
       { type: 'door', targetRoom: 'room4', x: 1, y: 21, spawnX: 47, spawnY: 19 },
       { type: 'door', targetRoom: 'room8', x: W - 2, y: 21, spawnX: 46, spawnY: 23 },
@@ -740,6 +750,11 @@ function buildRoom6() {
   fillRect(tiles, H - 2, 36, H - 1, 44, 1);
   clearRect(tiles, H - 2, 45, H - 2, 49);
   fillRect(tiles, H - 2, 50, H - 1, W - 2, 1);
+
+  // Stepping platforms (bridge floor bumps at row 18 to the main tier at row 14)
+  fillRow(tiles, 16, 6, 9, 2);
+  fillRow(tiles, 16, 26, 29, 2);
+  fillRow(tiles, 16, 50, 53, 2);
 
   // Elevated platforms (aqueduct channels)
   fillRow(tiles, 14, 4, 10, 2);
@@ -1086,7 +1101,7 @@ function buildRoom8() {
     playerSpawn: { x: 4, y: f },
     objects: [
       { type: 'door', targetRoom: 'room7', x: 1, y: f, spawnX: 26, spawnY: 5 },
-      { type: 'door', targetRoom: 'room5', x: W - 2, y: f, spawnX: 12, spawnY: 21 },
+      { type: 'door', targetRoom: 'room5', x: W - 2, y: f, spawnX: 37, spawnY: 21 },
       { type: 'door', targetRoom: 'room9', x: W / 2, y: 2, spawnX: 3, spawnY: 17 },
       // Central lava
       { type: 'magma_pool', x: 16, y: 24, width: 18 },
@@ -1114,25 +1129,19 @@ function buildRoom8() {
       { type: 'crumble_platform', x: 38, y: 14, collapseDelay: 350, respawnDelay: 2200 },
       { type: 'crumble_platform', x: 15, y: 10, collapseDelay: 280, respawnDelay: 1800 },
       { type: 'crumble_platform', x: 35, y: 10, collapseDelay: 280, respawnDelay: 1800 },
-      // Enemies (heavy combat room)
+      // Enemies
       { type: 'brute', x: 12, y: f },
       { type: 'brute', x: 36, y: f },
       { type: 'crawler', x: 6, y: f },
       { type: 'crawler', x: 44, y: f },
       { type: 'crawler', x: 20, y: 15 },
       { type: 'crawler', x: 30, y: 15 },
-      { type: 'crawler', x: 10, y: 13 },
-      { type: 'crawler', x: 40, y: 13 },
-      { type: 'flyer', x: 10, y: 5 },
-      { type: 'flyer', x: 20, y: 3 },
-      { type: 'flyer', x: 30, y: 3 },
-      { type: 'flyer', x: 40, y: 5 },
-      { type: 'flyer', x: 15, y: 8 },
+      { type: 'flyer', x: 10, y: 6 },
       { type: 'flyer', x: 25, y: 6 },
-      { type: 'flyer', x: 35, y: 8 },
-      { type: 'flyer', x: 12, y: 12 },
-      { type: 'flyer', x: 38, y: 12 },
-      { type: 'flyer', x: 25, y: 10 },
+      { type: 'flyer', x: 40, y: 6 },
+      { type: 'flyer', x: 15, y: 9 },
+      { type: 'flyer', x: 35, y: 9 },
+      { type: 'flyer', x: 25, y: 11 },
       // Health
       { type: 'health_pickup', x: 25, y: 7 },
       { type: 'health_pickup', x: 8, y: 13 },
@@ -1230,6 +1239,8 @@ function buildRoom9() {
 
   // Door opening on left (entry from room8)
   clearRect(tiles, f - 2, 0, f + 1, 0);
+  // Door opening on right (to room10 — unlocks after boss defeated)
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
 
   return {
     name: 'Throne of the Bone Tyrant',
@@ -1239,6 +1250,7 @@ function buildRoom9() {
     playerSpawn: { x: 3, y: f },
     objects: [
       { type: 'door', targetRoom: 'room8', x: 1, y: f, spawnX: 46, spawnY: 23 },
+      { type: 'door', targetRoom: 'room10', x: W - 2, y: f, spawnX: 3, spawnY: 19 },
       { type: 'boss', x: 28, y: f },
       { type: 'bench', x: 5, y: f },
       { type: 'health_pickup', x: 6, y: 9 },
@@ -1299,6 +1311,2672 @@ function buildRoom9() {
   };
 }
 
+function buildRoom10() {
+  const W = 50, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Icy terrain bumps on floor
+  fillRect(tiles, 18, 8, 19, 11, 1);
+  fillRect(tiles, 17, 22, 19, 25, 1);
+  fillRect(tiles, 18, 36, 19, 39, 1);
+
+  // Frozen chasms in the floor
+  clearRect(tiles, H - 2, 14, H - 2, 18);
+  clearRect(tiles, H - 2, 30, H - 2, 34);
+
+  // Zigzag ice platforms — horizontal traversal
+  fillRow(tiles, 16, 4, 8, 2);
+  fillRow(tiles, 14, 10, 15, 2);
+  fillRow(tiles, 12, 6, 10, 2);
+  fillRow(tiles, 16, 18, 23, 2);
+  fillRow(tiles, 14, 26, 30, 2);
+  fillRow(tiles, 12, 22, 26, 2);
+  fillRow(tiles, 10, 28, 33, 2);
+  fillRow(tiles, 16, 36, 40, 2);
+  fillRow(tiles, 14, 42, 46, 2);
+  fillRow(tiles, 10, 40, 44, 2);
+  fillRow(tiles, 8, 14, 18, 2);
+  fillRow(tiles, 8, 34, 38, 2);
+
+  // Stair blocks near climb start
+  setTile(tiles, f, 4, 3);
+  setTile(tiles, 18, 5, 3);
+  setTile(tiles, 17, 6, 3);
+
+  // Frozen pillars
+  fillRect(tiles, 6, 12, 12, 13, 1);
+  fillRect(tiles, 6, 34, 12, 35, 1);
+
+  // Ice tunnel ceiling
+  fillRect(tiles, 2, 6, 5, 20, 1);
+  fillRect(tiles, 2, 28, 5, 44, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Frozen Threshold',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room9', x: 1, y: f, spawnX: 40, spawnY: 17 },
+      { type: 'door', targetRoom: 'room11', x: W - 2, y: f, spawnX: 2, spawnY: 27 },
+      { type: 'bench', x: 24, y: 11 },
+      { type: 'coin', x: 8, y: 11 },
+      { type: 'coin', x: 28, y: 9 },
+      { type: 'coin', x: 44, y: 9 },
+      { type: 'coin', x: 16, y: 7 },
+      { type: 'crawler', x: 10, y: f },
+      { type: 'crawler', x: 30, y: 16 },
+      { type: 'crawler', x: 42, y: f },
+      { type: 'flyer', x: 16, y: 6 },
+      { type: 'flyer', x: 28, y: 8 },
+      { type: 'flyer', x: 40, y: 6 },
+      { type: 'magma_pool', x: 14, y: 20, width: 5 },
+      { type: 'magma_pool', x: 30, y: 20, width: 5 },
+      { type: 'moving_platform', x: 16, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 32, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.5, spin: 0 },
+      { type: 'pendulum_trap', x: 20, y: 10, length: 72, swing: 40, speed: 1.5, phase: 0 },
+      { type: 'spike_wall', x: 12, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 34, y: 8, width: 16, height: 64 },
+      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 450, respawnDelay: 2800 },
+      { type: 'crumble_platform', x: 38, y: 10, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'health_pickup', x: 36, y: 7 },
+      { type: 'wood_bridge', x: 15, y: f },
+      { type: 'wood_bridge', x: 31, y: f },
+      { type: 'crystal', x: 6, y: f },
+      { type: 'crystal', x: 20, y: f },
+      { type: 'crystal', x: 38, y: f },
+      { type: 'crystal_cluster', x: 12, y: f },
+      { type: 'crystal_cluster', x: 32, y: f },
+      { type: 'crystal_cluster', x: 46, y: f },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 24, y: 1 },
+      { type: 'stalactite', x: 40, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 32, y: 1 },
+      { type: 'stalactite_sm', x: 46, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 36, y: 1 },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 30, y: 4 },
+      { type: 'glow_spore', x: 42, y: 6 },
+      { type: 'ruin_arch', x: 16, y: f },
+      { type: 'ruin_arch', x: 34, y: f },
+      { type: 'gravel_patch', x: 8, y: f },
+      { type: 'gravel_patch', x: 28, y: f },
+      { type: 'gravel_patch', x: 44, y: f },
+    ],
+    foreground: [
+      { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_crystal_large', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 3, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 12, h: 8 },
+      { type: 'cb_detail_bricks', x: 30, y: 2, w: 14, h: 10 },
+      { type: 'cb_rune_mark', x: 12, y: 8 },
+      { type: 'cb_rune_mark', x: 26, y: 6 },
+      { type: 'cb_rune_mark', x: 42, y: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 36, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 12, y: 0, angle: -8, key: 'cool', alpha: 0.14, scale: 1.3 },
+        { x: 26, y: 0, angle: 5, key: 'cool', alpha: 0.12, scale: 1.1 },
+        { x: 42, y: 0, angle: -6, key: 'cool', alpha: 0.13, scale: 1.2 },
+      ],
+      ambientColor: 0x88ccff,
+      ambientAlpha: 0.05,
+    },
+    ambience: 'tunnel_crystal',
+  };
+}
+
+function buildRoom11() {
+  const W = 24, H = 30;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Bottom floor
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Zigzag ascending platforms — wall-jump friendly
+  fillRow(tiles, 26, 3, 7, 2);
+  fillRow(tiles, 24, 14, 20, 2);
+  fillRow(tiles, 22, 3, 8, 2);
+  fillRow(tiles, 20, 13, 19, 2);
+  fillRow(tiles, 18, 4, 9, 2);
+  fillRow(tiles, 16, 14, 20, 2);
+  fillRow(tiles, 14, 3, 8, 2);
+  fillRow(tiles, 12, 12, 18, 2);
+  fillRow(tiles, 10, 4, 9, 2);
+  fillRow(tiles, 8, 14, 20, 2);
+  fillRow(tiles, 6, 3, 8, 2);
+  fillRow(tiles, 4, 16, 22, 2);
+
+  // Wall columns for wall-jumping
+  fillRect(tiles, 10, 10, 18, 11, 1);
+  fillRect(tiles, 6, 10, 12, 11, 1);
+
+  // Glacial ceiling
+  fillRect(tiles, 1, 1, 3, W - 2, 1);
+  clearRect(tiles, 1, 10, 3, 14);
+  clearRect(tiles, 3, 16, 3, 22);
+
+  // Terrain bump on floor
+  fillRect(tiles, 26, 15, 27, 17, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, 3, W - 1, 5, W - 1);
+
+  return {
+    name: 'Glacial Shaft',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 2, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room10', x: 1, y: f, spawnX: 47, spawnY: 19 },
+      { type: 'door', targetRoom: 'room12', x: W - 2, y: 3, spawnX: 2, spawnY: 19 },
+      { type: 'coin', x: 18, y: 23 },
+      { type: 'coin', x: 6, y: 17 },
+      { type: 'coin', x: 18, y: 11 },
+      { type: 'flyer', x: 12, y: 20 },
+      { type: 'flyer', x: 8, y: 14 },
+      { type: 'flyer', x: 16, y: 8 },
+      { type: 'flyer', x: 6, y: 4 },
+      { type: 'spike_wall', x: 10, y: 14, width: 16, height: 80 },
+      { type: 'pendulum_trap', x: 12, y: 16, length: 64, swing: 38, speed: 1.6, phase: 0.5 },
+      { type: 'pendulum_trap', x: 12, y: 8, length: 56, swing: 36, speed: 1.8, phase: 1.0 },
+      { type: 'crumble_platform', x: 16, y: 20, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'crumble_platform', x: 6, y: 14, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 16, y: 12, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'health_pickup', x: 6, y: 9 },
+      { type: 'crystal', x: 5, y: f },
+      { type: 'crystal', x: 18, y: f },
+      { type: 'crystal_cluster', x: 10, y: f },
+      { type: 'stalactite', x: 6, y: 1 },
+      { type: 'stalactite', x: 16, y: 1 },
+      { type: 'stalactite_sm', x: 3, y: 1 },
+      { type: 'stalactite_sm', x: 12, y: 1 },
+      { type: 'stalactite_sm', x: 20, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 18, y: 1 },
+      { type: 'glow_spore', x: 6, y: 10 },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 10, y: 16 },
+      { type: 'vine', x: 4, y: 1 },
+      { type: 'vine', x: 14, y: 1 },
+    ],
+    foreground: [
+      { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_crystal_large', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 0, y: 14, flipX: false },
+      { type: 'fg_torch_bracket', x: 1, y: 10 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 12 },
+      { type: 'fg_torch_bracket', x: 1, y: 20 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 2, y: 4, w: 8, h: 10 },
+      { type: 'cb_detail_bricks', x: 12, y: 14, w: 8, h: 10 },
+      { type: 'cb_rune_mark', x: 6, y: 8 },
+      { type: 'cb_rune_mark', x: 16, y: 18 },
+      { type: 'cb_detail_roots', x: 4, y: 1, count: 2 },
+      { type: 'cb_detail_roots', x: 14, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 12, y: 0, angle: 0, key: 'cool', alpha: 0.16, scale: 1.5 },
+        { x: 6, y: 0, angle: -6, key: 'cool', alpha: 0.10, scale: 1.0 },
+        { x: 18, y: 0, angle: 6, key: 'cool', alpha: 0.10, scale: 1.0 },
+      ],
+      ambientColor: 0x88ccff,
+      ambientAlpha: 0.05,
+    },
+    ambience: 'tunnel_crystal',
+  };
+}
+
+function buildRoom12() {
+  const W = 55, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Floor terrain bumps
+  fillRect(tiles, 18, 8, 19, 11, 1);
+  fillRect(tiles, 17, 24, 19, 28, 1);
+  fillRect(tiles, 18, 40, 19, 43, 1);
+
+  // Floor gaps
+  clearRect(tiles, H - 2, 16, H - 2, 20);
+  clearRect(tiles, H - 2, 34, H - 2, 38);
+
+  // Multi-tier platforms
+  fillRow(tiles, 16, 4, 8, 2);
+  fillRow(tiles, 14, 10, 15, 2);
+  fillRow(tiles, 12, 5, 9, 2);
+  fillRow(tiles, 16, 20, 25, 2);
+  fillRow(tiles, 14, 28, 33, 2);
+  fillRow(tiles, 12, 22, 27, 2);
+  fillRow(tiles, 10, 30, 35, 2);
+  fillRow(tiles, 16, 40, 45, 2);
+  fillRow(tiles, 14, 46, 51, 2);
+  fillRow(tiles, 10, 42, 47, 2);
+  fillRow(tiles, 8, 16, 20, 2);
+  fillRow(tiles, 8, 36, 40, 2);
+  fillRow(tiles, 6, 26, 30, 2);
+
+  // Frozen pillars
+  fillRect(tiles, 5, 14, 12, 15, 1);
+  fillRect(tiles, 5, 40, 12, 41, 1);
+
+  // Ice ceiling
+  fillRect(tiles, 2, 6, 5, 22, 1);
+  fillRect(tiles, 2, 32, 5, 48, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Crystal Caverns',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room11', x: 1, y: f, spawnX: 21, spawnY: 3 },
+      { type: 'door', targetRoom: 'room13', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
+      { type: 'merchant_shop', x: 28, y: 5, items: [
+        { name: 'Health Refill', cost: 5, type: 'heal' },
+        { name: 'Max HP +1', cost: 15, type: 'maxhp' },
+      ], dialogue: [
+        'Brr... even my wares are starting to frost over down here.',
+        'Take what you need — coin spends the same whether it\'s frozen or not.',
+      ]},
+      { type: 'coin', x: 7, y: 11 },
+      { type: 'coin', x: 22, y: 11 },
+      { type: 'coin', x: 44, y: 9 },
+      { type: 'coin', x: 18, y: 7 },
+      { type: 'coin', x: 38, y: 7 },
+      { type: 'crawler', x: 12, y: f },
+      { type: 'crawler', x: 30, y: 13 },
+      { type: 'crawler', x: 48, y: f },
+      { type: 'flyer', x: 18, y: 6 },
+      { type: 'flyer', x: 34, y: 4 },
+      { type: 'flyer', x: 46, y: 8 },
+      { type: 'flyer', x: 10, y: 10 },
+      { type: 'magma_pool', x: 16, y: 20, width: 5 },
+      { type: 'magma_pool', x: 34, y: 20, width: 5 },
+      { type: 'moving_platform', x: 18, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 36, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'pendulum_trap', x: 22, y: 8, length: 72, swing: 42, speed: 1.6, phase: 0 },
+      { type: 'pendulum_trap', x: 38, y: 6, length: 64, swing: 38, speed: 1.7, phase: 1.2 },
+      { type: 'spike_wall', x: 14, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 40, y: 8, width: 16, height: 64 },
+      { type: 'crumble_platform', x: 12, y: 14, collapseDelay: 420, respawnDelay: 2600 },
+      { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 48, y: 14, collapseDelay: 450, respawnDelay: 2800 },
+      { type: 'health_pickup', x: 24, y: 11 },
+      { type: 'health_pickup', x: 44, y: 15 },
+      { type: 'crystal', x: 6, y: f },
+      { type: 'crystal', x: 22, y: f },
+      { type: 'crystal', x: 36, y: f },
+      { type: 'crystal', x: 50, y: f },
+      { type: 'crystal_cluster', x: 10, y: f },
+      { type: 'crystal_cluster', x: 30, y: f },
+      { type: 'crystal_cluster', x: 46, y: f },
+      { type: 'stalactite', x: 12, y: 1 },
+      { type: 'stalactite', x: 28, y: 1 },
+      { type: 'stalactite', x: 44, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 20, y: 1 },
+      { type: 'stalactite_sm', x: 36, y: 1 },
+      { type: 'stalactite_sm', x: 50, y: 1 },
+      { type: 'chain', x: 10, y: 1 },
+      { type: 'chain', x: 24, y: 1 },
+      { type: 'chain', x: 40, y: 1 },
+      { type: 'light_beam', x: 16, y: 1 },
+      { type: 'light_beam', x: 32, y: 1 },
+      { type: 'light_beam', x: 48, y: 1 },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 28, y: 4 },
+      { type: 'glow_spore', x: 42, y: 6 },
+      { type: 'ruin_arch', x: 8, y: f },
+      { type: 'ruin_arch', x: 32, y: f },
+      { type: 'pillar', x: 14, y: 16 },
+      { type: 'pillar_broken', x: 40, y: 16 },
+      { type: 'hanging_moss', x: 18, y: 2 },
+      { type: 'hanging_moss', x: 38, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_crystal_large', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 3, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 26, y: 6 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 12, h: 8 },
+      { type: 'cb_detail_bricks', x: 24, y: 2, w: 14, h: 10 },
+      { type: 'cb_detail_bricks', x: 44, y: 4, w: 8, h: 8 },
+      { type: 'cb_rune_mark', x: 10, y: 8 },
+      { type: 'cb_rune_mark', x: 28, y: 6 },
+      { type: 'cb_rune_mark', x: 46, y: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 36, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: -8, key: 'cool', alpha: 0.14, scale: 1.3 },
+        { x: 28, y: 0, angle: 5, key: 'cool', alpha: 0.12, scale: 1.1 },
+        { x: 44, y: 0, angle: -5, key: 'cool', alpha: 0.13, scale: 1.2 },
+      ],
+      ambientColor: 0x88ccff,
+      ambientAlpha: 0.05,
+    },
+    ambience: 'tunnel_crystal',
+  };
+}
+
+function buildRoom13() {
+  const W = 40, H = 24;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Arena floor
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Raised side platforms
+  fillRow(tiles, 18, 3, 8, 2);
+  fillRow(tiles, 18, W - 9, W - 4, 2);
+  fillRow(tiles, 14, 4, 9, 2);
+  fillRow(tiles, 14, W - 10, W - 5, 2);
+  fillRow(tiles, 10, 6, 10, 2);
+  fillRow(tiles, 10, W - 11, W - 7, 2);
+
+  // Central elevated platform
+  fillRow(tiles, 16, 16, 24, 2);
+  fillRow(tiles, 12, 14, 26, 2);
+  fillRow(tiles, 8, 18, 22, 2);
+
+  // Arena pillars
+  fillRect(tiles, 4, 12, 14, 12, 1);
+  fillRect(tiles, 4, W - 13, 14, W - 13, 1);
+
+  // Icy ceiling
+  fillRect(tiles, 2, 4, 5, W - 5, 1);
+  clearRect(tiles, 3, 16, 4, 24);
+
+  // Terrain bumps
+  fillRect(tiles, f, 10, f + 1, 12, 1);
+  fillRect(tiles, f, W - 13, f + 1, W - 11, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Frost Warden',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room12', x: 1, y: f, spawnX: 52, spawnY: 19 },
+      { type: 'door', targetRoom: 'room14', x: W - 2, y: f, spawnX: 2, spawnY: 23 },
+      { type: 'brute', x: 20, y: f },
+      { type: 'brute', x: 30, y: f },
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 16, y: 15 },
+      { type: 'crawler', x: 24, y: 15 },
+      { type: 'crawler', x: 34, y: f },
+      { type: 'flyer', x: 10, y: 6 },
+      { type: 'flyer', x: 20, y: 4 },
+      { type: 'flyer', x: 30, y: 6 },
+      { type: 'flyer', x: 14, y: 10 },
+      { type: 'flyer', x: 26, y: 8 },
+      { type: 'magma_pool', x: 14, y: 22, width: 3 },
+      { type: 'magma_pool', x: 24, y: 22, width: 3 },
+      { type: 'spike_wall', x: 12, y: 8, width: 16, height: 80 },
+      { type: 'spike_wall', x: W - 13, y: 8, width: 16, height: 80 },
+      { type: 'pendulum_trap', x: 20, y: 6, length: 80, swing: 46, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 10, y: 10, length: 64, swing: 40, speed: 1.6, phase: 1.0 },
+      { type: 'moving_platform', x: 20, y: 10, axis: 'x', range: 128, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'health_pickup', x: 20, y: 7 },
+      { type: 'health_pickup', x: 8, y: 13 },
+      { type: 'health_pickup', x: W - 9, y: 13 },
+      { type: 'crystal', x: 6, y: f },
+      { type: 'crystal', x: 18, y: f },
+      { type: 'crystal', x: 32, y: f },
+      { type: 'crystal_cluster', x: 14, y: f },
+      { type: 'crystal_cluster', x: 26, y: f },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 20, y: 1 },
+      { type: 'stalactite', x: 30, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 16, y: 1 },
+      { type: 'stalactite_sm', x: 36, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 34, y: 1 },
+      { type: 'pillar', x: 12, y: f },
+      { type: 'pillar', x: W - 13, y: f },
+      { type: 'ruin_arch', x: 16, y: f },
+      { type: 'ruin_arch', x: 26, y: f },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 26, y: 4 },
+      { type: 'glow_spore', x: 34, y: 6 },
+      { type: 'hanging_moss', x: 18, y: 2 },
+      { type: 'hanging_moss', x: 28, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_crystal_large', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 1, y: 16 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 16 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 2, w: 14, h: 12 },
+      { type: 'cb_detail_bricks', x: 24, y: 2, w: 12, h: 12 },
+      { type: 'cb_rune_mark', x: 10, y: 6 },
+      { type: 'cb_rune_mark', x: 20, y: 10 },
+      { type: 'cb_rune_mark', x: 32, y: 6 },
+    ],
+    lighting: {
+      beams: [
+        { x: 20, y: 0, angle: 0, key: 'cool', alpha: 0.16, scale: 1.6 },
+        { x: 10, y: 0, angle: -10, key: 'cool', alpha: 0.10, scale: 1.0 },
+        { x: 30, y: 0, angle: 10, key: 'cool', alpha: 0.10, scale: 1.0 },
+      ],
+      ambientColor: 0x88ccff,
+      ambientAlpha: 0.055,
+    },
+    locked: true,
+    ambience: 'tunnel_crystal',
+  };
+}
+
+function buildRoom14() {
+  const W = 50, H = 26;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Floor segments with magma gaps
+  fillRect(tiles, H - 2, 1, H - 1, 10, 1);
+  clearRect(tiles, H - 2, 11, H - 2, 16);
+  fillRect(tiles, H - 2, 17, H - 1, 24, 1);
+  clearRect(tiles, H - 2, 25, H - 2, 30);
+  fillRect(tiles, H - 2, 31, H - 1, 38, 1);
+  clearRect(tiles, H - 2, 39, H - 2, 44);
+  fillRect(tiles, H - 2, 45, H - 1, W - 2, 1);
+
+  // Stepping platforms over lava and ascending routes
+  fillRow(tiles, 20, 4, 8, 2);
+  fillRow(tiles, 18, 10, 15, 2);
+  fillRow(tiles, 16, 6, 10, 2);
+  fillRow(tiles, 20, 18, 23, 2);
+  fillRow(tiles, 18, 26, 31, 2);
+  fillRow(tiles, 16, 22, 26, 2);
+  fillRow(tiles, 14, 28, 33, 2);
+  fillRow(tiles, 20, 36, 40, 2);
+  fillRow(tiles, 18, 42, 46, 2);
+  fillRow(tiles, 14, 38, 42, 2);
+  fillRow(tiles, 12, 16, 20, 2);
+  fillRow(tiles, 10, 34, 38, 2);
+  fillRow(tiles, 8, 22, 26, 2);
+
+  // Stair blocks near lava crossings
+  setTile(tiles, f, 10, 3);
+  setTile(tiles, 22, 11, 3);
+  setTile(tiles, f, 38, 3);
+  setTile(tiles, 22, 39, 3);
+
+  // Lava pillars
+  fillRect(tiles, 5, 14, 14, 15, 1);
+  fillRect(tiles, 5, 34, 14, 35, 1);
+
+  // Cavern ceiling
+  fillRect(tiles, 2, 6, 5, 20, 1);
+  fillRect(tiles, 2, 28, 5, 44, 1);
+
+  // Terrain bumps
+  fillRect(tiles, f, 8, f + 1, 10, 1);
+  fillRect(tiles, f, 32, f + 1, 34, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Magma Descent',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room13', x: 1, y: f, spawnX: 37, spawnY: 21 },
+      { type: 'door', targetRoom: 'room15', x: W - 2, y: f, spawnX: 4, spawnY: 25 },
+      { type: 'ability_orb', ability: 'kick', x: 24, y: 7, hint: 'Press F or K to kick!' },
+      { type: 'coin', x: 12, y: 17 },
+      { type: 'coin', x: 28, y: 13 },
+      { type: 'coin', x: 36, y: 9 },
+      { type: 'coin', x: 18, y: 11 },
+      { type: 'magma_pool', x: 11, y: 24, width: 6 },
+      { type: 'magma_pool', x: 25, y: 24, width: 6 },
+      { type: 'magma_pool', x: 39, y: 24, width: 6 },
+      { type: 'moving_platform', x: 13, y: 22, axis: 'x', range: 128, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 27, y: 22, axis: 'x', range: 128, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 41, y: 22, axis: 'x', range: 128, speed: 1.3, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 20, y: 8, axis: 'y', range: 128, speed: 0.9, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 38, y: 6, axis: 'y', range: 96, speed: 1.0, phase: 1.5, spin: 0 },
+      { type: 'pendulum_trap', x: 12, y: 14, length: 80, swing: 44, speed: 1.6, phase: 0 },
+      { type: 'pendulum_trap', x: 30, y: 10, length: 72, swing: 40, speed: 1.8, phase: 1.0 },
+      { type: 'spike_wall', x: 14, y: 10, width: 16, height: 64 },
+      { type: 'spike_wall', x: 34, y: 10, width: 16, height: 64 },
+      { type: 'spike_wall', x: 11, y: 23, width: 192, height: 16 },
+      { type: 'spike_wall', x: 25, y: 23, width: 192, height: 16 },
+      { type: 'spike_wall', x: 39, y: 23, width: 192, height: 16 },
+      { type: 'crumble_platform', x: 18, y: 18, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'crumble_platform', x: 32, y: 14, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 44, y: 18, collapseDelay: 420, respawnDelay: 2800 },
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 22, y: 19 },
+      { type: 'crawler', x: 36, y: f },
+      { type: 'flyer', x: 16, y: 8 },
+      { type: 'flyer', x: 30, y: 6 },
+      { type: 'flyer', x: 42, y: 8 },
+      { type: 'flyer', x: 10, y: 14 },
+      { type: 'health_pickup', x: 36, y: 9 },
+      { type: 'health_pickup', x: 6, y: f },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 24, y: 1 },
+      { type: 'stalactite', x: 40, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 32, y: 1 },
+      { type: 'stalactite_sm', x: 46, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 36, y: 1 },
+      { type: 'chain', x: 46, y: 1 },
+      { type: 'ruin_arch', x: 10, y: f },
+      { type: 'ruin_arch', x: 32, y: f },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 30, y: 4 },
+      { type: 'glow_spore', x: 44, y: 6 },
+      { type: 'pillar', x: 14, y: 18 },
+      { type: 'pillar_broken', x: 34, y: 18 },
+      { type: 'mud_patch', x: 6, y: f },
+      { type: 'mud_patch', x: 22, y: f },
+      { type: 'gravel_patch', x: 34, y: f },
+      { type: 'gravel_patch', x: 46, y: f },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 4, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 20, y: 6 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 12, h: 10 },
+      { type: 'cb_detail_bricks', x: 28, y: 2, w: 14, h: 10 },
+      { type: 'cb_rune_mark', x: 12, y: 8 },
+      { type: 'cb_rune_mark', x: 26, y: 6 },
+      { type: 'cb_rune_mark', x: 42, y: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 36, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: -8, key: 'warm', alpha: 0.16, scale: 1.3 },
+        { x: 28, y: 0, angle: 5, key: 'warm', alpha: 0.14, scale: 1.1 },
+        { x: 42, y: 0, angle: -6, key: 'warm', alpha: 0.15, scale: 1.2 },
+      ],
+      ambientColor: 0xff6622,
+      ambientAlpha: 0.055,
+    },
+    ambience: 'tunnel_guardian',
+  };
+}
+
+function buildRoom15() {
+  const W = 30, H = 28;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Bottom floor — solid near entry, open center (lava below)
+  fillRect(tiles, H - 2, 1, H - 1, 6, 1);
+  clearRect(tiles, H - 2, 7, H - 2, 22);
+  fillRect(tiles, H - 2, 23, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 7, 22, 1);
+
+  // Ascending zigzag platforms
+  fillRow(tiles, 24, 10, 16, 2);
+  fillRow(tiles, 22, 3, 8, 2);
+  fillRow(tiles, 20, 14, 20, 2);
+  fillRow(tiles, 18, 4, 10, 2);
+  fillRow(tiles, 16, 16, 22, 2);
+  fillRow(tiles, 14, 3, 8, 2);
+  fillRow(tiles, 12, 14, 20, 2);
+  fillRow(tiles, 10, 4, 10, 2);
+  fillRow(tiles, 8, 16, 22, 2);
+  fillRow(tiles, 6, 4, 10, 2);
+  fillRow(tiles, 4, 18, W - 2, 2);
+
+  // Wall column for wall-jumping
+  fillRect(tiles, 10, 12, 20, 13, 1);
+
+  // Cavern ceiling
+  fillRect(tiles, 1, 1, 3, W - 2, 1);
+  clearRect(tiles, 1, 14, 3, 18);
+  clearRect(tiles, 3, 18, 3, W - 2);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, 3, W - 1, 5, W - 1);
+
+  return {
+    name: 'Crucible Depths',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 4, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room14', x: 1, y: f, spawnX: 47, spawnY: 23 },
+      { type: 'door', targetRoom: 'room16', x: W - 2, y: 3, spawnX: 2, spawnY: 19 },
+      { type: 'coin', x: 16, y: 15 },
+      { type: 'coin', x: 6, y: 9 },
+      { type: 'coin', x: 20, y: 7 },
+      { type: 'magma_pool', x: 7, y: 26, width: 16 },
+      { type: 'spike_wall', x: 7, y: 25, width: 512, height: 16 },
+      { type: 'spike_wall', x: 12, y: 16, width: 16, height: 80 },
+      { type: 'pendulum_trap', x: 14, y: 14, length: 72, swing: 42, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 8, y: 8, length: 64, swing: 38, speed: 2.0, phase: 1.0 },
+      { type: 'pendulum_trap', x: 20, y: 4, length: 56, swing: 36, speed: 1.9, phase: 0.5 },
+      { type: 'moving_platform', x: 14, y: 22, axis: 'x', range: 96, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 12, y: 10, axis: 'y', range: 96, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 20, y: 6, axis: 'x', range: 64, speed: 1.3, phase: 1.0, spin: 0 },
+      { type: 'crumble_platform', x: 14, y: 18, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 6, y: 12, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 18, y: 10, collapseDelay: 320, respawnDelay: 2000 },
+      { type: 'crawler', x: 6, y: f },
+      { type: 'crawler', x: 16, y: 21 },
+      { type: 'crawler', x: 6, y: 15 },
+      { type: 'flyer', x: 14, y: 16 },
+      { type: 'flyer', x: 8, y: 10 },
+      { type: 'flyer', x: 18, y: 6 },
+      { type: 'flyer', x: 6, y: 4 },
+      { type: 'health_pickup', x: 8, y: 7 },
+      { type: 'health_pickup', x: 22, y: 3 },
+      { type: 'stalactite', x: 8, y: 1 },
+      { type: 'stalactite', x: 20, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 14, y: 1 },
+      { type: 'stalactite_sm', x: 24, y: 1 },
+      { type: 'chain', x: 6, y: 1 },
+      { type: 'chain', x: 16, y: 1 },
+      { type: 'chain', x: 24, y: 1 },
+      { type: 'glow_spore', x: 8, y: 10 },
+      { type: 'glow_spore', x: 18, y: 6 },
+      { type: 'glow_spore', x: 24, y: 12 },
+      { type: 'ruin_arch', x: 4, y: f },
+      { type: 'ruin_arch', x: 24, y: f },
+      { type: 'vine', x: 10, y: 1 },
+      { type: 'vine', x: 22, y: 1 },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 0, y: 14, flipX: false },
+      { type: 'fg_torch_bracket', x: 1, y: 10 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 10 },
+      { type: 'fg_torch_bracket', x: 1, y: 20 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 2, y: 4, w: 10, h: 12 },
+      { type: 'cb_detail_bricks', x: 16, y: 2, w: 10, h: 10 },
+      { type: 'cb_rune_mark', x: 8, y: 8 },
+      { type: 'cb_rune_mark', x: 20, y: 14 },
+      { type: 'cb_detail_roots', x: 4, y: 1, count: 2 },
+      { type: 'cb_detail_roots', x: 18, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: 0, key: 'warm', alpha: 0.18, scale: 1.5 },
+        { x: 6, y: 0, angle: -8, key: 'warm', alpha: 0.12, scale: 1.0 },
+        { x: 22, y: 0, angle: 8, key: 'warm', alpha: 0.12, scale: 1.0 },
+      ],
+      ambientColor: 0xff4422,
+      ambientAlpha: 0.06,
+    },
+    ambience: 'tunnel_guardian',
+  };
+}
+
+function buildRoom16() {
+  const W = 55, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Floor with hazard gaps
+  clearRect(tiles, H - 2, 12, H - 2, 16);
+  clearRect(tiles, H - 2, 24, H - 2, 28);
+  clearRect(tiles, H - 2, 38, H - 2, 42);
+
+  // Terrain bumps
+  fillRect(tiles, 18, 6, 19, 9, 1);
+  fillRect(tiles, 17, 20, 19, 22, 1);
+  fillRect(tiles, 18, 44, 19, 47, 1);
+
+  // Multi-tier platforms — horizontal gauntlet
+  fillRow(tiles, 16, 4, 9, 2);
+  fillRow(tiles, 14, 12, 17, 2);
+  fillRow(tiles, 12, 6, 10, 2);
+  fillRow(tiles, 16, 18, 23, 2);
+  fillRow(tiles, 14, 26, 31, 2);
+  fillRow(tiles, 12, 20, 25, 2);
+  fillRow(tiles, 10, 28, 34, 2);
+  fillRow(tiles, 16, 34, 39, 2);
+  fillRow(tiles, 14, 42, 47, 2);
+  fillRow(tiles, 10, 40, 44, 2);
+  fillRow(tiles, 8, 14, 18, 2);
+  fillRow(tiles, 8, 46, 51, 2);
+  fillRow(tiles, 6, 30, 34, 2);
+  fillRow(tiles, 16, 48, 52, 2);
+
+  // Lava pillars
+  fillRect(tiles, 5, 10, 12, 11, 1);
+  fillRect(tiles, 5, 36, 12, 37, 1);
+
+  // Cavern ceiling
+  fillRect(tiles, 2, 6, 5, 22, 1);
+  fillRect(tiles, 2, 28, 5, 48, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Ember Halls',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room15', x: 1, y: f, spawnX: 27, spawnY: 3 },
+      { type: 'door', targetRoom: 'room17', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
+      { type: 'teleport', targetRoom: 'room20', x: 32, y: 5, spawnX: 26, spawnY: 19 },
+      { type: 'coin', x: 8, y: 11 },
+      { type: 'coin', x: 22, y: 11 },
+      { type: 'coin', x: 42, y: 9 },
+      { type: 'coin', x: 16, y: 7 },
+      { type: 'coin', x: 48, y: 7 },
+      { type: 'magma_pool', x: 12, y: 20, width: 5 },
+      { type: 'magma_pool', x: 24, y: 20, width: 5 },
+      { type: 'magma_pool', x: 38, y: 20, width: 5 },
+      { type: 'moving_platform', x: 14, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 26, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 40, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'pendulum_trap', x: 16, y: 10, length: 80, swing: 46, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 26, y: 8, length: 72, swing: 42, speed: 2.0, phase: 1.0 },
+      { type: 'pendulum_trap', x: 42, y: 10, length: 80, swing: 44, speed: 1.7, phase: 0.5 },
+      { type: 'spike_wall', x: 10, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 36, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 12, y: 19, width: 160, height: 16 },
+      { type: 'spike_wall', x: 24, y: 19, width: 160, height: 16 },
+      { type: 'spike_wall', x: 38, y: 19, width: 160, height: 16 },
+      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 30, y: 10, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 44, y: 14, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'crawler', x: 10, y: f },
+      { type: 'crawler', x: 30, y: f },
+      { type: 'crawler', x: 46, y: f },
+      { type: 'flyer', x: 14, y: 6 },
+      { type: 'flyer', x: 28, y: 4 },
+      { type: 'flyer', x: 44, y: 6 },
+      { type: 'flyer', x: 20, y: 10 },
+      { type: 'flyer', x: 38, y: 8 },
+      { type: 'health_pickup', x: 20, y: 11 },
+      { type: 'health_pickup', x: 50, y: 7 },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 26, y: 1 },
+      { type: 'stalactite', x: 42, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 50, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 38, y: 1 },
+      { type: 'chain', x: 50, y: 1 },
+      { type: 'ruin_arch', x: 12, y: f },
+      { type: 'ruin_arch', x: 30, y: f },
+      { type: 'ruin_arch', x: 46, y: f },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 32, y: 4 },
+      { type: 'glow_spore', x: 48, y: 6 },
+      { type: 'pillar', x: 10, y: 16 },
+      { type: 'pillar_broken', x: 36, y: 16 },
+      { type: 'mud_patch', x: 6, y: f },
+      { type: 'mud_patch', x: 34, y: f },
+      { type: 'gravel_patch', x: 20, y: f },
+      { type: 'gravel_patch', x: 44, y: f },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 4, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 24, y: 6 },
+      { type: 'fg_torch_bracket', x: 42, y: 6 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 14, h: 10 },
+      { type: 'cb_detail_bricks', x: 28, y: 2, w: 12, h: 8 },
+      { type: 'cb_detail_bricks', x: 44, y: 4, w: 8, h: 8 },
+      { type: 'cb_rune_mark', x: 12, y: 8 },
+      { type: 'cb_rune_mark', x: 28, y: 6 },
+      { type: 'cb_rune_mark', x: 46, y: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 36, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: -8, key: 'warm', alpha: 0.16, scale: 1.3 },
+        { x: 28, y: 0, angle: 5, key: 'warm', alpha: 0.14, scale: 1.1 },
+        { x: 46, y: 0, angle: -10, key: 'warm', alpha: 0.15, scale: 1.2 },
+      ],
+      ambientColor: 0xff5522,
+      ambientAlpha: 0.05,
+    },
+    ambience: 'tunnel_guardian',
+  };
+}
+
+function buildRoom17() {
+  const W = 44, H = 24;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Arena floor
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Raised side platforms
+  fillRow(tiles, 18, 3, 8, 2);
+  fillRow(tiles, 18, W - 9, W - 4, 2);
+  fillRow(tiles, 14, 4, 10, 2);
+  fillRow(tiles, 14, W - 11, W - 5, 2);
+  fillRow(tiles, 10, 6, 10, 2);
+  fillRow(tiles, 10, W - 11, W - 7, 2);
+
+  // Central elevated platform
+  fillRow(tiles, 16, 16, 28, 2);
+  fillRow(tiles, 12, 18, 26, 2);
+  fillRow(tiles, 8, 20, 24, 2);
+
+  // Arena pillars
+  fillRect(tiles, 4, 12, 16, 12, 1);
+  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+
+  // Vaulted ceiling
+  fillRect(tiles, 2, 4, 5, W - 5, 1);
+  clearRect(tiles, 3, 18, 4, 26);
+
+  // Lava pits near pillars
+  clearRect(tiles, H - 2, 13, H - 2, 16);
+  clearRect(tiles, H - 2, W - 17, H - 2, W - 14);
+
+  // Terrain bumps
+  fillRect(tiles, f, 10, f + 1, 11, 1);
+  fillRect(tiles, f, W - 12, f + 1, W - 11, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Inferno Guardian',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room16', x: 1, y: f, spawnX: 52, spawnY: 19 },
+      { type: 'door', targetRoom: 'room18', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
+      { type: 'bench', x: 22, y: 7 },
+      { type: 'brute', x: 16, y: f },
+      { type: 'brute', x: 28, y: f },
+      { type: 'brute', x: 22, y: 15 },
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 36, y: f },
+      { type: 'crawler', x: 20, y: 15 },
+      { type: 'crawler', x: 26, y: 15 },
+      { type: 'flyer', x: 10, y: 6 },
+      { type: 'flyer', x: 22, y: 4 },
+      { type: 'flyer', x: 34, y: 6 },
+      { type: 'flyer', x: 16, y: 10 },
+      { type: 'flyer', x: 28, y: 10 },
+      { type: 'magma_pool', x: 13, y: 22, width: 4 },
+      { type: 'magma_pool', x: W - 17, y: 22, width: 4 },
+      { type: 'spike_wall', x: 12, y: 8, width: 16, height: 96 },
+      { type: 'spike_wall', x: W - 13, y: 8, width: 16, height: 96 },
+      { type: 'spike_wall', x: 13, y: 21, width: 128, height: 16 },
+      { type: 'spike_wall', x: W - 17, y: 21, width: 128, height: 16 },
+      { type: 'pendulum_trap', x: 22, y: 6, length: 80, swing: 48, speed: 1.9, phase: 0 },
+      { type: 'pendulum_trap', x: 14, y: 10, length: 72, swing: 42, speed: 1.7, phase: 1.2 },
+      { type: 'pendulum_trap', x: 30, y: 10, length: 72, swing: 42, speed: 1.7, phase: 0.6 },
+      { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 160, speed: 1.3, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 12, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: W - 13, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 1.5, spin: 0 },
+      { type: 'health_pickup', x: 22, y: 11 },
+      { type: 'health_pickup', x: 8, y: 13 },
+      { type: 'health_pickup', x: W - 9, y: 13 },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 22, y: 1 },
+      { type: 'stalactite', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 16, y: 1 },
+      { type: 'stalactite_sm', x: 28, y: 1 },
+      { type: 'stalactite_sm', x: 38, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 20, y: 1 },
+      { type: 'chain', x: 24, y: 1 },
+      { type: 'chain', x: 36, y: 1 },
+      { type: 'pillar', x: 12, y: f },
+      { type: 'pillar', x: W - 13, y: f },
+      { type: 'ruin_arch', x: 16, y: f },
+      { type: 'ruin_arch', x: 28, y: f },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 22, y: 3 },
+      { type: 'glow_spore', x: 30, y: 6 },
+      { type: 'hanging_moss', x: 20, y: 2 },
+      { type: 'hanging_moss', x: 26, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_pillar_fragment', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_pillar_fragment', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 1, y: 16 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 16 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 2, w: 16, h: 14 },
+      { type: 'cb_detail_bricks', x: 26, y: 2, w: 14, h: 14 },
+      { type: 'cb_rune_mark', x: 10, y: 6 },
+      { type: 'cb_rune_mark', x: 22, y: 10 },
+      { type: 'cb_rune_mark', x: 34, y: 6 },
+      { type: 'cb_rune_mark', x: 16, y: 16 },
+      { type: 'cb_rune_mark', x: 28, y: 16 },
+    ],
+    lighting: {
+      beams: [
+        { x: 22, y: 0, angle: 0, key: 'warm', alpha: 0.18, scale: 1.8 },
+        { x: 10, y: 0, angle: -12, key: 'warm', alpha: 0.12, scale: 1.2 },
+        { x: 34, y: 0, angle: 12, key: 'warm', alpha: 0.12, scale: 1.2 },
+      ],
+      ambientColor: 0xff3322,
+      ambientAlpha: 0.06,
+    },
+    locked: true,
+    ambience: 'tunnel_guardian',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SHADOW SANCTUM  (rooms 18–21)
+// ═══════════════════════════════════════════════════════════════
+
+function buildRoom18() {
+  const W = 50, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Shadow terrain bumps
+  fillRect(tiles, 18, 8, 19, 11, 1);
+  fillRect(tiles, 17, 24, 19, 27, 1);
+  fillRect(tiles, 18, 38, 19, 41, 1);
+
+  // Shadow pits in floor
+  clearRect(tiles, H - 2, 14, H - 2, 18);
+  clearRect(tiles, H - 2, 32, H - 2, 36);
+
+  // Horizontal traversal platforms
+  fillRow(tiles, 16, 4, 9, 2);
+  fillRow(tiles, 14, 12, 17, 2);
+  fillRow(tiles, 12, 6, 10, 2);
+  fillRow(tiles, 16, 20, 26, 2);
+  fillRow(tiles, 14, 28, 33, 2);
+  fillRow(tiles, 12, 22, 27, 2);
+  fillRow(tiles, 10, 30, 35, 2);
+  fillRow(tiles, 16, 38, 43, 2);
+  fillRow(tiles, 14, 44, 47, 2);
+  fillRow(tiles, 8, 16, 20, 2);
+  fillRow(tiles, 8, 36, 40, 2);
+
+  setTile(tiles, f, 4, 3);
+  setTile(tiles, 18, 5, 3);
+
+  // Shadow pillars
+  fillRect(tiles, 5, 14, 12, 15, 1);
+  fillRect(tiles, 5, 34, 12, 35, 1);
+
+  // Ceiling bands
+  fillRect(tiles, 2, 6, 5, 22, 1);
+  fillRect(tiles, 2, 28, 5, 46, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Shadow Gate',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room17', x: 1, y: f, spawnX: 41, spawnY: 21 },
+      { type: 'door', targetRoom: 'room19', x: W - 2, y: f, spawnX: 2, spawnY: 4 },
+      { type: 'bench', x: 24, y: 11 },
+      { type: 'npc', npcType: 'spirit', x: 10, y: f, dialogue: [
+        'You have crossed from the burning halls into the Shadow Sanctum. Few mortals tread this far.',
+        'This place exists between worlds — not quite alive, not quite dead. The shadows here remember the kingdom that was.',
+        'The Bone Tyrant\'s reach extends even here, but his grip is weaker. The shadows obey older laws.',
+        'Be wary of the Phantom Corridors ahead. They shift and twist. Trust your instincts over your eyes.',
+        'If you survive the Sanctum, you will find paths to older, stranger places. Places even the Tyrant fears.',
+      ]},
+      { type: 'coin', x: 8, y: 11 },
+      { type: 'coin', x: 26, y: 11 },
+      { type: 'coin', x: 42, y: 13 },
+      { type: 'coin', x: 18, y: 7 },
+      { type: 'crawler', x: 12, y: f },
+      { type: 'crawler', x: 30, y: f },
+      { type: 'crawler', x: 44, y: f },
+      { type: 'flyer', x: 16, y: 6 },
+      { type: 'flyer', x: 30, y: 4 },
+      { type: 'flyer', x: 42, y: 6 },
+      { type: 'magma_pool', x: 14, y: 20, width: 5 },
+      { type: 'magma_pool', x: 32, y: 20, width: 5 },
+      { type: 'moving_platform', x: 16, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 34, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'pendulum_trap', x: 22, y: 10, length: 72, swing: 42, speed: 1.6, phase: 0 },
+      { type: 'spike_wall', x: 14, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 34, y: 8, width: 16, height: 64 },
+      { type: 'crumble_platform', x: 20, y: 14, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'crumble_platform', x: 40, y: 16, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'health_pickup', x: 38, y: 7 },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 26, y: 1 },
+      { type: 'stalactite', x: 42, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 46, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 38, y: 1 },
+      { type: 'chain', x: 48, y: 1 },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 30, y: 4 },
+      { type: 'glow_spore', x: 44, y: 6 },
+      { type: 'ruin_arch', x: 12, y: f },
+      { type: 'ruin_arch', x: 32, y: f },
+      { type: 'hanging_moss', x: 20, y: 2 },
+      { type: 'hanging_moss', x: 36, y: 2 },
+      { type: 'gravel_patch', x: 6, y: f },
+      { type: 'gravel_patch', x: 28, y: f },
+      { type: 'mud_patch', x: 20, y: f },
+      { type: 'mud_patch', x: 44, y: f },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 4, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 14, h: 10 },
+      { type: 'cb_detail_bricks', x: 28, y: 2, w: 12, h: 8 },
+      { type: 'cb_rune_mark', x: 12, y: 8 },
+      { type: 'cb_rune_mark', x: 30, y: 6 },
+      { type: 'cb_rune_mark', x: 44, y: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 36, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: -8, key: 'cool', alpha: 0.10, scale: 1.2 },
+        { x: 28, y: 0, angle: 5, key: 'cool', alpha: 0.08, scale: 1.0 },
+        { x: 44, y: 0, angle: -6, key: 'cool', alpha: 0.10, scale: 1.1 },
+      ],
+      ambientColor: 0x443366,
+      ambientAlpha: 0.06,
+    },
+    ambience: 'tunnel',
+  };
+}
+
+function buildRoom19() {
+  const W = 24, H = 30;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Bottom floor
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Descending zigzag platforms — pendulum gauntlet
+  fillRow(tiles, 4, 3, 8, 2);
+  fillRow(tiles, 6, 14, 20, 2);
+  fillRow(tiles, 8, 3, 9, 2);
+  fillRow(tiles, 10, 12, 18, 2);
+  fillRow(tiles, 12, 4, 10, 2);
+  fillRow(tiles, 14, 14, 20, 2);
+  fillRow(tiles, 16, 3, 9, 2);
+  fillRow(tiles, 18, 12, 18, 2);
+  fillRow(tiles, 20, 4, 10, 2);
+  fillRow(tiles, 22, 14, 20, 2);
+  fillRow(tiles, 24, 3, 8, 2);
+  fillRow(tiles, 26, 14, 20, 2);
+
+  // Wall columns for wall-sliding
+  fillRect(tiles, 8, 10, 16, 11, 1);
+  fillRect(tiles, 18, 10, 24, 11, 1);
+
+  // Phantom ceiling
+  fillRect(tiles, 1, 1, 3, W - 2, 1);
+  clearRect(tiles, 1, 3, 3, 8);
+  clearRect(tiles, 3, 14, 3, 20);
+
+  // Terrain bumps at bottom
+  fillRect(tiles, 26, 4, 27, 6, 1);
+
+  // Door openings
+  clearRect(tiles, 3, 0, 5, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Phantom Corridors',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 5, y: 3 },
+    objects: [
+      { type: 'door', targetRoom: 'room18', x: 1, y: 4, spawnX: 47, spawnY: 19 },
+      { type: 'door', targetRoom: 'room20', x: W - 2, y: f, spawnX: 2, spawnY: 19 },
+      { type: 'coin', x: 16, y: 9 },
+      { type: 'coin', x: 6, y: 15 },
+      { type: 'coin', x: 18, y: 21 },
+      { type: 'pendulum_trap', x: 12, y: 6, length: 64, swing: 38, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 6, y: 10, length: 72, swing: 42, speed: 1.8, phase: 0.8 },
+      { type: 'pendulum_trap', x: 16, y: 14, length: 64, swing: 40, speed: 1.9, phase: 1.5 },
+      { type: 'pendulum_trap', x: 6, y: 18, length: 72, swing: 44, speed: 1.6, phase: 0.3 },
+      { type: 'pendulum_trap', x: 16, y: 22, length: 64, swing: 38, speed: 2.0, phase: 1.0 },
+      { type: 'pendulum_trap', x: 8, y: 26, length: 56, swing: 36, speed: 1.8, phase: 0.5 },
+      { type: 'flyer', x: 12, y: 8 },
+      { type: 'flyer', x: 8, y: 14 },
+      { type: 'flyer', x: 16, y: 20 },
+      { type: 'flyer', x: 6, y: 24 },
+      { type: 'spike_wall', x: 10, y: 12, width: 16, height: 80 },
+      { type: 'spike_wall', x: 10, y: 20, width: 16, height: 80 },
+      { type: 'magma_pool', x: 8, y: 28, width: 8 },
+      { type: 'moving_platform', x: 12, y: 12, axis: 'x', range: 64, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 12, y: 20, axis: 'x', range: 64, speed: 1.0, phase: 1.0, spin: 0 },
+      { type: 'crumble_platform', x: 14, y: 10, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 6, y: 16, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 16, y: 22, collapseDelay: 320, respawnDelay: 2000 },
+      { type: 'health_pickup', x: 6, y: 11 },
+      { type: 'health_pickup', x: 18, y: 25 },
+      { type: 'stalactite', x: 6, y: 1 },
+      { type: 'stalactite', x: 16, y: 1 },
+      { type: 'stalactite_sm', x: 3, y: 1 },
+      { type: 'stalactite_sm', x: 12, y: 1 },
+      { type: 'stalactite_sm', x: 20, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 18, y: 1 },
+      { type: 'glow_spore', x: 6, y: 8 },
+      { type: 'glow_spore', x: 16, y: 16 },
+      { type: 'glow_spore', x: 8, y: 24 },
+      { type: 'vine', x: 4, y: 1 },
+      { type: 'vine', x: 14, y: 1 },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 0, y: 14, flipX: false },
+      { type: 'fg_torch_bracket', x: 1, y: 10 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 12 },
+      { type: 'fg_torch_bracket', x: 1, y: 22 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 2, y: 4, w: 8, h: 12 },
+      { type: 'cb_detail_bricks', x: 12, y: 14, w: 8, h: 10 },
+      { type: 'cb_rune_mark', x: 6, y: 8 },
+      { type: 'cb_rune_mark', x: 16, y: 18 },
+      { type: 'cb_detail_roots', x: 4, y: 1, count: 2 },
+      { type: 'cb_detail_roots', x: 14, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 12, y: 0, angle: 0, key: 'cool', alpha: 0.08, scale: 1.4 },
+        { x: 6, y: 0, angle: -6, key: 'cool', alpha: 0.06, scale: 0.9 },
+        { x: 18, y: 0, angle: 6, key: 'cool', alpha: 0.06, scale: 0.9 },
+      ],
+      ambientColor: 0x332255,
+      ambientAlpha: 0.07,
+    },
+    ambience: 'tunnel',
+  };
+}
+
+function buildRoom20() {
+  const W = 55, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Floor with spectral gaps
+  clearRect(tiles, H - 2, 14, H - 2, 18);
+  clearRect(tiles, H - 2, 30, H - 2, 34);
+  clearRect(tiles, H - 2, 42, H - 2, 46);
+
+  // Terrain bumps
+  fillRect(tiles, 18, 6, 19, 9, 1);
+  fillRect(tiles, 17, 22, 19, 24, 1);
+  fillRect(tiles, 18, 48, 19, 51, 1);
+
+  // Multi-tier platforms — wide nave layout
+  fillRow(tiles, 16, 4, 9, 2);
+  fillRow(tiles, 14, 12, 17, 2);
+  fillRow(tiles, 12, 6, 10, 2);
+  fillRow(tiles, 16, 20, 26, 2);
+  fillRow(tiles, 14, 28, 33, 2);
+  fillRow(tiles, 12, 22, 28, 2);
+  fillRow(tiles, 10, 32, 38, 2);
+  fillRow(tiles, 16, 36, 41, 2);
+  fillRow(tiles, 14, 44, 50, 2);
+  fillRow(tiles, 10, 44, 48, 2);
+  fillRow(tiles, 8, 16, 20, 2);
+  fillRow(tiles, 8, 38, 42, 2);
+  fillRow(tiles, 6, 26, 30, 2);
+
+  // Spectral pillars
+  fillRect(tiles, 5, 12, 12, 13, 1);
+  fillRect(tiles, 5, 40, 12, 41, 1);
+
+  // Nave ceiling arches
+  fillRect(tiles, 2, 6, 5, 22, 1);
+  fillRect(tiles, 2, 28, 5, 48, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Spectral Nave',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room19', x: 1, y: f, spawnX: 21, spawnY: 27 },
+      { type: 'door', targetRoom: 'room21', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
+      { type: 'teleport', targetRoom: 'room16', x: 28, y: 5, spawnX: 50, spawnY: 19 },
+      { type: 'merchant_shop', x: 36, y: 9, items: [
+        { name: 'Health Refill', cost: 5, type: 'heal' },
+        { name: 'Max HP +1', cost: 20, type: 'maxhp' },
+      ], dialogue: [
+        'Shadows make fine customers — they never haggle. You, however, look like the haggling type.',
+        'Coin for health, coin for power. Spend wisely — the Shadow Warden ahead does not forgive mistakes.',
+      ]},
+      { type: 'coin', x: 8, y: 11 },
+      { type: 'coin', x: 18, y: 7 },
+      { type: 'coin', x: 34, y: 9 },
+      { type: 'coin', x: 46, y: 9 },
+      { type: 'coin', x: 28, y: 5 },
+      { type: 'crawler', x: 10, y: f },
+      { type: 'crawler', x: 30, y: 13 },
+      { type: 'crawler', x: 48, y: f },
+      { type: 'flyer', x: 16, y: 6 },
+      { type: 'flyer', x: 32, y: 4 },
+      { type: 'flyer', x: 46, y: 8 },
+      { type: 'magma_pool', x: 14, y: 20, width: 5 },
+      { type: 'magma_pool', x: 30, y: 20, width: 5 },
+      { type: 'magma_pool', x: 42, y: 20, width: 5 },
+      { type: 'moving_platform', x: 16, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 32, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 44, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 0.5, spin: 0 },
+      { type: 'pendulum_trap', x: 22, y: 10, length: 72, swing: 42, speed: 1.6, phase: 0 },
+      { type: 'pendulum_trap', x: 38, y: 8, length: 64, swing: 38, speed: 1.8, phase: 1.2 },
+      { type: 'spike_wall', x: 12, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 40, y: 8, width: 16, height: 64 },
+      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 420, respawnDelay: 2600 },
+      { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'health_pickup', x: 24, y: 11 },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 26, y: 1 },
+      { type: 'stalactite', x: 44, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 36, y: 1 },
+      { type: 'stalactite_sm', x: 50, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 38, y: 1 },
+      { type: 'chain', x: 50, y: 1 },
+      { type: 'crystal', x: 6, y: f },
+      { type: 'crystal', x: 22, y: f },
+      { type: 'crystal', x: 38, y: f },
+      { type: 'crystal_cluster', x: 12, y: f },
+      { type: 'crystal_cluster', x: 34, y: f },
+      { type: 'crystal_cluster', x: 50, y: f },
+      { type: 'light_beam', x: 16, y: 1 },
+      { type: 'light_beam', x: 32, y: 1 },
+      { type: 'light_beam', x: 48, y: 1 },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 30, y: 4 },
+      { type: 'glow_spore', x: 46, y: 6 },
+      { type: 'ruin_arch', x: 10, y: f },
+      { type: 'ruin_arch', x: 34, y: f },
+      { type: 'pillar', x: 12, y: 16 },
+      { type: 'pillar_broken', x: 40, y: 16 },
+      { type: 'hanging_moss', x: 18, y: 2 },
+      { type: 'hanging_moss', x: 38, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 4, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 26, y: 6 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 12, h: 8 },
+      { type: 'cb_detail_bricks', x: 24, y: 2, w: 14, h: 10 },
+      { type: 'cb_detail_bricks', x: 44, y: 4, w: 8, h: 8 },
+      { type: 'cb_rune_mark', x: 10, y: 8 },
+      { type: 'cb_rune_mark', x: 28, y: 6 },
+      { type: 'cb_rune_mark', x: 46, y: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 36, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: -8, key: 'cool', alpha: 0.10, scale: 1.3 },
+        { x: 28, y: 0, angle: 5, key: 'cool', alpha: 0.08, scale: 1.0 },
+        { x: 46, y: 0, angle: -6, key: 'cool', alpha: 0.10, scale: 1.2 },
+      ],
+      ambientColor: 0x553388,
+      ambientAlpha: 0.055,
+    },
+    ambience: 'tunnel',
+  };
+}
+
+function buildRoom21() {
+  const W = 44, H = 24;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Arena floor
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Raised side platforms
+  fillRow(tiles, 18, 3, 8, 2);
+  fillRow(tiles, 18, W - 9, W - 4, 2);
+  fillRow(tiles, 14, 4, 10, 2);
+  fillRow(tiles, 14, W - 11, W - 5, 2);
+  fillRow(tiles, 10, 6, 10, 2);
+  fillRow(tiles, 10, W - 11, W - 7, 2);
+
+  // Central platforms
+  fillRow(tiles, 16, 16, 28, 2);
+  fillRow(tiles, 12, 18, 26, 2);
+  fillRow(tiles, 8, 20, 24, 2);
+
+  // Shadow arena pillars
+  fillRect(tiles, 4, 12, 16, 12, 1);
+  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+
+  // Vaulted ceiling
+  fillRect(tiles, 2, 4, 5, W - 5, 1);
+  clearRect(tiles, 3, 18, 4, 26);
+
+  // Shadow pits near pillars
+  clearRect(tiles, H - 2, 13, H - 2, 16);
+  clearRect(tiles, H - 2, W - 17, H - 2, W - 14);
+
+  // Terrain bumps
+  fillRect(tiles, f, 10, f + 1, 11, 1);
+  fillRect(tiles, f, W - 12, f + 1, W - 11, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Shadow Warden',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room20', x: 1, y: f, spawnX: 52, spawnY: 19 },
+      { type: 'door', targetRoom: 'room22', x: W - 2, y: f, spawnX: 2, spawnY: 19 },
+      { type: 'bench', x: 5, y: f },
+      { type: 'brute', x: 16, y: f },
+      { type: 'brute', x: 28, y: f },
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 36, y: f },
+      { type: 'crawler', x: 20, y: 15 },
+      { type: 'crawler', x: 26, y: 15 },
+      { type: 'flyer', x: 10, y: 6 },
+      { type: 'flyer', x: 22, y: 4 },
+      { type: 'flyer', x: 34, y: 6 },
+      { type: 'flyer', x: 16, y: 10 },
+      { type: 'flyer', x: 28, y: 10 },
+      { type: 'magma_pool', x: 13, y: 22, width: 4 },
+      { type: 'magma_pool', x: W - 17, y: 22, width: 4 },
+      { type: 'spike_wall', x: 12, y: 8, width: 16, height: 96 },
+      { type: 'spike_wall', x: W - 13, y: 8, width: 16, height: 96 },
+      { type: 'spike_wall', x: 13, y: 21, width: 128, height: 16 },
+      { type: 'spike_wall', x: W - 17, y: 21, width: 128, height: 16 },
+      { type: 'pendulum_trap', x: 22, y: 6, length: 80, swing: 48, speed: 1.9, phase: 0 },
+      { type: 'pendulum_trap', x: 14, y: 10, length: 72, swing: 42, speed: 1.7, phase: 1.2 },
+      { type: 'pendulum_trap', x: 30, y: 10, length: 72, swing: 42, speed: 1.7, phase: 0.6 },
+      { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 160, speed: 1.3, phase: 0, spin: 0 },
+      { type: 'health_pickup', x: 22, y: 7 },
+      { type: 'health_pickup', x: 8, y: 13 },
+      { type: 'health_pickup', x: W - 9, y: 13 },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 22, y: 1 },
+      { type: 'stalactite', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 16, y: 1 },
+      { type: 'stalactite_sm', x: 28, y: 1 },
+      { type: 'stalactite_sm', x: 38, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 20, y: 1 },
+      { type: 'chain', x: 24, y: 1 },
+      { type: 'chain', x: 36, y: 1 },
+      { type: 'pillar', x: 12, y: f },
+      { type: 'pillar', x: W - 13, y: f },
+      { type: 'ruin_arch', x: 16, y: f },
+      { type: 'ruin_arch', x: 28, y: f },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 22, y: 3 },
+      { type: 'glow_spore', x: 30, y: 6 },
+      { type: 'hanging_moss', x: 20, y: 2 },
+      { type: 'hanging_moss', x: 26, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_pillar_fragment', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_pillar_fragment', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 1, y: 16 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 16 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 2, w: 16, h: 14 },
+      { type: 'cb_detail_bricks', x: 26, y: 2, w: 14, h: 14 },
+      { type: 'cb_rune_mark', x: 10, y: 6 },
+      { type: 'cb_rune_mark', x: 22, y: 10 },
+      { type: 'cb_rune_mark', x: 34, y: 6 },
+      { type: 'cb_rune_mark', x: 16, y: 16 },
+      { type: 'cb_rune_mark', x: 28, y: 16 },
+    ],
+    lighting: {
+      beams: [
+        { x: 22, y: 0, angle: 0, key: 'cool', alpha: 0.12, scale: 1.6 },
+        { x: 10, y: 0, angle: -12, key: 'cool', alpha: 0.08, scale: 1.0 },
+        { x: 34, y: 0, angle: 12, key: 'cool', alpha: 0.08, scale: 1.0 },
+      ],
+      ambientColor: 0x442266,
+      ambientAlpha: 0.065,
+    },
+    locked: true,
+    ambience: 'tunnel',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ANCIENT LIBRARY  (rooms 22–25)
+// ═══════════════════════════════════════════════════════════════
+
+function buildRoom22() {
+  const W = 50, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Broken bridge gaps in floor
+  clearRect(tiles, H - 2, 12, H - 2, 16);
+  clearRect(tiles, H - 2, 28, H - 2, 32);
+
+  // Terrain bumps — rubble piles
+  fillRect(tiles, 18, 6, 19, 9, 1);
+  fillRect(tiles, 17, 20, 19, 23, 1);
+  fillRect(tiles, 18, 36, 19, 39, 1);
+
+  // Horizontal platforms — archive shelves
+  fillRow(tiles, 16, 4, 9, 2);
+  fillRow(tiles, 14, 12, 16, 2);
+  fillRow(tiles, 12, 4, 8, 2);
+  fillRow(tiles, 16, 18, 24, 2);
+  fillRow(tiles, 14, 26, 32, 2);
+  fillRow(tiles, 12, 20, 26, 2);
+  fillRow(tiles, 10, 28, 34, 2);
+  fillRow(tiles, 16, 34, 40, 2);
+  fillRow(tiles, 14, 42, 47, 2);
+  fillRow(tiles, 10, 40, 44, 2);
+  fillRow(tiles, 8, 14, 18, 2);
+  fillRow(tiles, 8, 34, 38, 2);
+
+  setTile(tiles, f, 4, 3);
+  setTile(tiles, 18, 5, 3);
+
+  // Archive pillars
+  fillRect(tiles, 5, 10, 12, 11, 1);
+  fillRect(tiles, 5, 34, 12, 35, 1);
+
+  // Ceiling — crumbling stone
+  fillRect(tiles, 2, 6, 5, 20, 1);
+  fillRect(tiles, 2, 26, 5, 44, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Ruined Archives',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room21', x: 1, y: f, spawnX: 41, spawnY: 21 },
+      { type: 'door', targetRoom: 'room23', x: W - 2, y: f, spawnX: 2, spawnY: 29 },
+      { type: 'npc', npcType: 'hermit', x: 8, y: f, dialogue: [
+        'Welcome to the Ruined Archives. Or what remains of them.',
+        'These shelves once held every text ever written in the kingdom of Ur-Karath. Treaties, poems, histories — all of it.',
+        'When the Bone Tyrant turned, the scholars tried to preserve what they could. They failed. The knowledge rotted with the rest.',
+        'But fragments remain. The walls themselves hold echoes of what was written here. If you listen closely, you can almost hear the words.',
+        'The Scholar\'s Tower above still stands, mostly. If you can reach the top, you may find something worth the climb.',
+      ]},
+      { type: 'coin', x: 8, y: 11 },
+      { type: 'coin', x: 22, y: 11 },
+      { type: 'coin', x: 38, y: 7 },
+      { type: 'coin', x: 16, y: 7 },
+      { type: 'crawler', x: 14, y: f },
+      { type: 'crawler', x: 30, y: 13 },
+      { type: 'crawler', x: 44, y: f },
+      { type: 'flyer', x: 16, y: 6 },
+      { type: 'flyer', x: 30, y: 4 },
+      { type: 'flyer', x: 44, y: 8 },
+      { type: 'magma_pool', x: 12, y: 20, width: 5 },
+      { type: 'magma_pool', x: 28, y: 20, width: 5 },
+      { type: 'moving_platform', x: 14, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 30, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'pendulum_trap', x: 20, y: 10, length: 72, swing: 40, speed: 1.5, phase: 0 },
+      { type: 'spike_wall', x: 10, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 34, y: 8, width: 16, height: 64 },
+      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 450, respawnDelay: 2800 },
+      { type: 'crumble_platform', x: 36, y: 10, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'health_pickup', x: 24, y: 11 },
+      { type: 'fungus', x: 3, y: f },
+      { type: 'fungus', x: 18, y: f },
+      { type: 'fungus', x: 34, y: f },
+      { type: 'fungus', x: 46, y: f },
+      { type: 'fungus_small', x: 10, y: f },
+      { type: 'fungus_small', x: 26, y: f },
+      { type: 'fungus_small', x: 42, y: f },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 24, y: 1 },
+      { type: 'stalactite', x: 40, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 32, y: 1 },
+      { type: 'stalactite_sm', x: 46, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 38, y: 1 },
+      { type: 'vine', x: 14, y: 1 },
+      { type: 'vine', x: 30, y: 1 },
+      { type: 'vine', x: 44, y: 1 },
+      { type: 'glow_spore', x: 12, y: 6 },
+      { type: 'glow_spore', x: 28, y: 4 },
+      { type: 'glow_spore', x: 42, y: 6 },
+      { type: 'ruin_arch', x: 10, y: f },
+      { type: 'ruin_arch', x: 30, y: f },
+      { type: 'hanging_moss', x: 16, y: 2 },
+      { type: 'hanging_moss', x: 34, y: 2 },
+      { type: 'gravel_patch', x: 6, y: f },
+      { type: 'gravel_patch', x: 26, y: f },
+      { type: 'mud_patch', x: 16, y: f },
+      { type: 'mud_patch', x: 40, y: f },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_mushroom_large', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 4, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 12, h: 8 },
+      { type: 'cb_detail_bricks', x: 26, y: 2, w: 14, h: 10 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 4 },
+      { type: 'cb_detail_roots', x: 32, y: 1, count: 3 },
+      { type: 'cb_rune_mark', x: 12, y: 8 },
+      { type: 'cb_rune_mark', x: 28, y: 6 },
+      { type: 'cb_rune_mark', x: 44, y: 8 },
+    ],
+    lighting: {
+      beams: [
+        { x: 12, y: 0, angle: -6, key: 'warm', alpha: 0.12, scale: 1.2 },
+        { x: 26, y: 0, angle: 5, key: 'warm', alpha: 0.10, scale: 1.0 },
+        { x: 42, y: 0, angle: -8, key: 'warm', alpha: 0.11, scale: 1.1 },
+      ],
+      ambientColor: 0x66aa44,
+      ambientAlpha: 0.045,
+    },
+    ambience: 'tunnel_fungal',
+  };
+}
+
+function buildRoom23() {
+  const W = 24, H = 32;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Bottom floor
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Ascending zigzag — wall-jump required for some shortcuts
+  fillRow(tiles, 28, 3, 8, 2);
+  fillRow(tiles, 26, 14, 20, 2);
+  fillRow(tiles, 24, 3, 9, 2);
+  fillRow(tiles, 22, 13, 19, 2);
+  fillRow(tiles, 20, 4, 10, 2);
+  fillRow(tiles, 18, 14, 20, 2);
+  fillRow(tiles, 16, 3, 8, 2);
+  fillRow(tiles, 14, 12, 18, 2);
+  fillRow(tiles, 12, 4, 10, 2);
+  fillRow(tiles, 10, 14, 20, 2);
+  fillRow(tiles, 8, 3, 8, 2);
+  fillRow(tiles, 6, 14, 20, 2);
+  fillRow(tiles, 4, 16, 22, 2);
+
+  // Wall columns for wall-jumping
+  fillRect(tiles, 12, 10, 22, 11, 1);
+  fillRect(tiles, 6, 10, 12, 11, 1);
+
+  // Tower ceiling
+  fillRect(tiles, 1, 1, 3, W - 2, 1);
+  clearRect(tiles, 1, 10, 3, 14);
+  clearRect(tiles, 3, 16, 3, 22);
+
+  // Terrain bump
+  fillRect(tiles, 28, 16, 29, 18, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, 3, W - 1, 5, W - 1);
+
+  return {
+    name: 'Scholar\'s Tower',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 4, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room22', x: 1, y: f, spawnX: 47, spawnY: 19 },
+      { type: 'door', targetRoom: 'room24', x: W - 2, y: 4, spawnX: 2, spawnY: 19 },
+      { type: 'coin', x: 16, y: 25 },
+      { type: 'coin', x: 6, y: 15 },
+      { type: 'coin', x: 18, y: 9 },
+      { type: 'crumble_platform', x: 16, y: 26, collapseDelay: 450, respawnDelay: 2800 },
+      { type: 'crumble_platform', x: 6, y: 20, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'crumble_platform', x: 16, y: 14, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 6, y: 8, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'flyer', x: 12, y: 22 },
+      { type: 'flyer', x: 8, y: 16 },
+      { type: 'flyer', x: 16, y: 10 },
+      { type: 'flyer', x: 6, y: 6 },
+      { type: 'spike_wall', x: 10, y: 16, width: 16, height: 80 },
+      { type: 'spike_wall', x: 10, y: 8, width: 16, height: 64 },
+      { type: 'pendulum_trap', x: 12, y: 18, length: 64, swing: 38, speed: 1.6, phase: 0 },
+      { type: 'pendulum_trap', x: 12, y: 10, length: 56, swing: 36, speed: 1.8, phase: 1.0 },
+      { type: 'moving_platform', x: 12, y: 24, axis: 'x', range: 64, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 12, y: 14, axis: 'x', range: 64, speed: 1.1, phase: 0.5, spin: 0 },
+      { type: 'health_pickup', x: 6, y: 11 },
+      { type: 'health_pickup', x: 20, y: 3 },
+      { type: 'fungus', x: 4, y: f },
+      { type: 'fungus', x: 16, y: f },
+      { type: 'fungus_small', x: 8, y: f },
+      { type: 'fungus_small', x: 20, y: f },
+      { type: 'stalactite', x: 6, y: 1 },
+      { type: 'stalactite', x: 16, y: 1 },
+      { type: 'stalactite_sm', x: 3, y: 1 },
+      { type: 'stalactite_sm', x: 12, y: 1 },
+      { type: 'stalactite_sm', x: 20, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 18, y: 1 },
+      { type: 'vine', x: 4, y: 1 },
+      { type: 'vine', x: 14, y: 1 },
+      { type: 'glow_spore', x: 6, y: 10 },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 10, y: 18 },
+    ],
+    foreground: [
+      { type: 'fg_mushroom_large', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 0, y: 16, flipX: false },
+      { type: 'fg_torch_bracket', x: 1, y: 10 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 12 },
+      { type: 'fg_torch_bracket', x: 1, y: 22 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 2, y: 4, w: 8, h: 12 },
+      { type: 'cb_detail_bricks', x: 12, y: 16, w: 8, h: 10 },
+      { type: 'cb_detail_roots', x: 4, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 14, y: 1, count: 2 },
+      { type: 'cb_rune_mark', x: 6, y: 8 },
+      { type: 'cb_rune_mark', x: 16, y: 20 },
+    ],
+    lighting: {
+      beams: [
+        { x: 12, y: 0, angle: 0, key: 'warm', alpha: 0.12, scale: 1.4 },
+        { x: 6, y: 0, angle: -6, key: 'warm', alpha: 0.08, scale: 0.9 },
+        { x: 18, y: 0, angle: 6, key: 'warm', alpha: 0.08, scale: 0.9 },
+      ],
+      ambientColor: 0x558833,
+      ambientAlpha: 0.045,
+    },
+    ambience: 'tunnel_fungal',
+  };
+}
+
+function buildRoom24() {
+  const W = 55, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Floor with gaps — collapsed stacks
+  clearRect(tiles, H - 2, 10, H - 2, 14);
+  clearRect(tiles, H - 2, 24, H - 2, 28);
+  clearRect(tiles, H - 2, 38, H - 2, 42);
+
+  // Terrain bumps
+  fillRect(tiles, 18, 4, 19, 7, 1);
+  fillRect(tiles, 17, 18, 19, 21, 1);
+  fillRect(tiles, 18, 44, 19, 47, 1);
+
+  // Dense platform layout — heavy platforming challenge
+  fillRow(tiles, 16, 4, 8, 2);
+  fillRow(tiles, 14, 10, 14, 2);
+  fillRow(tiles, 12, 4, 8, 2);
+  fillRow(tiles, 10, 10, 14, 2);
+  fillRow(tiles, 16, 16, 22, 2);
+  fillRow(tiles, 14, 24, 28, 2);
+  fillRow(tiles, 12, 18, 24, 2);
+  fillRow(tiles, 10, 26, 32, 2);
+  fillRow(tiles, 8, 20, 24, 2);
+  fillRow(tiles, 16, 30, 36, 2);
+  fillRow(tiles, 14, 38, 42, 2);
+  fillRow(tiles, 12, 32, 38, 2);
+  fillRow(tiles, 10, 40, 46, 2);
+  fillRow(tiles, 8, 34, 38, 2);
+  fillRow(tiles, 16, 44, 50, 2);
+  fillRow(tiles, 6, 26, 30, 2);
+  fillRow(tiles, 8, 46, 50, 2);
+
+  // Library pillars
+  fillRect(tiles, 4, 8, 12, 9, 1);
+  fillRect(tiles, 4, 30, 12, 31, 1);
+  fillRect(tiles, 4, 46, 12, 47, 1);
+
+  // Ceiling — vaulted archive roof
+  fillRect(tiles, 2, 4, 5, 18, 1);
+  fillRect(tiles, 2, 22, 5, 40, 1);
+  fillRect(tiles, 2, 44, 5, 52, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Forbidden Stacks',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room23', x: 1, y: f, spawnX: 21, spawnY: 4 },
+      { type: 'door', targetRoom: 'room25', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
+      { type: 'merchant_shop', x: 28, y: 5, items: [
+        { name: 'Health Refill', cost: 5, type: 'heal' },
+        { name: 'Max HP +1', cost: 25, type: 'maxhp' },
+      ], dialogue: [
+        'They say forbidden knowledge has a price. So does forbidden merchandise, apparently.',
+        'Stock up while you can. The Archive Sentinel does not appreciate browsing without buying.',
+      ]},
+      { type: 'coin', x: 6, y: 11 },
+      { type: 'coin', x: 22, y: 7 },
+      { type: 'coin', x: 36, y: 7 },
+      { type: 'coin', x: 48, y: 7 },
+      { type: 'coin', x: 14, y: 9 },
+      { type: 'crawler', x: 12, y: f },
+      { type: 'crawler', x: 28, y: 13 },
+      { type: 'crawler', x: 44, y: f },
+      { type: 'crawler', x: 50, y: f },
+      { type: 'flyer', x: 14, y: 6 },
+      { type: 'flyer', x: 28, y: 4 },
+      { type: 'flyer', x: 42, y: 6 },
+      { type: 'flyer', x: 18, y: 10 },
+      { type: 'flyer', x: 38, y: 8 },
+      { type: 'magma_pool', x: 10, y: 20, width: 5 },
+      { type: 'magma_pool', x: 24, y: 20, width: 5 },
+      { type: 'magma_pool', x: 38, y: 20, width: 5 },
+      { type: 'moving_platform', x: 12, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 26, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 40, y: 18, axis: 'x', range: 96, speed: 1.3, phase: 0.5, spin: 0 },
+      { type: 'pendulum_trap', x: 16, y: 10, length: 80, swing: 44, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 34, y: 8, length: 72, swing: 40, speed: 1.8, phase: 1.2 },
+      { type: 'pendulum_trap', x: 48, y: 6, length: 64, swing: 38, speed: 1.9, phase: 0.5 },
+      { type: 'spike_wall', x: 8, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 30, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 46, y: 8, width: 16, height: 64 },
+      { type: 'crumble_platform', x: 12, y: 14, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 26, y: 12, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 42, y: 14, collapseDelay: 400, respawnDelay: 2600 },
+      { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 320, respawnDelay: 2000 },
+      { type: 'health_pickup', x: 20, y: 7 },
+      { type: 'health_pickup', x: 46, y: 9 },
+      { type: 'fungus', x: 4, y: f },
+      { type: 'fungus', x: 22, y: f },
+      { type: 'fungus', x: 36, y: f },
+      { type: 'fungus', x: 50, y: f },
+      { type: 'fungus_small', x: 10, y: f },
+      { type: 'fungus_small', x: 30, y: f },
+      { type: 'fungus_small', x: 46, y: f },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 26, y: 1 },
+      { type: 'stalactite', x: 42, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 50, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 38, y: 1 },
+      { type: 'chain', x: 50, y: 1 },
+      { type: 'vine', x: 14, y: 1 },
+      { type: 'vine', x: 30, y: 1 },
+      { type: 'vine', x: 46, y: 1 },
+      { type: 'light_beam', x: 12, y: 1 },
+      { type: 'light_beam', x: 28, y: 1 },
+      { type: 'light_beam', x: 44, y: 1 },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 30, y: 4 },
+      { type: 'glow_spore', x: 46, y: 6 },
+      { type: 'ruin_arch', x: 10, y: f },
+      { type: 'ruin_arch', x: 32, y: f },
+      { type: 'pillar', x: 8, y: 16 },
+      { type: 'pillar_broken', x: 30, y: 16 },
+      { type: 'hanging_moss', x: 16, y: 2 },
+      { type: 'hanging_moss', x: 36, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_mushroom_large', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 4, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 24, y: 6 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 12, h: 8 },
+      { type: 'cb_detail_bricks', x: 24, y: 2, w: 14, h: 10 },
+      { type: 'cb_detail_bricks', x: 44, y: 4, w: 8, h: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 4 },
+      { type: 'cb_detail_roots', x: 34, y: 1, count: 3 },
+      { type: 'cb_rune_mark', x: 10, y: 8 },
+      { type: 'cb_rune_mark', x: 28, y: 6 },
+      { type: 'cb_rune_mark', x: 46, y: 8 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: -8, key: 'warm', alpha: 0.12, scale: 1.2 },
+        { x: 28, y: 0, angle: 5, key: 'warm', alpha: 0.10, scale: 1.0 },
+        { x: 46, y: 0, angle: -6, key: 'warm', alpha: 0.11, scale: 1.1 },
+      ],
+      ambientColor: 0x77aa55,
+      ambientAlpha: 0.04,
+    },
+    ambience: 'tunnel_fungal',
+  };
+}
+
+function buildRoom25() {
+  const W = 44, H = 24;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Arena floor
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Raised side platforms
+  fillRow(tiles, 18, 3, 8, 2);
+  fillRow(tiles, 18, W - 9, W - 4, 2);
+  fillRow(tiles, 14, 4, 10, 2);
+  fillRow(tiles, 14, W - 11, W - 5, 2);
+  fillRow(tiles, 10, 6, 10, 2);
+  fillRow(tiles, 10, W - 11, W - 7, 2);
+
+  // Central platforms
+  fillRow(tiles, 16, 16, 28, 2);
+  fillRow(tiles, 12, 18, 26, 2);
+  fillRow(tiles, 8, 20, 24, 2);
+
+  // Archive sentinels — pillars
+  fillRect(tiles, 4, 12, 16, 12, 1);
+  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+
+  // Vaulted ceiling
+  fillRect(tiles, 2, 4, 5, W - 5, 1);
+  clearRect(tiles, 3, 18, 4, 26);
+
+  // Floor pits
+  clearRect(tiles, H - 2, 13, H - 2, 16);
+  clearRect(tiles, H - 2, W - 17, H - 2, W - 14);
+
+  // Terrain bumps
+  fillRect(tiles, f, 10, f + 1, 11, 1);
+  fillRect(tiles, f, W - 12, f + 1, W - 11, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Archive Sentinel',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room24', x: 1, y: f, spawnX: 52, spawnY: 19 },
+      { type: 'door', targetRoom: 'room26', x: W - 2, y: f, spawnX: 2, spawnY: 19 },
+      { type: 'brute', x: 16, y: f },
+      { type: 'brute', x: 28, y: f },
+      { type: 'brute', x: 22, y: 15 },
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 36, y: f },
+      { type: 'crawler', x: 20, y: 15 },
+      { type: 'crawler', x: 26, y: 15 },
+      { type: 'flyer', x: 10, y: 6 },
+      { type: 'flyer', x: 22, y: 4 },
+      { type: 'flyer', x: 34, y: 6 },
+      { type: 'flyer', x: 16, y: 10 },
+      { type: 'flyer', x: 28, y: 10 },
+      { type: 'magma_pool', x: 13, y: 22, width: 4 },
+      { type: 'magma_pool', x: W - 17, y: 22, width: 4 },
+      { type: 'spike_wall', x: 12, y: 8, width: 16, height: 96 },
+      { type: 'spike_wall', x: W - 13, y: 8, width: 16, height: 96 },
+      { type: 'spike_wall', x: 13, y: 21, width: 128, height: 16 },
+      { type: 'spike_wall', x: W - 17, y: 21, width: 128, height: 16 },
+      { type: 'pendulum_trap', x: 22, y: 6, length: 80, swing: 48, speed: 1.9, phase: 0 },
+      { type: 'pendulum_trap', x: 14, y: 10, length: 72, swing: 42, speed: 1.7, phase: 1.2 },
+      { type: 'pendulum_trap', x: 30, y: 10, length: 72, swing: 42, speed: 1.7, phase: 0.6 },
+      { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 160, speed: 1.3, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 12, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: W - 13, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 1.5, spin: 0 },
+      { type: 'health_pickup', x: 22, y: 7 },
+      { type: 'health_pickup', x: 8, y: 13 },
+      { type: 'health_pickup', x: W - 9, y: 13 },
+      { type: 'fungus', x: 4, y: f },
+      { type: 'fungus', x: 18, y: f },
+      { type: 'fungus', x: 34, y: f },
+      { type: 'fungus_small', x: 10, y: f },
+      { type: 'fungus_small', x: 26, y: f },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 22, y: 1 },
+      { type: 'stalactite', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 16, y: 1 },
+      { type: 'stalactite_sm', x: 28, y: 1 },
+      { type: 'stalactite_sm', x: 38, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 20, y: 1 },
+      { type: 'chain', x: 24, y: 1 },
+      { type: 'chain', x: 36, y: 1 },
+      { type: 'pillar', x: 12, y: f },
+      { type: 'pillar', x: W - 13, y: f },
+      { type: 'ruin_arch', x: 16, y: f },
+      { type: 'ruin_arch', x: 28, y: f },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 22, y: 3 },
+      { type: 'glow_spore', x: 30, y: 6 },
+      { type: 'hanging_moss', x: 20, y: 2 },
+      { type: 'hanging_moss', x: 26, y: 2 },
+      { type: 'vine', x: 12, y: 2 },
+      { type: 'vine', x: 32, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_pillar_fragment', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_pillar_fragment', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_mushroom_large', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+      { type: 'fg_torch_bracket', x: 1, y: 16 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 16 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 2, w: 16, h: 14 },
+      { type: 'cb_detail_bricks', x: 26, y: 2, w: 14, h: 14 },
+      { type: 'cb_detail_roots', x: 6, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 30, y: 1, count: 3 },
+      { type: 'cb_rune_mark', x: 10, y: 6 },
+      { type: 'cb_rune_mark', x: 22, y: 10 },
+      { type: 'cb_rune_mark', x: 34, y: 6 },
+    ],
+    lighting: {
+      beams: [
+        { x: 22, y: 0, angle: 0, key: 'warm', alpha: 0.14, scale: 1.6 },
+        { x: 10, y: 0, angle: -10, key: 'warm', alpha: 0.08, scale: 1.0 },
+        { x: 34, y: 0, angle: 10, key: 'warm', alpha: 0.08, scale: 1.0 },
+      ],
+      ambientColor: 0x669944,
+      ambientAlpha: 0.055,
+    },
+    locked: true,
+    ambience: 'tunnel_fungal',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VOID NEXUS  (rooms 26–29)
+// ═══════════════════════════════════════════════════════════════
+
+function buildRoom26() {
+  const W = 50, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Hazardous floor — multiple gaps
+  clearRect(tiles, H - 2, 10, H - 2, 14);
+  clearRect(tiles, H - 2, 22, H - 2, 26);
+  clearRect(tiles, H - 2, 34, H - 2, 38);
+
+  // Terrain bumps
+  fillRect(tiles, 18, 4, 19, 7, 1);
+  fillRect(tiles, 17, 16, 19, 19, 1);
+  fillRect(tiles, 18, 40, 19, 43, 1);
+
+  // Horizontal gauntlet platforms
+  fillRow(tiles, 16, 3, 8, 2);
+  fillRow(tiles, 14, 10, 14, 2);
+  fillRow(tiles, 12, 4, 8, 2);
+  fillRow(tiles, 16, 16, 21, 2);
+  fillRow(tiles, 14, 22, 26, 2);
+  fillRow(tiles, 12, 16, 20, 2);
+  fillRow(tiles, 10, 24, 30, 2);
+  fillRow(tiles, 16, 28, 33, 2);
+  fillRow(tiles, 14, 34, 38, 2);
+  fillRow(tiles, 12, 30, 36, 2);
+  fillRow(tiles, 16, 40, 46, 2);
+  fillRow(tiles, 8, 12, 16, 2);
+  fillRow(tiles, 8, 36, 40, 2);
+  fillRow(tiles, 6, 22, 26, 2);
+
+  // Void pillars
+  fillRect(tiles, 4, 10, 12, 11, 1);
+  fillRect(tiles, 4, 32, 12, 33, 1);
+
+  // Ceiling
+  fillRect(tiles, 2, 4, 5, 20, 1);
+  fillRect(tiles, 2, 26, 5, 44, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Void Threshold',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room25', x: 1, y: f, spawnX: 41, spawnY: 21 },
+      { type: 'door', targetRoom: 'room27', x: W - 2, y: f, spawnX: 2, spawnY: 29 },
+      { type: 'npc', npcType: 'knight', x: 8, y: f, dialogue: [
+        'Halt. I know that look — the look of someone who has come too far to turn back.',
+        'Beyond this threshold lies the Void Nexus. It is not a place that belongs to our world.',
+        'The Bone Tyrant tried to harness the Void\'s power. Instead, it consumed the deepest parts of his kingdom.',
+        'The creatures here are not his subjects — they are something else entirely. Fragments of emptiness given form.',
+        'I have stood watch here for... I cannot remember how long. If you enter the Nexus, there may be no return.',
+        'But if you are strong enough to reach the Void King, you may end this curse once and for all. Go with whatever courage you have left.',
+      ]},
+      { type: 'coin', x: 6, y: 11 },
+      { type: 'coin', x: 24, y: 5 },
+      { type: 'coin', x: 38, y: 7 },
+      { type: 'coin', x: 14, y: 7 },
+      { type: 'crawler', x: 14, y: f },
+      { type: 'crawler', x: 30, y: f },
+      { type: 'crawler', x: 44, y: f },
+      { type: 'flyer', x: 14, y: 6 },
+      { type: 'flyer', x: 28, y: 4 },
+      { type: 'flyer', x: 40, y: 6 },
+      { type: 'flyer', x: 20, y: 10 },
+      { type: 'magma_pool', x: 10, y: 20, width: 5 },
+      { type: 'magma_pool', x: 22, y: 20, width: 5 },
+      { type: 'magma_pool', x: 34, y: 20, width: 5 },
+      { type: 'spike_wall', x: 10, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 32, y: 8, width: 16, height: 64 },
+      { type: 'spike_wall', x: 10, y: 19, width: 160, height: 16 },
+      { type: 'spike_wall', x: 22, y: 19, width: 160, height: 16 },
+      { type: 'spike_wall', x: 34, y: 19, width: 160, height: 16 },
+      { type: 'pendulum_trap', x: 18, y: 10, length: 80, swing: 46, speed: 1.9, phase: 0 },
+      { type: 'pendulum_trap', x: 30, y: 8, length: 72, swing: 42, speed: 2.0, phase: 1.0 },
+      { type: 'pendulum_trap', x: 42, y: 10, length: 80, swing: 44, speed: 1.8, phase: 0.5 },
+      { type: 'moving_platform', x: 12, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 24, y: 18, axis: 'x', range: 96, speed: 1.3, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 36, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 0.5, spin: 0 },
+      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 30, y: 12, collapseDelay: 320, respawnDelay: 2000 },
+      { type: 'crumble_platform', x: 42, y: 14, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'health_pickup', x: 20, y: 11 },
+      { type: 'health_pickup', x: 44, y: 15 },
+      { type: 'stalactite', x: 10, y: 1 },
+      { type: 'stalactite', x: 24, y: 1 },
+      { type: 'stalactite', x: 40, y: 1 },
+      { type: 'stalactite_sm', x: 4, y: 1 },
+      { type: 'stalactite_sm', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 32, y: 1 },
+      { type: 'stalactite_sm', x: 46, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 36, y: 1 },
+      { type: 'chain', x: 46, y: 1 },
+      { type: 'crystal', x: 6, y: f },
+      { type: 'crystal', x: 20, y: f },
+      { type: 'crystal', x: 42, y: f },
+      { type: 'crystal_cluster', x: 14, y: f },
+      { type: 'crystal_cluster', x: 30, y: f },
+      { type: 'glow_spore', x: 14, y: 6 },
+      { type: 'glow_spore', x: 28, y: 4 },
+      { type: 'glow_spore', x: 42, y: 6 },
+      { type: 'ruin_arch', x: 12, y: f },
+      { type: 'ruin_arch', x: 34, y: f },
+      { type: 'pillar', x: 10, y: 16 },
+      { type: 'pillar_broken', x: 32, y: 16 },
+      { type: 'gravel_patch', x: 8, y: f },
+      { type: 'gravel_patch', x: 28, y: f },
+      { type: 'mud_patch', x: 18, y: f },
+      { type: 'mud_patch', x: 44, y: f },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_crystal_large', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation_sm', x: W - 4, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 8 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 8 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 4, w: 14, h: 10 },
+      { type: 'cb_detail_bricks', x: 28, y: 2, w: 12, h: 8 },
+      { type: 'cb_rune_mark', x: 10, y: 8 },
+      { type: 'cb_rune_mark', x: 24, y: 6 },
+      { type: 'cb_rune_mark', x: 42, y: 8 },
+      { type: 'cb_detail_roots', x: 8, y: 1, count: 3 },
+      { type: 'cb_detail_roots', x: 36, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 14, y: 0, angle: -8, key: 'cool', alpha: 0.12, scale: 1.2 },
+        { x: 26, y: 0, angle: 5, key: 'cool', alpha: 0.10, scale: 1.0 },
+        { x: 42, y: 0, angle: -10, key: 'cool', alpha: 0.12, scale: 1.2 },
+      ],
+      ambientColor: 0x6622aa,
+      ambientAlpha: 0.06,
+    },
+    ambience: 'tunnel_guardian',
+  };
+}
+
+function buildRoom27() {
+  const W = 26, H = 32;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Bottom floor with lava center
+  fillRect(tiles, H - 2, 1, H - 1, 6, 1);
+  clearRect(tiles, H - 2, 7, H - 2, 18);
+  fillRect(tiles, H - 2, 19, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 7, 18, 1);
+
+  // Ascending zigzag — very difficult
+  fillRow(tiles, 28, 3, 8, 2);
+  fillRow(tiles, 26, 16, 22, 2);
+  fillRow(tiles, 24, 4, 10, 2);
+  fillRow(tiles, 22, 16, 22, 2);
+  fillRow(tiles, 20, 3, 8, 2);
+  fillRow(tiles, 18, 14, 20, 2);
+  fillRow(tiles, 16, 4, 10, 2);
+  fillRow(tiles, 14, 16, 22, 2);
+  fillRow(tiles, 12, 3, 8, 2);
+  fillRow(tiles, 10, 14, 20, 2);
+  fillRow(tiles, 8, 4, 10, 2);
+  fillRow(tiles, 6, 16, 22, 2);
+  fillRow(tiles, 4, 10, 16, 2);
+
+  // Wall columns — wall-jump mandatory
+  fillRect(tiles, 10, 11, 22, 12, 1);
+  fillRect(tiles, 6, 11, 10, 12, 1);
+
+  // Spire ceiling
+  fillRect(tiles, 1, 1, 3, W - 2, 1);
+  clearRect(tiles, 1, 10, 3, 16);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, 2, 10, 2, 16);
+  clearRect(tiles, 0, 10, 0, 16);
+
+  return {
+    name: 'Nexus Spire',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 4, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room26', x: 1, y: f, spawnX: 47, spawnY: 19 },
+      { type: 'door', targetRoom: 'room28', x: 13, y: 2, spawnX: 2, spawnY: 23 },
+      { type: 'coin', x: 18, y: 25 },
+      { type: 'coin', x: 6, y: 15 },
+      { type: 'coin', x: 18, y: 9 },
+      { type: 'flyer', x: 14, y: 24 },
+      { type: 'flyer', x: 8, y: 18 },
+      { type: 'flyer', x: 18, y: 12 },
+      { type: 'flyer', x: 6, y: 6 },
+      { type: 'flyer', x: 14, y: 4 },
+      { type: 'spike_wall', x: 11, y: 14, width: 16, height: 96 },
+      { type: 'spike_wall', x: 11, y: 8, width: 16, height: 48 },
+      { type: 'pendulum_trap', x: 14, y: 20, length: 72, swing: 42, speed: 1.9, phase: 0 },
+      { type: 'pendulum_trap', x: 8, y: 14, length: 64, swing: 38, speed: 2.0, phase: 0.8 },
+      { type: 'pendulum_trap', x: 18, y: 8, length: 56, swing: 36, speed: 2.1, phase: 1.5 },
+      { type: 'pendulum_trap', x: 8, y: 4, length: 48, swing: 34, speed: 2.2, phase: 0.3 },
+      { type: 'crumble_platform', x: 18, y: 26, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 6, y: 20, collapseDelay: 320, respawnDelay: 2000 },
+      { type: 'crumble_platform', x: 18, y: 14, collapseDelay: 300, respawnDelay: 1800 },
+      { type: 'crumble_platform', x: 6, y: 8, collapseDelay: 280, respawnDelay: 1600 },
+      { type: 'moving_platform', x: 14, y: 24, axis: 'x', range: 64, speed: 1.3, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 14, y: 16, axis: 'x', range: 64, speed: 1.4, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 14, y: 8, axis: 'x', range: 48, speed: 1.5, phase: 0.5, spin: 0 },
+      { type: 'magma_pool', x: 7, y: 30, width: 12 },
+      { type: 'spike_wall', x: 7, y: 29, width: 384, height: 16 },
+      { type: 'health_pickup', x: 6, y: 11 },
+      { type: 'health_pickup', x: 20, y: 5 },
+      { type: 'stalactite', x: 6, y: 1 },
+      { type: 'stalactite', x: 18, y: 1 },
+      { type: 'stalactite_sm', x: 3, y: 1 },
+      { type: 'stalactite_sm', x: 14, y: 1 },
+      { type: 'stalactite_sm', x: 22, y: 1 },
+      { type: 'chain', x: 8, y: 1 },
+      { type: 'chain', x: 20, y: 1 },
+      { type: 'glow_spore', x: 8, y: 10 },
+      { type: 'glow_spore', x: 18, y: 6 },
+      { type: 'glow_spore', x: 6, y: 20 },
+      { type: 'vine', x: 4, y: 1 },
+      { type: 'vine', x: 16, y: 1 },
+      { type: 'crystal', x: 4, y: f },
+      { type: 'crystal', x: 22, y: f },
+      { type: 'crystal_cluster', x: 12, y: 3 },
+    ],
+    foreground: [
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_crystal_large', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation_sm', x: 0, y: 16, flipX: false },
+      { type: 'fg_torch_bracket', x: 1, y: 10 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 12 },
+      { type: 'fg_torch_bracket', x: 1, y: 22 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 2, y: 4, w: 10, h: 12 },
+      { type: 'cb_detail_bricks', x: 14, y: 14, w: 8, h: 10 },
+      { type: 'cb_rune_mark', x: 6, y: 8 },
+      { type: 'cb_rune_mark', x: 18, y: 18 },
+      { type: 'cb_detail_roots', x: 4, y: 1, count: 2 },
+      { type: 'cb_detail_roots', x: 16, y: 1, count: 2 },
+    ],
+    lighting: {
+      beams: [
+        { x: 13, y: 0, angle: 0, key: 'cool', alpha: 0.14, scale: 1.5 },
+        { x: 6, y: 0, angle: -8, key: 'cool', alpha: 0.08, scale: 0.9 },
+        { x: 20, y: 0, angle: 8, key: 'cool', alpha: 0.08, scale: 0.9 },
+      ],
+      ambientColor: 0x5511aa,
+      ambientAlpha: 0.065,
+    },
+    ambience: 'tunnel_guardian',
+  };
+}
+
+function buildRoom28() {
+  const W = 55, H = 26;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Arena floor with central lava pit
+  fillRect(tiles, H - 2, 1, H - 1, 16, 1);
+  clearRect(tiles, H - 2, 17, H - 2, 37);
+  fillRect(tiles, H - 2, 38, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 17, 37, 1);
+
+  // Multi-tier platforms — massive combat arena
+  fillRow(tiles, 20, 3, 8, 2);
+  fillRow(tiles, 18, 10, 16, 2);
+  fillRow(tiles, 20, 38, 44, 2);
+  fillRow(tiles, 18, 46, 52, 2);
+  fillRow(tiles, 14, 6, 12, 2);
+  fillRow(tiles, 14, 42, 48, 2);
+  fillRow(tiles, 16, 20, 26, 2);
+  fillRow(tiles, 16, 28, 34, 2);
+  fillRow(tiles, 12, 22, 32, 2);
+  fillRow(tiles, 10, 14, 18, 2);
+  fillRow(tiles, 10, 36, 40, 2);
+  fillRow(tiles, 8, 24, 30, 2);
+  fillRow(tiles, 6, 10, 14, 2);
+  fillRow(tiles, 6, 40, 44, 2);
+
+  // Arena pillars
+  fillRect(tiles, 3, 8, 14, 8, 1);
+  fillRect(tiles, 3, 46, 14, 46, 1);
+  fillRect(tiles, 3, 20, 8, 20, 1);
+  fillRect(tiles, 3, 34, 8, 34, 1);
+
+  // Vaulted ceiling
+  fillRect(tiles, 2, 6, 4, 22, 1);
+  fillRect(tiles, 2, 32, 4, 48, 1);
+
+  // Door openings
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
+  return {
+    name: 'Convergence',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 4, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room27', x: 1, y: f, spawnX: 23, spawnY: 4 },
+      { type: 'door', targetRoom: 'room29', x: W - 2, y: f, spawnX: 2, spawnY: 19 },
+      { type: 'bench', x: 6, y: f },
+      { type: 'coin', x: 12, y: 13 },
+      { type: 'coin', x: 26, y: 7 },
+      { type: 'coin', x: 44, y: 13 },
+      { type: 'coin', x: 16, y: 9 },
+      { type: 'coin', x: 38, y: 9 },
+      { type: 'coin', x: 30, y: 11 },
+      { type: 'brute', x: 14, y: f },
+      { type: 'brute', x: 40, y: f },
+      { type: 'brute', x: 28, y: 15 },
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 46, y: f },
+      { type: 'crawler', x: 22, y: 15 },
+      { type: 'crawler', x: 32, y: 15 },
+      { type: 'crawler', x: 12, y: 13 },
+      { type: 'crawler', x: 44, y: 13 },
+      { type: 'flyer', x: 12, y: 5 },
+      { type: 'flyer', x: 22, y: 3 },
+      { type: 'flyer', x: 32, y: 3 },
+      { type: 'flyer', x: 42, y: 5 },
+      { type: 'flyer', x: 16, y: 8 },
+      { type: 'flyer', x: 27, y: 6 },
+      { type: 'flyer', x: 38, y: 8 },
+      { type: 'magma_pool', x: 17, y: 24, width: 21 },
+      { type: 'spike_wall', x: 17, y: 23, width: 672, height: 16 },
+      { type: 'spike_wall', x: 8, y: 8, width: 16, height: 80 },
+      { type: 'spike_wall', x: 46, y: 8, width: 16, height: 80 },
+      { type: 'spike_wall', x: 20, y: 4, width: 16, height: 48 },
+      { type: 'spike_wall', x: 34, y: 4, width: 16, height: 48 },
+      { type: 'pendulum_trap', x: 16, y: 8, length: 88, swing: 48, speed: 2.0, phase: 0 },
+      { type: 'pendulum_trap', x: 27, y: 5, length: 72, swing: 44, speed: 2.1, phase: 1.0 },
+      { type: 'pendulum_trap', x: 38, y: 8, length: 88, swing: 48, speed: 2.0, phase: 2.0 },
+      { type: 'moving_platform', x: 22, y: 20, axis: 'x', range: 160, speed: 1.3, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 32, y: 20, axis: 'x', range: 160, speed: 1.3, phase: 1.5, spin: 0 },
+      { type: 'moving_platform', x: 8, y: 8, axis: 'y', range: 160, speed: 1.1, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 46, y: 8, axis: 'y', range: 160, speed: 1.1, phase: 1.5, spin: 0 },
+      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 300, respawnDelay: 2000 },
+      { type: 'crumble_platform', x: 24, y: 12, collapseDelay: 280, respawnDelay: 1800 },
+      { type: 'crumble_platform', x: 30, y: 12, collapseDelay: 280, respawnDelay: 1800 },
+      { type: 'crumble_platform', x: 40, y: 14, collapseDelay: 300, respawnDelay: 2000 },
+      { type: 'health_pickup', x: 27, y: 7 },
+      { type: 'health_pickup', x: 10, y: 13 },
+      { type: 'stalactite', x: 12, y: 1 },
+      { type: 'stalactite', x: 27, y: 1 },
+      { type: 'stalactite', x: 42, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 20, y: 1 },
+      { type: 'stalactite_sm', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 48, y: 1 },
+      { type: 'chain', x: 10, y: 1 },
+      { type: 'chain', x: 22, y: 1 },
+      { type: 'chain', x: 32, y: 1 },
+      { type: 'chain', x: 44, y: 1 },
+      { type: 'pillar', x: 8, y: f },
+      { type: 'pillar', x: 46, y: f },
+      { type: 'ruin_arch', x: 14, y: f },
+      { type: 'ruin_arch', x: 40, y: f },
+      { type: 'crystal', x: 18, y: f },
+      { type: 'crystal', x: 36, y: f },
+      { type: 'crystal_cluster', x: 24, y: 11 },
+      { type: 'crystal_cluster', x: 30, y: 11 },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 27, y: 3 },
+      { type: 'glow_spore', x: 38, y: 6 },
+      { type: 'glow_spore', x: 10, y: 10 },
+      { type: 'glow_spore', x: 44, y: 10 },
+      { type: 'hanging_moss', x: 14, y: 2 },
+      { type: 'hanging_moss', x: 27, y: 2 },
+      { type: 'hanging_moss', x: 40, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_pillar_fragment', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_pillar_fragment', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_crystal_large', x: 2, y: H - 2, flipX: false },
+      { type: 'fg_crystal_large', x: W - 4, y: H - 2, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 6 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 6 },
+      { type: 'fg_torch_bracket', x: 1, y: 16 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 16 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 4, y: 2, w: 18, h: 14 },
+      { type: 'cb_detail_bricks', x: 34, y: 2, w: 18, h: 14 },
+      { type: 'cb_rune_mark', x: 10, y: 6 },
+      { type: 'cb_rune_mark', x: 22, y: 10 },
+      { type: 'cb_rune_mark', x: 32, y: 6 },
+      { type: 'cb_rune_mark', x: 44, y: 10 },
+      { type: 'cb_rune_mark', x: 16, y: 16 },
+      { type: 'cb_rune_mark', x: 38, y: 16 },
+    ],
+    lighting: {
+      beams: [
+        { x: 27, y: 0, angle: 0, key: 'cool', alpha: 0.16, scale: 1.8 },
+        { x: 12, y: 0, angle: -12, key: 'cool', alpha: 0.10, scale: 1.1 },
+        { x: 42, y: 0, angle: 12, key: 'cool', alpha: 0.10, scale: 1.1 },
+      ],
+      ambientColor: 0x7722cc,
+      ambientAlpha: 0.06,
+    },
+    locked: true,
+    ambience: 'tunnel_guardian',
+  };
+}
+
+function buildRoom29() {
+  const W = 48, H = 22;
+  const tiles = makeRoom(W, H);
+  const f = H - 3;
+
+  // Arena floor — wide open with lava on sides
+  fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
+
+  // Lava pits on sides
+  clearRect(tiles, H - 2, 2, H - 2, 6);
+  clearRect(tiles, H - 2, W - 7, H - 2, W - 3);
+
+  // Side platforms for maneuvering
+  fillRow(tiles, 16, 2, 6, 2);
+  fillRow(tiles, 16, W - 7, W - 3, 2);
+  fillRow(tiles, 12, 3, 7, 2);
+  fillRow(tiles, 12, W - 8, W - 4, 2);
+  fillRow(tiles, 8, 4, 8, 2);
+  fillRow(tiles, 8, W - 9, W - 5, 2);
+
+  // Central elevated platform — boss showdown stage
+  fillRow(tiles, 14, 18, 30, 2);
+  fillRow(tiles, 10, 20, 28, 2);
+  fillRow(tiles, 6, 22, 26, 2);
+
+  // Arena pillars framing the center
+  fillRect(tiles, 4, 12, 16, 12, 1);
+  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+
+  // Throne ceiling — oppressive stone dome
+  fillRect(tiles, 2, 4, 5, W - 5, 1);
+  clearRect(tiles, 3, 20, 4, 28);
+
+  // Terrain bumps near sides
+  fillRect(tiles, f, 8, f + 1, 10, 1);
+  fillRect(tiles, f, W - 11, f + 1, W - 9, 1);
+
+  // Door opening on left
+  clearRect(tiles, f - 2, 0, f + 1, 0);
+
+  return {
+    name: 'The Void King',
+    width: W,
+    height: H,
+    tiles,
+    playerSpawn: { x: 3, y: f },
+    objects: [
+      { type: 'door', targetRoom: 'room28', x: 1, y: f, spawnX: 52, spawnY: 23 },
+      { type: 'boss', x: 30, y: f },
+      { type: 'health_pickup', x: 6, y: 11 },
+      { type: 'health_pickup', x: W - 7, y: 11 },
+      { type: 'health_pickup', x: 24, y: 5 },
+      { type: 'magma_pool', x: 2, y: 20, width: 5 },
+      { type: 'magma_pool', x: W - 7, y: 20, width: 5 },
+      { type: 'spike_wall', x: 2, y: 19, width: 160, height: 16 },
+      { type: 'spike_wall', x: W - 7, y: 19, width: 160, height: 16 },
+      { type: 'spike_wall', x: 12, y: 8, width: 16, height: 96 },
+      { type: 'spike_wall', x: W - 13, y: 8, width: 16, height: 96 },
+      { type: 'moving_platform', x: 14, y: 12, axis: 'y', range: 128, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: W - 15, y: 12, axis: 'y', range: 128, speed: 1.0, phase: 1.5, spin: 0 },
+      { type: 'pendulum_trap', x: 24, y: 4, length: 80, swing: 50, speed: 2.0, phase: 0 },
+      { type: 'pendulum_trap', x: 16, y: 8, length: 72, swing: 44, speed: 1.8, phase: 1.0 },
+      { type: 'pendulum_trap', x: W - 17, y: 8, length: 72, swing: 44, speed: 1.8, phase: 2.0 },
+      { type: 'pillar', x: 12, y: f },
+      { type: 'pillar', x: W - 13, y: f },
+      { type: 'chain', x: 10, y: 1 },
+      { type: 'chain', x: 18, y: 1 },
+      { type: 'chain', x: W - 19, y: 1 },
+      { type: 'chain', x: W - 11, y: 1 },
+      { type: 'stalactite', x: 14, y: 1 },
+      { type: 'stalactite', x: 24, y: 1 },
+      { type: 'stalactite', x: W - 15, y: 1 },
+      { type: 'stalactite_sm', x: 6, y: 1 },
+      { type: 'stalactite_sm', x: 20, y: 1 },
+      { type: 'stalactite_sm', x: W - 7, y: 1 },
+      { type: 'crystal', x: 16, y: f },
+      { type: 'crystal', x: W - 17, y: f },
+      { type: 'crystal_cluster', x: 22, y: 13 },
+      { type: 'crystal_cluster', x: 28, y: 13 },
+      { type: 'glow_spore', x: 16, y: 6 },
+      { type: 'glow_spore', x: 24, y: 3 },
+      { type: 'glow_spore', x: W - 17, y: 6 },
+      { type: 'ruin_arch', x: 14, y: f },
+      { type: 'ruin_arch', x: W - 15, y: f },
+      { type: 'hanging_moss', x: 22, y: 2 },
+      { type: 'hanging_moss', x: 28, y: 2 },
+    ],
+    foreground: [
+      { type: 'fg_pillar_fragment', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_pillar_fragment', x: W - 1, y: H - 1, flipX: true },
+      { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
+      { type: 'fg_rock_formation', x: W - 2, y: H - 1, flipX: true },
+      { type: 'fg_crystal_large', x: 2, y: H - 1, flipX: false },
+      { type: 'fg_crystal_large', x: W - 3, y: H - 1, flipX: true },
+      { type: 'fg_torch_bracket', x: 1, y: 6 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 6 },
+      { type: 'fg_torch_bracket', x: 1, y: 14 },
+      { type: 'fg_torch_bracket', x: W - 2, y: 14 },
+    ],
+    closeBgDetails: [
+      { type: 'cb_detail_bricks', x: 2, y: 2, w: 18, h: 14 },
+      { type: 'cb_detail_bricks', x: W - 20, y: 2, w: 18, h: 14 },
+      { type: 'cb_rune_mark', x: 12, y: 6 },
+      { type: 'cb_rune_mark', x: 24, y: 4 },
+      { type: 'cb_rune_mark', x: W - 13, y: 6 },
+      { type: 'cb_rune_mark', x: 18, y: 14 },
+      { type: 'cb_rune_mark', x: W - 19, y: 14 },
+    ],
+    lighting: {
+      beams: [
+        { x: 24, y: 0, angle: 0, key: 'cool', alpha: 0.18, scale: 2.0 },
+        { x: 12, y: 0, angle: -15, key: 'cool', alpha: 0.12, scale: 1.3 },
+        { x: W - 13, y: 0, angle: 15, key: 'cool', alpha: 0.12, scale: 1.3 },
+      ],
+      ambientColor: 0x8833dd,
+      ambientAlpha: 0.07,
+    },
+    locked: true,
+    ambience: 'tunnel_guardian',
+  };
+}
+
 export const rooms = {
   room1: buildRoom1(),
   room2: buildRoom2(),
@@ -1309,5 +3987,25 @@ export const rooms = {
   room7: buildRoom7(),
   room8: buildRoom8(),
   room9: buildRoom9(),
+  room10: buildRoom10(),
+  room11: buildRoom11(),
+  room12: buildRoom12(),
+  room13: buildRoom13(),
+  room14: buildRoom14(),
+  room15: buildRoom15(),
+  room16: buildRoom16(),
+  room17: buildRoom17(),
+  room18: buildRoom18(),
+  room19: buildRoom19(),
+  room20: buildRoom20(),
+  room21: buildRoom21(),
+  room22: buildRoom22(),
+  room23: buildRoom23(),
+  room24: buildRoom24(),
+  room25: buildRoom25(),
+  room26: buildRoom26(),
+  room27: buildRoom27(),
+  room28: buildRoom28(),
+  room29: buildRoom29(),
   room_organic: buildOrganicCaveRoom({ width: 56, height: 26, seed: 1337 }),
 };

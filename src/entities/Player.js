@@ -1,5 +1,6 @@
 import { MovementSystem } from '../systems/Movement.js';
 import { CombatSystem } from '../systems/Combat.js';
+import { TILE_SIZE } from '../level/rooms.js';
 
 const MAX_HP = 5;
 
@@ -30,6 +31,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.checkpointY = y;
 
     this.hasMap = false;
+    this.coins = 0;
     this.visitedRooms = new Set();
 
     this.currentAnim = 'idle';
@@ -44,21 +46,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   setupAnimations() {
-    if (this.scene.anims.exists('player_run')) return;
-
-    this.scene.anims.create({
-      key: 'player_run',
-      frames: [
-        { key: 'player_run_0' },
-        { key: 'player_run_1' },
-        { key: 'player_run_2' },
-        { key: 'player_run_3' },
-        { key: 'player_run_4' },
-        { key: 'player_run_5' },
-      ],
-      frameRate: 12,
-      repeat: -1,
-    });
+    if (!this.scene.anims.exists('player_run')) {
+      this.scene.anims.create({
+        key: 'player_run',
+        frames: [0, 1, 2, 3, 4, 5].map(i => ({ key: `player_run_${i}` })),
+        frameRate: 12,
+        repeat: -1,
+      });
+    }
+    if (!this.scene.anims.exists('player_run_armed')) {
+      this.scene.anims.create({
+        key: 'player_run_armed',
+        frames: [0, 1, 2, 3, 4, 5].map(i => ({ key: `player_run_armed_${i}` })),
+        frameRate: 12,
+        repeat: -1,
+      });
+    }
   }
 
   getInputState() {
@@ -93,8 +96,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   updateAnimation() {
     if (this.movement.isDashing) return;
 
-    // Sword swing poses (synced to combat slash)
-    if (this.combat.isSlashing && this.combat.hasSlash) {
+    const armed = this.combat.hasSlash;
+    const s = armed ? '_armed' : '';
+
+    if (this.combat.isKicking && this.combat.hasKick) {
+      this.setTexture('player_kick');
+      this.currentAnim = 'kick';
+      return;
+    }
+
+    if (this.combat.isSlashing && armed) {
       const phase = this.combat.getSlashAnimPhase();
       const d = this.combat.slashDirection;
       let tex;
@@ -112,29 +123,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const moving = Math.abs(this.body.velocity.x) > 20;
 
     if (this.movement.isWallSliding) {
-      this.setTexture('player_wallslide');
+      this.setTexture(`player_wallslide${s}`);
       this.currentAnim = 'wallslide';
       return;
     }
 
     if (!onGround) {
       if (this.body.velocity.y < -20) {
-        this.setTexture('player_jump');
+        this.setTexture(`player_jump${s}`);
         this.currentAnim = 'jump';
       } else if (this.body.velocity.y > 20) {
-        this.setTexture('player_fall');
+        this.setTexture(`player_fall${s}`);
         this.currentAnim = 'fall';
       }
       return;
     }
 
+    const runKey = armed ? 'player_run_armed' : 'player_run';
     if (moving) {
-      if (this.currentAnim !== 'run') {
-        this.play('player_run');
+      if (this.currentAnim !== 'run' || this._lastArmed !== armed) {
+        this.play(runKey);
         this.currentAnim = 'run';
+        this._lastArmed = armed;
       }
     } else {
-      this.setTexture('player_idle');
+      this.setTexture(`player_idle${s}`);
       this.currentAnim = 'idle';
     }
   }
@@ -229,6 +242,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'spear':
         this.combat.hasSpear = true;
         break;
+      case 'kick':
+        this.combat.hasKick = true;
+        break;
       case 'map':
         this.hasMap = true;
         break;
@@ -242,8 +258,27 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'dash': return this.movement.abilities.dash;
       case 'doubleJump': return this.movement.abilities.doubleJump;
       case 'spear': return this.combat.hasSpear;
+      case 'kick': return this.combat.hasKick;
       case 'map': return this.hasMap;
       default: return false;
+    }
+  }
+
+  /** Apply data from SaveGame.loadGameState() after loadRoom(). */
+  applySaveState(s) {
+    if (!s) return;
+    if (typeof s.maxHp === 'number' && s.maxHp >= 1) this.maxHp = s.maxHp;
+    if (typeof s.hp === 'number') this.hp = Math.min(s.hp, this.maxHp);
+    this.coins = typeof s.coins === 'number' ? s.coins : 0;
+    this.hasMap = !!s.hasMap;
+    this.visitedRooms = new Set(Array.isArray(s.visitedRooms) ? s.visitedRooms : []);
+    for (const a of s.abilities || []) {
+      this.unlockAbility(a);
+    }
+    if (s.checkpointRoom && s.checkpointTileX != null && s.checkpointTileY != null) {
+      this.checkpointX = s.checkpointTileX * TILE_SIZE + TILE_SIZE / 2;
+      this.checkpointY = s.checkpointTileY * TILE_SIZE + TILE_SIZE / 2;
+      this._checkpointRoom = s.checkpointRoom;
     }
   }
 }

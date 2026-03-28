@@ -7,6 +7,6 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     generateAllTextures(this);
-    this.scene.start('TitleScene');
+    this.scene.start('IntroScene');
   }
 }

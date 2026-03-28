@@ -27,6 +27,10 @@ export class LevelManager {
     this.crumblePlatforms = [];
     this.hazardDamageCooldown = 0;
     this.npcs = [];
+    this.coins = [];
+    this.teleports = [];
+    this.roomLockVisuals = [];
+    this.roomLockTweens = [];
   }
 
   get roomWidth() {
@@ -652,6 +656,9 @@ export class LevelManager {
         case 'brute': this.createBrute(px, py); break;
         case 'npc': this.createNPC(px, py, obj); break;
         case 'health_pickup': this.createHealthPickup(px, py); break;
+        case 'coin': this.createCoin(px, py); break;
+        case 'teleport': this.createTeleport(px, py, obj); break;
+        case 'merchant_shop': this.createMerchantShop(px, py, obj); break;
         case 'moving_platform': this.createMovingPlatform(px, py, obj); break;
         case 'pendulum_trap': this.createPendulumTrap(px, py, obj); break;
         case 'spike_wall': this.createSpikeWall(px, py, obj); break;
@@ -715,9 +722,24 @@ export class LevelManager {
     const sx = spawnX !== undefined
       ? spawnX * TILE_SIZE + TILE_SIZE / 2
       : room.playerSpawn.x * TILE_SIZE + TILE_SIZE / 2;
-    const sy = spawnY !== undefined
+    let sy = spawnY !== undefined
       ? spawnY * TILE_SIZE + TILE_SIZE / 2
       : room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
+
+    // Nudge upward if the spawn tile is solid/platform so the player doesn't get embedded
+    for (let i = 0; i < 6; i++) {
+      const col = Math.floor(sx / TILE_SIZE);
+      const row = Math.floor(sy / TILE_SIZE);
+      if (row >= 0 && row < room.tiles.length && col >= 0 && col < room.tiles[0].length) {
+        const tile = room.tiles[row][col];
+        if (tile === 1 || tile === 2 || tile === 3) {
+          sy -= TILE_SIZE;
+          continue;
+        }
+      }
+      break;
+    }
+
     this.scene.player.setPosition(sx, sy);
     this.scene.player.body.velocity.set(0, 0);
     this.scene.player.spawnX = sx;
@@ -741,6 +763,10 @@ export class LevelManager {
     const door = this.scene.physics.add.image(x, y, 'door');
     door.body.allowGravity = false;
     door.body.setImmovable(true);
+    const bw = Math.max(TILE_SIZE, door.width * 0.9);
+    const bh = Math.max(TILE_SIZE * 2, door.height * 0.95);
+    door.body.setSize(bw, bh);
+    door.body.setOffset((door.width - bw) / 2, (door.height - bh) / 2);
     door.setDepth(1);
     door.targetRoom = obj.targetRoom;
     door.spawnX = obj.spawnX;
@@ -836,7 +862,7 @@ export class LevelManager {
     const cx = cam.width / 2;
     const cy = cam.height / 2;
 
-    const names = { slash: 'SLASH', wallJump: 'WALL JUMP', dash: 'DASH', map: 'DUNGEON MAP' };
+    const names = { slash: 'SLASH', wallJump: 'WALL JUMP', dash: 'DASH', map: 'DUNGEON MAP', kick: 'KICK', spear: 'SOUL SPEAR', doubleJump: 'DOUBLE JUMP' };
     const abilityName = names[ability] || ability.toUpperCase();
 
     const modalElements = [];
@@ -1116,6 +1142,224 @@ export class LevelManager {
       );
     }
     this.healthPickups.push(pickup);
+  }
+
+  createCoin(x, y) {
+    const coin = this.scene.physics.add.image(x, y, 'coin');
+    coin.body.allowGravity = false;
+    coin.setDepth(3);
+    this.scene.tweens.add({
+      targets: coin, y: y - 5, duration: 1000,
+      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    this.scene.tweens.add({
+      targets: coin, angle: 360, duration: 2400, repeat: -1, ease: 'Linear',
+    });
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(
+        player, coin, () => {
+          if (!coin.active) return;
+          player.coins++;
+          if (this.scene.hud) this.scene.hud.refresh();
+          const txt = this.scene.add.text(coin.x, coin.y - 10, '+1', {
+            fontSize: '14px', fontFamily: 'monospace', color: '#ffc840',
+            stroke: '#000', strokeThickness: 2,
+          }).setOrigin(0.5).setDepth(20);
+          this.scene.tweens.add({
+            targets: txt, alpha: 0, y: '-=20', duration: 800,
+            onComplete: () => txt.destroy(),
+          });
+          coin.destroy();
+        },
+      );
+    }
+    this.coins.push(coin);
+  }
+
+  createTeleport(x, y, obj) {
+    const pad = this.scene.physics.add.image(x, y, 'teleport_pad');
+    pad.body.allowGravity = false;
+    pad.body.setImmovable(true);
+    pad.setDepth(1);
+    pad.setAlpha(0.8);
+    pad.targetRoom = obj.targetRoom;
+    pad.spawnX = obj.spawnX;
+    pad.spawnY = obj.spawnY;
+
+    const glow = this.scene.add.image(x, y, 'particle_teal');
+    glow.setScale(6);
+    glow.setAlpha(0.15);
+    glow.setDepth(0);
+    glow.setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({
+      targets: glow, alpha: 0.05, scaleX: 8, scaleY: 8,
+      duration: 1800, yoyo: true, repeat: -1,
+    });
+    this.decorations.push(glow);
+
+    this.scene.tweens.add({
+      targets: pad, angle: 360, duration: 6000, repeat: -1, ease: 'Linear',
+    });
+
+    const onTeleport = () => {
+      if (this.roomLocked) return;
+      this.scene.transitionToRoom(pad.targetRoom, pad.spawnX, pad.spawnY);
+    };
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, pad, onTeleport);
+    }
+    this.teleports.push({ pad, glow });
+  }
+
+  createMerchantShop(x, y, obj) {
+    const npcObj = { npcType: 'merchant', dialogue: obj.dialogue || [
+      'Welcome, traveler. I have wares if you have coin.',
+    ]};
+    this.createNPC(x, y, npcObj);
+
+    const items = obj.items || [
+      { name: 'Health Refill', cost: 5, type: 'heal' },
+      { name: 'Max HP +1', cost: 15, type: 'maxhp' },
+    ];
+
+    const zone = this.scene.physics.add.image(x, y, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(80, 48);
+
+    let shopOpen = false;
+    const tryShop = (player) => {
+      if (shopOpen || this.scene.dialogueActive) return;
+      const body = player.body;
+      if (!body || !body.blocked.down) return;
+      const dist = Phaser.Math.Distance.Between(player.x, player.y, x, y);
+      if (dist > 62) return;
+      const input = player.getInputState();
+      if (!input.interactPressed) return;
+      shopOpen = true;
+      this.scene.dialogueActive = true;
+      this.scene.physics.pause();
+      this.showShopModal(player, items, () => {
+        shopOpen = false;
+        this.scene.dialogueActive = false;
+        this.scene.physics.resume();
+      });
+    };
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => tryShop(player));
+    }
+  }
+
+  showShopModal(player, items, onClose) {
+    const cam = this.scene.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height / 2;
+    const modalElements = [];
+
+    const overlay = this.scene.add.rectangle(cx, cy, cam.width, cam.height, 0x000000, 0)
+      .setScrollFactor(0).setDepth(200);
+    modalElements.push(overlay);
+    this.scene.tweens.add({ targets: overlay, fillAlpha: 0.55, duration: 200 });
+
+    const panelW = 300;
+    const panelH = 60 + items.length * 44;
+    const panel = this.scene.add.rectangle(cx, cy, panelW, panelH, 0x1a1008, 0.94)
+      .setScrollFactor(0).setDepth(202).setAlpha(0);
+    modalElements.push(panel);
+    this.scene.tweens.add({ targets: panel, alpha: 1, duration: 200 });
+
+    const border = this.scene.add.rectangle(cx, cy, panelW + 4, panelH + 4, 0xd4a020, 0.4)
+      .setScrollFactor(0).setDepth(201).setAlpha(0);
+    modalElements.push(border);
+    this.scene.tweens.add({ targets: border, alpha: 1, duration: 200 });
+
+    const title = this.scene.add.text(cx, cy - panelH / 2 + 18, 'MERCHANT', {
+      fontSize: '18px', fontFamily: 'monospace', color: '#ffc840',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(204).setAlpha(0);
+    modalElements.push(title);
+    this.scene.tweens.add({ targets: title, alpha: 1, duration: 250 });
+
+    const coinText = this.scene.add.text(cx + panelW / 2 - 10, cy - panelH / 2 + 18,
+      `Coins: ${player.coins}`, {
+        fontSize: '12px', fontFamily: 'monospace', color: '#d4a020',
+        stroke: '#000', strokeThickness: 2,
+      }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(204).setAlpha(0);
+    modalElements.push(coinText);
+    this.scene.tweens.add({ targets: coinText, alpha: 1, duration: 250 });
+
+    const itemButtons = [];
+    items.forEach((item, i) => {
+      const iy = cy - panelH / 2 + 50 + i * 44;
+
+      const bg = this.scene.add.rectangle(cx, iy, panelW - 24, 36, 0x2a1c10, 0.8)
+        .setScrollFactor(0).setDepth(203).setInteractive({ useHandCursor: true });
+      modalElements.push(bg);
+
+      const nameT = this.scene.add.text(cx - panelW / 2 + 24, iy, item.name, {
+        fontSize: '13px', fontFamily: 'monospace', color: '#d4c8a8',
+        stroke: '#000', strokeThickness: 2,
+      }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(204);
+      modalElements.push(nameT);
+
+      const costT = this.scene.add.text(cx + panelW / 2 - 24, iy,
+        `${item.cost} coins`, {
+          fontSize: '12px', fontFamily: 'monospace',
+          color: player.coins >= item.cost ? '#ffc840' : '#664420',
+          stroke: '#000', strokeThickness: 2,
+        }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(204);
+      modalElements.push(costT);
+
+      bg.on('pointerdown', () => {
+        if (player.coins < item.cost) return;
+        player.coins -= item.cost;
+        coinText.setText(`Coins: ${player.coins}`);
+
+        if (item.type === 'heal') {
+          player.hp = player.maxHp;
+        } else if (item.type === 'maxhp') {
+          player.maxHp += 1;
+          player.hp = player.maxHp;
+        }
+
+        if (this.scene.hud) this.scene.hud.refresh();
+        costT.setColor(player.coins >= item.cost ? '#ffc840' : '#664420');
+
+        this.scene.cameras.main.flash(150, 64, 192, 32);
+      });
+      itemButtons.push(bg);
+    });
+
+    const closeT = this.scene.add.text(cx, cy + panelH / 2 - 14, '[ CLOSE ]', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#6a5838',
+      stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(204)
+      .setInteractive({ useHandCursor: true });
+    modalElements.push(closeT);
+
+    const dismiss = () => {
+      this.scene.tweens.add({
+        targets: modalElements, alpha: 0, duration: 200,
+        onComplete: () => {
+          modalElements.forEach(el => el.destroy());
+          if (onClose) onClose();
+        },
+      });
+    };
+
+    closeT.on('pointerdown', dismiss);
+    const keyDismiss = (e) => {
+      if (e.key === 'Escape' || e.key === 'e' || e.key === 'E') {
+        this.scene.input.keyboard.off('keydown', keyDismiss);
+        dismiss();
+      }
+    };
+    this.scene.time.delayedCall(200, () => {
+      this.scene.input.keyboard.on('keydown', keyDismiss);
+    });
   }
 
   createDecoration(x, y, key) {
@@ -1471,15 +1715,94 @@ export class LevelManager {
       d.door.setTint(0xff2222);
       d.door.setAlpha(0.8);
     }
+    this.showRoomLockBarrier();
   }
 
   unlockDoors() {
+    this.destroyRoomLockVisuals();
     this.roomLocked = false;
     for (const d of this.doorZones) {
       d.door.clearTint();
       d.door.setAlpha(0.5);
     }
     this.scene.cameras.main.flash(300, 64, 232, 192);
+  }
+
+  destroyRoomLockVisuals() {
+    for (const tw of this.roomLockTweens) {
+      if (tw && tw.stop) tw.stop();
+    }
+    this.roomLockTweens = [];
+    for (const o of this.roomLockVisuals) {
+      if (o && o.active) o.destroy();
+    }
+    this.roomLockVisuals = [];
+  }
+
+  showRoomLockBarrier() {
+    this.destroyRoomLockVisuals();
+
+    const rpw = this.roomPixelW;
+    const rph = this.roomPixelH;
+    const band = Math.max(12, Math.min(18, Math.floor(TILE_SIZE * 0.45)));
+    const fill = 0x660011;
+    const edge = 0xff3344;
+
+    const addBand = (cx, cy, w, h) => {
+      const r = this.scene.add.rectangle(cx, cy, w, h, fill)
+        .setAlpha(0.35).setDepth(4).setScrollFactor(1);
+      this.roomLockVisuals.push(r);
+      const tw = this.scene.tweens.add({
+        targets: r,
+        alpha: { from: 0.2, to: 0.5 },
+        duration: 1000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      this.roomLockTweens.push(tw);
+      return r;
+    };
+
+    addBand(rpw / 2, band / 2, rpw, band);
+    addBand(rpw / 2, rph - band / 2, rpw, band);
+    addBand(band / 2, rph / 2, band, rph);
+    addBand(rpw - band / 2, rph / 2, band, rph);
+
+    const g = this.scene.add.graphics().setDepth(10).setScrollFactor(1);
+    g.lineStyle(3, edge, 0.92);
+    g.strokeRect(2, 2, rpw - 4, rph - 4);
+    g.lineStyle(2, edge, 0.55);
+    const step = 22;
+    for (let x = step; x < rpw; x += step) {
+      g.lineBetween(x, 0, x, band + 8);
+      g.lineBetween(x, rph, x, rph - band - 8);
+    }
+    for (let y = step; y < rph; y += step) {
+      g.lineBetween(0, y, band + 8, y);
+      g.lineBetween(rpw, y, rpw - band - 8, y);
+    }
+    this.roomLockVisuals.push(g);
+
+    const twG = this.scene.tweens.add({
+      targets: g,
+      alpha: { from: 0.75, to: 1 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    this.roomLockTweens.push(twG);
+
+    const banner = this.scene.add.text(rpw / 2, band + 14,
+      'ROOM SEALED — Defeat every enemy to unlock exits', {
+        fontSize: '12px',
+        fontFamily: 'monospace',
+        color: '#ff5566',
+        stroke: '#1a0000',
+        strokeThickness: 5,
+      }).setOrigin(0.5, 0).setDepth(12).setScrollFactor(1);
+    this.roomLockVisuals.push(banner);
   }
 
   checkRoomCleared() {
@@ -1498,7 +1821,7 @@ export class LevelManager {
         onComplete: () => text.destroy(),
       });
 
-      if (this.currentRoomId === 'room9') {
+      if (this.currentRoomId === 'room29') {
         this.scene.time.delayedCall(2500, () => {
           this.scene.showLevelComplete();
         });
@@ -1548,6 +1871,14 @@ export class LevelManager {
     for (const p of this.healthPickups) { if (p && p.active) p.destroy(); }
     this.healthPickups = [];
 
+    for (const c of this.coins) { if (c && c.active) c.destroy(); }
+    this.coins = [];
+
+    for (const t of this.teleports) {
+      if (t.pad && t.pad.active) t.pad.destroy();
+    }
+    this.teleports = [];
+
     for (const d of this.decorations) { if (d && d.active) d.destroy(); }
     this.decorations = [];
 
@@ -1581,6 +1912,8 @@ export class LevelManager {
 
     for (const e of this.dripEmitters) { e.destroy(); }
     this.dripEmitters = [];
+
+    this.destroyRoomLockVisuals();
 
     for (const l of this.parallaxLayers) { if (l && l.active) l.destroy(); }
     this.parallaxLayers = [];

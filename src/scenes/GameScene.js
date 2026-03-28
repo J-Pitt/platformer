@@ -4,6 +4,7 @@ import { HUD } from '../ui/HUD.js';
 import { InputManager } from '../systems/InputManager.js';
 import { PlatformerOnlineSync } from '../net/PlatformerOnlineSync.js';
 import { TILE_SIZE, rooms } from '../level/rooms.js';
+import * as SaveGame from '../persistence/SaveGame.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -55,6 +56,27 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.levelManager = new LevelManager(this);
+
+    this.transitioning = false;
+    this.paused = false;
+    this.pauseElements = [];
+    this.dialogueActive = false;
+
+    const solo = !this.online && !this.coopMode;
+    const saved = solo && data?.fromSave ? SaveGame.loadGameState() : null;
+
+    if (saved) {
+      this.savedPlayerName = saved.playerName || SaveGame.getStoredPlayerName() || 'Traveler';
+      this.levelManager.loadRoom(saved.roomId, saved.spawnTileX, saved.spawnTileY);
+      this.player.applySaveState(saved);
+    } else {
+      this.savedPlayerName =
+        (data?.profileName && String(data.profileName).trim()) ||
+        SaveGame.getStoredPlayerName() ||
+        'Traveler';
+      this.levelManager.loadRoom('room1');
+    }
+
     this.hud = new HUD(this);
 
     if (this.textures.exists('player_rim_light')) {
@@ -64,13 +86,6 @@ export class GameScene extends Phaser.Scene {
       this.playerRimLight.setAlpha(0.32);
     }
 
-    this.transitioning = false;
-    this.paused = false;
-    this.pauseElements = [];
-    this.dialogueActive = false;
-
-    this.levelManager.loadRoom('room1');
-
     if (this.online) {
       this.onlineSync = new PlatformerOnlineSync(this, this.online);
       this.onlineSync.start();
@@ -78,6 +93,19 @@ export class GameScene extends Phaser.Scene {
 
     this.input.keyboard.on('keydown-P', () => this.togglePause());
     this.input.keyboard.on('keydown-ESC', () => this.togglePause());
+
+    this._secretWarpSeq = [];
+    this._secretWarpPattern = ['up', 'down', 'up', 'down', 'left', 'right', 'left', 'right'];
+    this._secretWarpDeadline = null;
+    this._secretWarpPrevDirs = { up: false, down: false, left: false, right: false };
+
+    this._upStuckHoldMs = 0;
+    this._upRecoverArmed = true;
+
+    if (solo) {
+      this.setupSoloAutosave();
+      this.time.delayedCall(2000, () => this.saveGameIfEligible(false));
+    }
 
     this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
     this.cameras.main.setDeadzone(60, 40);
@@ -106,6 +134,9 @@ export class GameScene extends Phaser.Scene {
       j: this.input.keyboard.addKey('J'),
       shift: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
       e: this.input.keyboard.addKey('E'),
+      f: this.input.keyboard.addKey('F'),
+      k: this.input.keyboard.addKey('K'),
+      saveGame: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B),
     };
   }
 
@@ -168,6 +199,7 @@ export class GameScene extends Phaser.Scene {
     const dt = Math.min(delta, 33.33);
 
     this.inputManager.update();
+    this.pollSecretWarpDirectionalEdges();
 
     if (this.inputManager.touch.active) {
       const t = this.inputManager.touch._pressed;
@@ -177,13 +209,20 @@ export class GameScene extends Phaser.Scene {
       this._pauseTouchPrev = !!t.pause;
     }
 
-    if (this.paused) return;
+    if (this.paused) {
+      if (!this.online && !this.coopMode && Phaser.Input.Keyboard.JustDown(this.keys.saveGame)) {
+        this.saveGameIfEligible(true);
+      }
+      return;
+    }
 
     if (this.dialogueActive) return;
 
     if (this.hud && this.hud.mapOverlay && this.hud.mapOverlay.visible) {
       return;
     }
+
+    this.pollUpHoldSoftRecover(dt);
 
     this.player.update(dt);
     if (this.player2) this.player2.update(dt);
@@ -225,6 +264,93 @@ export class GameScene extends Phaser.Scene {
     this.hud.update();
   }
 
+  /** Konami-style: ↑↓↑↓←→←→ within 5s (arrows / WASD / d-pad / stick). */
+  pollSecretWarpDirectionalEdges() {
+    if (!this.sys.isActive() || this.transitioning) return;
+    if (!this.levelManager?.currentRoom) return;
+    if (this.online && !this.online.isHost) return;
+
+    const st = this.inputManager.state;
+    const prev = this._secretWarpPrevDirs;
+    const edge = (k) => !!(st[k] && !prev[k]);
+    if (edge('up')) this.feedSecretWarpDirection('up');
+    else if (edge('down')) this.feedSecretWarpDirection('down');
+    else if (edge('left')) this.feedSecretWarpDirection('left');
+    else if (edge('right')) this.feedSecretWarpDirection('right');
+    this._secretWarpPrevDirs = {
+      up: !!st.up,
+      down: !!st.down,
+      left: !!st.left,
+      right: !!st.right,
+    };
+  }
+
+  feedSecretWarpDirection(dir) {
+    if (!this.sys.isActive() || this.transitioning) return;
+    if (!this.levelManager?.currentRoom) return;
+    if (this.online && !this.online.isHost) return;
+
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const pat = this._secretWarpPattern;
+    const windowMs = 5000;
+
+    if (this._secretWarpDeadline != null && now > this._secretWarpDeadline) {
+      this._secretWarpSeq = [];
+      this._secretWarpDeadline = null;
+    }
+
+    const expected = pat[this._secretWarpSeq.length];
+    if (dir !== expected) {
+      this._secretWarpSeq = dir === pat[0] ? [dir] : [];
+      this._secretWarpDeadline = this._secretWarpSeq.length ? now + windowMs : null;
+      return;
+    }
+
+    this._secretWarpSeq.push(dir);
+    if (this._secretWarpSeq.length === 1) {
+      this._secretWarpDeadline = now + windowMs;
+    }
+
+    if (this._secretWarpSeq.length >= pat.length) {
+      this._secretWarpSeq = [];
+      this._secretWarpDeadline = null;
+      this.secretWarpRandomRoom();
+    }
+  }
+
+  secretWarpRandomRoom() {
+    if (this.transitioning) return;
+    if (this.online && !this.online.isHost) return;
+
+    const cur = this.levelManager.currentRoomId;
+    let ids = Object.keys(rooms).filter((id) => rooms[id] && id !== cur);
+    if (ids.length === 0) ids = Object.keys(rooms).filter((id) => rooms[id]);
+    if (ids.length === 0) return;
+    const pick = ids[Phaser.Math.Between(0, ids.length - 1)];
+    const room = rooms[pick];
+    const sx = room.playerSpawn?.x ?? 3;
+    const sy = room.playerSpawn?.y ?? 10;
+
+    const cam = this.cameras.main;
+    const toast = this.add.text(cam.width / 2, 48, `WARP → ${pick}`, {
+      fontSize: '13px',
+      fontFamily: 'monospace',
+      color: '#ffcc44',
+      stroke: '#000',
+      strokeThickness: 4,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(350);
+    this.tweens.add({
+      targets: toast,
+      alpha: 0,
+      y: toast.y - 12,
+      duration: 1400,
+      delay: 400,
+      onComplete: () => toast.destroy(),
+    });
+
+    this.transitionToRoom(pick, sx, sy);
+  }
+
   transitionToRoom(roomId, spawnX, spawnY) {
     if (this.transitioning) return;
     this.transitioning = true;
@@ -241,7 +367,74 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
+        this.saveGameIfEligible(false);
       }
+    });
+  }
+
+  setupSoloAutosave() {
+    this._flushSaveToStorage = () => {
+      try {
+        const st = SaveGame.buildSaveState(this);
+        if (st) SaveGame.persistState(st);
+      } catch (e) {
+        console.warn('[SaveGame] flush failed', e);
+      }
+    };
+
+    this._onVisibilitySave = () => {
+      if (document.visibilityState === 'hidden') this._flushSaveToStorage();
+    };
+
+    window.addEventListener('beforeunload', this._flushSaveToStorage);
+    window.addEventListener('pagehide', this._flushSaveToStorage);
+    document.addEventListener('visibilitychange', this._onVisibilitySave);
+
+    this._autosaveTimer = this.time.addEvent({
+      delay: 12000,
+      loop: true,
+      callback: () => {
+        if (!this.sys.isActive() || this.transitioning || this.paused) return;
+        this.saveGameIfEligible(false);
+      },
+    });
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this._flushSaveToStorage();
+      window.removeEventListener('beforeunload', this._flushSaveToStorage);
+      window.removeEventListener('pagehide', this._flushSaveToStorage);
+      document.removeEventListener('visibilitychange', this._onVisibilitySave);
+      if (this._autosaveTimer) {
+        this._autosaveTimer.remove();
+        this._autosaveTimer = null;
+      }
+    });
+  }
+
+  saveGameIfEligible(showToast) {
+    if (this.online || this.coopMode) return;
+    const st = SaveGame.buildSaveState(this);
+    if (!st) return;
+    SaveGame.persistState(st);
+    if (showToast) this.showSaveToast();
+  }
+
+  showSaveToast() {
+    const cam = this.cameras.main;
+    const t = this.add.text(cam.width / 2, cam.height / 2 + 4, 'SAVED', {
+      fontSize: '18px',
+      fontFamily: 'monospace',
+      color: '#40ffd8',
+      stroke: '#000',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(352);
+    this.tweens.add({
+      targets: t,
+      alpha: 0,
+      y: t.y - 24,
+      duration: 900,
+      delay: 200,
+      onComplete: () => t.destroy(),
     });
   }
 
@@ -264,6 +457,7 @@ export class GameScene extends Phaser.Scene {
         }
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
+        this.saveGameIfEligible(false);
       }
     });
   }
@@ -290,6 +484,90 @@ export class GameScene extends Phaser.Scene {
     return this.player._checkpointRoom || this.levelManager.currentRoomId;
   }
 
+  /** Hold UP 10s → reload checkpoint room (recover from soft-locks). Release UP before it can trigger again. */
+  pollUpHoldSoftRecover(dt) {
+    if (this.online && !this.online.isHost) return;
+    if (!this.player || this.player.isDead) return;
+    if (!this.levelManager?.currentRoom) return;
+
+    const upHeld = !!this.inputManager.state.up;
+    if (!upHeld) {
+      this._upRecoverArmed = true;
+      this._upStuckHoldMs = 0;
+      return;
+    }
+    if (!this._upRecoverArmed) return;
+
+    this._upStuckHoldMs += dt;
+    if (this._upStuckHoldMs < 10000) return;
+
+    this._upStuckHoldMs = 0;
+    this._upRecoverArmed = false;
+    this.softRecoverGameplay();
+  }
+
+  resetLocalPlayersAfterRecover() {
+    for (const pl of [this.player, this.player2]) {
+      if (!pl || pl.remoteMode) continue;
+      pl.body.velocity.set(0, 0);
+      pl.movement.isDashing = false;
+      pl.movement.dashTimer = 0;
+      pl.movement.dashCooldownTimer = 0;
+      pl.movement.wallJumpLockoutTimer = 0;
+      pl.movement.airJumpsUsed = 0;
+      if (pl.combat.isSlashing) pl.combat.endSlash();
+      if (pl.combat.isKicking) pl.combat.endKick();
+      pl.combat.isInvulnerable = false;
+      pl.combat.invulnTimer = 0;
+      pl.setAlpha(1);
+    }
+  }
+
+  softRecoverGameplay() {
+    if (this.transitioning) return;
+    if (this.online && !this.online.isHost) return;
+    if (!this.levelManager?.currentRoom || !this.player) return;
+
+    this.transitioning = true;
+    if (this.hud?.mapOverlay) this.hud.mapOverlay.hide();
+
+    const roomId = this.findCheckpointRoom();
+    const tx = Math.floor(this.player.checkpointX / TILE_SIZE);
+    const ty = Math.floor(this.player.checkpointY / TILE_SIZE);
+
+    this.cameras.main.fade(280, 0, 0, 0, false, (cam, progress) => {
+      if (progress < 1) return;
+      this.levelManager.loadRoom(roomId, tx, ty);
+      this.resetLocalPlayersAfterRecover();
+      if (this.player2 && !this.player2.remoteMode) {
+        this.player2.setPosition(this.player.x + 20, this.player.y);
+        this.player2.body.velocity.set(0, 0);
+      }
+      this.onlineSync?.queueHostLead(roomId, tx, ty);
+      this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
+      this.cameras.main.fadeIn(320, 0, 0, 0);
+      this.transitioning = false;
+      this.saveGameIfEligible(false);
+
+      const mainCam = this.cameras.main;
+      const t = this.add.text(mainCam.width / 2, 52, 'CHECKPOINT RELOAD', {
+        fontSize: '14px',
+        fontFamily: 'monospace',
+        color: '#ffcc66',
+        stroke: '#000',
+        strokeThickness: 4,
+      }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(352);
+      this.tweens.add({
+        targets: t,
+        alpha: 0,
+        y: t.y - 16,
+        duration: 1600,
+        delay: 400,
+        onComplete: () => t.destroy(),
+      });
+    });
+  }
+
   togglePause() {
     if (this.transitioning) return;
     if (this.hud && this.hud.mapOverlay && this.hud.mapOverlay.visible) return;
@@ -297,6 +575,7 @@ export class GameScene extends Phaser.Scene {
     this.paused = !this.paused;
     if (this.paused) {
       this.physics.pause();
+      this.saveGameIfEligible(false);
       this.showPauseOverlay();
     } else {
       this.physics.resume();
@@ -319,13 +598,33 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
     this.pauseElements.push(title);
 
-    const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
-    const hint = this.add.text(cx, cy + 30,
-      isMobile ? '[ TAP PAUSE TO RESUME ]' : '[ P OR ESC TO RESUME ]', {
-        fontSize: '12px', fontFamily: 'monospace', color: '#6a5838',
-        stroke: '#000', strokeThickness: 2,
+    if (!this.online && !this.coopMode && this.savedPlayerName) {
+      const who = this.add.text(cx, cy - 58, this.savedPlayerName, {
+        fontSize: '13px', fontFamily: 'monospace', color: '#8a7858',
+        stroke: '#000', strokeThickness: 3,
       }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
+      this.pauseElements.push(who);
+    }
+
+    const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
+    let resumeHint = isMobile ? '[ TAP PAUSE TO RESUME ]' : '[ P OR ESC TO RESUME ]';
+    if (!this.online && !this.coopMode && !isMobile) {
+      resumeHint += '  ·  B SAVE';
+    }
+    const hint = this.add.text(cx, cy + 30, resumeHint, {
+      fontSize: '12px', fontFamily: 'monospace', color: '#6a5838',
+      stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
     this.pauseElements.push(hint);
+
+    if (!this.online && !this.coopMode && isMobile) {
+      const saveT = this.add.text(cx, cy + 58, '[ TAP TO SAVE ]', {
+        fontSize: '14px', fontFamily: 'monospace', color: '#40ffd8',
+        stroke: '#000', strokeThickness: 3,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(251).setInteractive({ useHandCursor: true });
+      saveT.on('pointerdown', () => this.saveGameIfEligible(true));
+      this.pauseElements.push(saveT);
+    }
   }
 
   hidePauseOverlay() {
