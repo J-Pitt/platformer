@@ -4,6 +4,21 @@ import { TILE_SIZE } from '../level/rooms.js';
 
 const MAX_HP = 5;
 
+const JP_UNLOCK_ABILITIES = [
+  'slash',
+  'wallJump',
+  'dash',
+  'doubleJump',
+  'spear',
+  'kick',
+  'map',
+];
+
+/** Solo dev profile: exact name JP (case-insensitive). */
+export function isJpProfileName(name) {
+  return String(name ?? '').trim().toUpperCase() === 'JP';
+}
+
 export class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, playerIndex = 0) {
     super(scene, x, y, 'player');
@@ -191,7 +206,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   respawn() {
     this.isDead = false;
-    this.hp = MAX_HP;
+    this.hp = this.maxHp;
     this.body.allowGravity = true;
     this.setAlpha(1);
     this.setScale(1);
@@ -262,6 +277,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'map': return this.hasMap;
       default: return false;
     }
+  }
+
+  /** JP profile: all abilities + 3 max HP (new solo game only). */
+  applyJpUnlock() {
+    for (const a of JP_UNLOCK_ABILITIES) {
+      this.unlockAbility(a);
+    }
+    this.maxHp += 3;
+    this.hp = this.maxHp;
   }
 
   /** Apply data from SaveGame.loadGameState() after loadRoom(). */

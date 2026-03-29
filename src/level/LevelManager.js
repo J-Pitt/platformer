@@ -716,6 +716,15 @@ export class LevelManager {
     }
     this.scene.physics.add.collider(this.scene.enemies, this.wallLayer);
     this.scene.physics.add.collider(this.scene.enemies, this.platformGroup);
+
+    const sk = this.scene.sidekick;
+    if (sk && sk.body) {
+      this.scene.physics.add.collider(sk, this.wallLayer);
+      this.scene.physics.add.collider(sk, this.platformGroup);
+      for (const plat of this.movingPlatforms) {
+        if (plat.sprite && plat.sprite.body) this.scene.physics.add.collider(sk, plat.sprite);
+      }
+    }
   }
 
   positionPlayer(room, spawnX, spawnY) {
@@ -756,6 +765,9 @@ export class LevelManager {
       this.scene.player2.spawnY = sy;
       this.scene.player2.checkpointX = this.scene.player.checkpointX;
       this.scene.player2.checkpointY = this.scene.player.checkpointY;
+    }
+    if (this.scene.sidekick) {
+      this.scene.sidekick.snapNearPlayer();
     }
   }
 
@@ -1848,6 +1860,8 @@ export class LevelManager {
   }
 
   clearCurrentRoom() {
+    if (this.scene.sidekick) this.scene.sidekick.cancelAttackState();
+
     if (this.wallLayer) { this.wallLayer.clear(true, true); this.wallLayer = null; }
     if (this.platformGroup) { this.platformGroup.clear(true, true); this.platformGroup = null; }
 

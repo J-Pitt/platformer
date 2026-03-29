@@ -5,6 +5,14 @@ import {
 } from '../net/platformerRoomApi.js';
 import * as SaveGame from '../persistence/SaveGame.js';
 
+function fadeToScene(scene, key, payload) {
+  scene.cameras.main.fade(300, 0, 0, 0, false, (_cam, progress) => {
+    if (progress >= 1) {
+      scene.scene.start(key, payload);
+    }
+  });
+}
+
 export class TitleScene extends Phaser.Scene {
   constructor() {
     super('TitleScene');
@@ -93,7 +101,9 @@ export class TitleScene extends Phaser.Scene {
         const nm = window.prompt('Player name', SaveGame.getStoredPlayerName() || 'Traveler');
         if (nm === null) return;
         SaveGame.setStoredPlayerName(nm.trim() || 'Traveler');
-        fadeToGame({ profileName: SaveGame.getStoredPlayerName() });
+        fadeToScene(this, 'SidekickSelectScene', {
+          profileName: SaveGame.getStoredPlayerName(),
+        });
       },
     });
 
@@ -135,7 +145,7 @@ export class TitleScene extends Phaser.Scene {
       menuEntries[i]._txt = t;
     }
 
-    const hint = this.add.text(cx, cy + 118, '↑↓ select · ENTER · Progress saves in browser (solo) · Online needs server + Redis', {
+    const hint = this.add.text(cx, cy + 118, '↑↓ select · ENTER · New solo game: pick an ally next · Saves in browser · Online needs server + Redis', {
       fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',
       stroke: '#000', strokeThickness: 2,
       align: 'center',

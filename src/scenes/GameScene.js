@@ -1,10 +1,16 @@
-import { Player } from '../entities/Player.js';
+import { Player, isJpProfileName } from '../entities/Player.js';
+import { Sidekick } from '../entities/Sidekick.js';
 import { LevelManager } from '../level/LevelManager.js';
 import { HUD } from '../ui/HUD.js';
 import { InputManager } from '../systems/InputManager.js';
 import { PlatformerOnlineSync } from '../net/PlatformerOnlineSync.js';
 import { TILE_SIZE, rooms } from '../level/rooms.js';
 import * as SaveGame from '../persistence/SaveGame.js';
+import {
+  DEFAULT_SIDEKICK_ID,
+  getSidekickConfig,
+  isValidSidekickId,
+} from '../characters/sidekickRegistry.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -65,6 +71,19 @@ export class GameScene extends Phaser.Scene {
     const solo = !this.online && !this.coopMode;
     const saved = solo && data?.fromSave ? SaveGame.loadGameState() : null;
 
+    let sidekickId = DEFAULT_SIDEKICK_ID;
+    if (saved && isValidSidekickId(saved.sidekickId)) {
+      sidekickId = saved.sidekickId;
+    } else if (data?.sidekickId && isValidSidekickId(data.sidekickId)) {
+      sidekickId = data.sidekickId;
+    }
+    this.selectedSidekickId = sidekickId;
+
+    this.sidekick = null;
+    if (solo) {
+      this.sidekick = new Sidekick(this, getSidekickConfig(sidekickId));
+    }
+
     if (saved) {
       this.savedPlayerName = saved.playerName || SaveGame.getStoredPlayerName() || 'Traveler';
       this.levelManager.loadRoom(saved.roomId, saved.spawnTileX, saved.spawnTileY);
@@ -75,7 +94,12 @@ export class GameScene extends Phaser.Scene {
         SaveGame.getStoredPlayerName() ||
         'Traveler';
       this.levelManager.loadRoom('room1');
+      if (solo && isJpProfileName(this.savedPlayerName)) {
+        this.player.applyJpUnlock();
+      }
     }
+
+    if (this.sidekick) this.sidekick.snapNearPlayer();
 
     this.hud = new HUD(this);
 
@@ -226,6 +250,7 @@ export class GameScene extends Phaser.Scene {
 
     this.player.update(dt);
     if (this.player2) this.player2.update(dt);
+    if (this.sidekick) this.sidekick.update(dt);
     if (this.levelManager) this.levelManager.update(dt);
 
     if (this.playerRimLight) {
