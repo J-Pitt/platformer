@@ -10,9 +10,10 @@ import { generatePipSidekickTextures } from './pip_pangolin/textures.js';
 import { generateBuzzSidekickTextures } from './buzz_beetle/textures.js';
 import { generateNimbusSidekickTextures } from './nimbus_slime/textures.js';
 import { generateEmberSidekickTextures } from './ember_fox/textures.js';
+import { generateFigSidekickTextures } from './fig_gecko/textures.js';
 
 /** @type {import('./sidekickTypes.js').SidekickConfig[]} */
-export const SIDEKICK_LIST = [mochi, pip, buzz, nimbus, ember];
+export const SIDEKICK_LIST = [mochi, pip, buzz, nimbus, ember, fig];
 
 /** @type {Record<string, import('./sidekickTypes.js').SidekickConfig>} */
 export const SIDEKICK_BY_ID = Object.fromEntries(SIDEKICK_LIST.map((c) => [c.id, c]));
