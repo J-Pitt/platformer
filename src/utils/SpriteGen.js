@@ -47,7 +47,7 @@ export function generateAllTextures(scene) {
   generateAllSidekickTextures(scene);
 }
 
-/** Royal blade + gold guard + pommel (hx,hy = hand / crossguard center) */
+/** Royal greatsword + gold guard + pommel (hx,hy = hand / crossguard center) */
 function drawBladeWithGuard(g, hx, hy, tx, ty) {
   const dx = tx - hx;
   const dy = ty - hy;
@@ -56,69 +56,68 @@ function drawBladeWithGuard(g, hx, hy, tx, ty) {
   const uy = dy / len;
   const px = -uy;
   const py = ux;
-  g.lineStyle(4.2, 0xb0b8c8, 0.96);
+  g.lineStyle(5.4, 0xb0b8c8, 0.96);
   g.lineBetween(hx, hy, tx, ty);
-  g.lineStyle(2.2, 0xe0e8f0, 0.72);
-  g.lineBetween(hx + px * 1.5, hy + py * 1.5, tx - px * 0.5, ty - py * 0.5);
-  g.lineStyle(3.8, CROWN_GOLD, 0.95);
-  const gw = 6;
+  g.lineStyle(2.8, 0xe0e8f0, 0.72);
+  g.lineBetween(hx + px * 2, hy + py * 2, tx - px * 0.6, ty - py * 0.6);
+  g.lineStyle(4.2, CROWN_GOLD, 0.95);
+  const gw = 7;
   g.lineBetween(hx - px * gw, hy - py * gw, hx + px * gw, hy + py * gw);
   g.fillStyle(CROWN_BRIGHT);
-  g.fillCircle(hx - ux * 5, hy - uy * 5, 2.8);
+  g.fillCircle(hx - ux * 5.5, hy - uy * 5.5, 3.2);
   g.fillStyle(0xe0e8ff);
   g.setAlpha(0.45);
-  g.fillCircle(tx, ty, 2.2);
+  g.fillCircle(tx, ty, 2.6);
   g.setAlpha(1);
 }
 
-/** Large sword resting at the king’s right side */
+/** Greatsword resting at the king’s right side (longer reach than old royal blade) */
 function drawBigSwordIdle(g, cx, sway) {
   const sx = sway * 0.3;
-  const hx = cx + 13 + sx;
-  const hy = 27;
-  const tx = cx + 22 + sx;
-  const ty = 1;
+  const hx = cx + 12 + sx;
+  const hy = 28;
+  const tx = cx + 26 + sx;
+  const ty = 0;
   drawBladeWithGuard(g, hx, hy, tx, ty);
 }
 
 /**
  * Attack swing (assume facing right; flipX on sprite for left).
- * frame 0 wind-up → 1 chamber → 2 strike → 3 follow-through
+ * frame 0 wind-up → 1 high chamber → 2 cleaving strike (arc) → 3 follow-through low
  */
 function drawAttackSword(g, cx, dir, frame) {
   const clamp = (x, y) => ({ x: Phaser.Math.Clamp(x, 2, PW - 2), y: Phaser.Math.Clamp(y, 2, PH - 2) });
   let hx; let hy; let tx; let ty;
   if (dir === 'h') {
-    hx = cx + 11;
-    hy = 23;
-    const tips = [
-      { x: cx - 2, y: 30 },
-      { x: cx + 2, y: 5 },
-      { x: cx + 36, y: 17 },
-      { x: cx + 28, y: 4 },
+    const poses = [
+      { hx: cx + 8, hy: 25, tx: cx - 6, ty: 32 },
+      { hx: cx + 9, hy: 21, tx: cx - 10, ty: 7 },
+      { hx: cx + 12, hy: 22, tx: cx + 42, ty: 30 },
+      { hx: cx + 10, hy: 24, tx: cx + 28, ty: 38 },
     ];
-    ({ x: tx, y: ty } = clamp(tips[frame].x, tips[frame].y));
+    ({ hx, hy, tx, ty } = poses[frame]);
+    ({ x: tx, y: ty } = clamp(tx, ty));
+    ({ x: hx, y: hy } = clamp(hx, hy));
   } else if (dir === 'u') {
-    hx = cx + 10;
-    hy = 22;
-    const tips = [
-      { x: cx + 14, y: 34 },
-      { x: cx - 4, y: 10 },
-      { x: cx + 2, y: 1 },
-      { x: cx + 18, y: 6 },
+    const poses = [
+      { hx: cx + 9, hy: 24, tx: cx + 16, ty: 34 },
+      { hx: cx + 8, hy: 22, tx: cx - 8, ty: 12 },
+      { hx: cx + 7, hy: 20, tx: cx + 4, ty: 0 },
+      { hx: cx + 8, hy: 18, tx: cx + 20, ty: 4 },
     ];
-    ({ x: tx, y: ty } = clamp(tips[frame].x, tips[frame].y));
+    ({ hx, hy, tx, ty } = poses[frame]);
+    ({ x: tx, y: ty } = clamp(tx, ty));
+    ({ x: hx, y: hy } = clamp(hx, hy));
   } else {
-    // down
-    hx = cx + 11;
-    hy = 19;
-    const tips = [
-      { x: cx + 6, y: 6 },
-      { x: cx + 22, y: 10 },
-      { x: cx + 18, y: 38 },
-      { x: cx + 10, y: 36 },
+    const poses = [
+      { hx: cx + 10, hy: 18, tx: cx + 4, ty: 6 },
+      { hx: cx + 11, hy: 19, tx: cx + 24, ty: 8 },
+      { hx: cx + 12, hy: 21, tx: cx + 20, ty: 40 },
+      { hx: cx + 9, hy: 22, tx: cx + 6, ty: 38 },
     ];
-    ({ x: tx, y: ty } = clamp(tips[frame].x, tips[frame].y));
+    ({ hx, hy, tx, ty } = poses[frame]);
+    ({ x: tx, y: ty } = clamp(tx, ty));
+    ({ x: hx, y: hy } = clamp(hx, hy));
   }
   drawBladeWithGuard(g, hx, hy, tx, ty);
 }
@@ -382,165 +381,113 @@ function generatePlayerSlashTextures(scene) {
   const bladeEdge = 0x9ecfff;
   const glow = TEAL_GLOW;
 
-  /** 4 frames each: wind-up → mid → strike → trail */
+  const arcStroke = (g, cx, cy, r, start, end, acw, thick, color, a) => {
+    g.lineStyle(thick, color, a);
+    g.beginPath();
+    g.arc(cx, cy, r, start, end, acw);
+    g.strokePath();
+  };
+
+  /** Curved greatsword trails: wind-up → chamber → wide swing → dissipating arc */
   const frames = {
     right: [
       (g) => {
-        g.fillStyle(blade, 0.75);
-        g.fillTriangle(10, 18, 18, 26, 12, 30);
-        g.lineStyle(2, glow, 0.45);
-        g.lineBetween(12, 20, 20, 28);
-        g.lineStyle(1.5, 0xffffff, 0.35);
-        g.lineBetween(14, 22, 22, 30);
+        arcStroke(g, 18, 28, 14, Math.PI * 0.55, Math.PI * 0.95, false, 4, blade, 0.55);
+        arcStroke(g, 18, 28, 14, Math.PI * 0.55, Math.PI * 0.95, false, 2, glow, 0.35);
+        arcStroke(g, 18, 28, 16, Math.PI * 0.58, Math.PI * 0.92, false, 1.5, 0xffffff, 0.25);
       },
       (g) => {
-        g.fillStyle(blade, 0.88);
-        g.fillTriangle(22, 8, 34, 18, 28, 28);
-        g.fillTriangle(28, 28, 34, 18, 32, 32);
-        g.fillStyle(bladeEdge, 0.75);
-        g.fillTriangle(24, 10, 32, 18, 29, 24);
-        g.lineStyle(2, glow, 0.65);
-        g.lineBetween(22, 10, 34, 22);
+        arcStroke(g, 10, 20, 18, Math.PI * 1.05, Math.PI * 1.55, false, 5, blade, 0.72);
+        arcStroke(g, 10, 20, 18, Math.PI * 1.05, Math.PI * 1.55, false, 2.5, bladeEdge, 0.5);
+        arcStroke(g, 10, 20, 20, Math.PI * 1.02, Math.PI * 1.52, false, 2, glow, 0.45);
       },
       (g) => {
-        g.fillStyle(blade, 0.98);
-        g.fillTriangle(34, 10, 44, 22, 38, 26);
-        g.fillTriangle(38, 26, 44, 22, 42, 30);
-        g.fillStyle(bladeEdge, 0.92);
-        g.fillTriangle(36, 12, 42, 20, 39, 23);
-        g.lineStyle(2.5, glow, 0.9);
-        g.lineBetween(32, 12, 44, 24);
-        g.lineStyle(1.5, 0xffffff, 0.65);
-        g.lineBetween(35, 14, 43, 22);
-        g.lineStyle(3, glow, 0.3);
-        g.lineBetween(30, 14, 46, 28);
+        arcStroke(g, 6, 26, 30, Math.PI * 0.48, -0.12, true, 7, blade, 0.95);
+        arcStroke(g, 6, 26, 30, Math.PI * 0.48, -0.12, true, 4, bladeEdge, 0.78);
+        arcStroke(g, 6, 26, 32, Math.PI * 0.45, -0.1, true, 3.5, glow, 0.55);
+        arcStroke(g, 6, 26, 28, Math.PI * 0.5, -0.08, true, 1.8, 0xffffff, 0.5);
+        g.fillStyle(TEAL_BRIGHT, 0.45);
+        g.fillCircle(38, 26, 2.5);
+        g.fillCircle(34, 30, 2);
       },
       (g) => {
-        g.fillStyle(blade, 0.55);
-        g.fillTriangle(40, 6, 46, 22, 42, 28);
-        g.lineStyle(2, glow, 0.5);
-        g.lineBetween(38, 8, 46, 26);
-        g.lineBetween(36, 12, 44, 24);
-        g.lineBetween(34, 10, 42, 20);
-        g.fillStyle(TEAL_BRIGHT, 0.35);
-        g.fillCircle(44, 18, 2);
-        g.fillCircle(40, 22, 1.5);
+        arcStroke(g, 4, 30, 26, Math.PI * 0.35, Math.PI * 0.02, true, 4, blade, 0.42);
+        arcStroke(g, 4, 30, 28, Math.PI * 0.33, 0.04, true, 2.5, glow, 0.32);
+        g.fillStyle(TEAL_BRIGHT, 0.28);
+        g.fillCircle(30, 34, 2);
       },
     ],
     left: [
       (g) => {
-        g.fillStyle(blade, 0.75);
-        g.fillTriangle(38, 18, 30, 26, 36, 30);
-        g.lineStyle(2, glow, 0.45);
-        g.lineBetween(36, 20, 28, 28);
-        g.lineStyle(1.5, 0xffffff, 0.35);
-        g.lineBetween(34, 22, 26, 30);
+        arcStroke(g, 30, 28, 14, Math.PI * 0.05, Math.PI * 0.45, false, 4, blade, 0.55);
+        arcStroke(g, 30, 28, 14, Math.PI * 0.05, Math.PI * 0.45, false, 2, glow, 0.35);
+        arcStroke(g, 30, 28, 16, Math.PI * 0.08, Math.PI * 0.42, false, 1.5, 0xffffff, 0.25);
       },
       (g) => {
-        g.fillStyle(blade, 0.88);
-        g.fillTriangle(26, 8, 14, 18, 20, 28);
-        g.fillTriangle(20, 28, 14, 18, 16, 32);
-        g.fillStyle(bladeEdge, 0.75);
-        g.fillTriangle(24, 10, 16, 18, 19, 24);
-        g.lineStyle(2, glow, 0.65);
-        g.lineBetween(26, 10, 14, 22);
+        arcStroke(g, 38, 20, 18, Math.PI * -0.05, Math.PI * 0.45, true, 5, blade, 0.72);
+        arcStroke(g, 38, 20, 18, Math.PI * -0.05, Math.PI * 0.45, true, 2.5, bladeEdge, 0.5);
+        arcStroke(g, 38, 20, 20, Math.PI * -0.02, Math.PI * 0.48, true, 2, glow, 0.45);
       },
       (g) => {
-        g.fillStyle(blade, 0.98);
-        g.fillTriangle(14, 10, 4, 22, 10, 26);
-        g.fillTriangle(10, 26, 4, 22, 6, 30);
-        g.fillStyle(bladeEdge, 0.92);
-        g.fillTriangle(12, 12, 6, 20, 9, 23);
-        g.lineStyle(2.5, glow, 0.9);
-        g.lineBetween(16, 12, 4, 24);
-        g.lineStyle(1.5, 0xffffff, 0.65);
-        g.lineBetween(13, 14, 5, 22);
-        g.lineStyle(3, glow, 0.3);
-        g.lineBetween(18, 14, 2, 28);
+        arcStroke(g, 42, 26, 30, Math.PI * 0.52, Math.PI * -0.02, false, 7, blade, 0.95);
+        arcStroke(g, 42, 26, 30, Math.PI * 0.52, Math.PI * -0.02, false, 4, bladeEdge, 0.78);
+        arcStroke(g, 42, 26, 32, Math.PI * 0.55, 0, false, 3.5, glow, 0.55);
+        arcStroke(g, 42, 26, 28, Math.PI * 0.5, -0.02, false, 1.8, 0xffffff, 0.5);
+        g.fillStyle(TEAL_BRIGHT, 0.45);
+        g.fillCircle(10, 26, 2.5);
+        g.fillCircle(14, 30, 2);
       },
       (g) => {
-        g.fillStyle(blade, 0.55);
-        g.fillTriangle(8, 6, 2, 22, 6, 28);
-        g.lineStyle(2, glow, 0.5);
-        g.lineBetween(10, 8, 2, 26);
-        g.lineBetween(12, 12, 4, 24);
-        g.lineBetween(14, 10, 6, 20);
-        g.fillStyle(TEAL_BRIGHT, 0.35);
-        g.fillCircle(4, 18, 2);
-        g.fillCircle(8, 22, 1.5);
+        arcStroke(g, 44, 30, 26, Math.PI * 0.65, Math.PI * 0.98, false, 4, blade, 0.42);
+        arcStroke(g, 44, 30, 28, Math.PI * 0.67, Math.PI, false, 2.5, glow, 0.32);
+        g.fillStyle(TEAL_BRIGHT, 0.28);
+        g.fillCircle(18, 34, 2);
       },
     ],
     up: [
       (g) => {
-        g.fillStyle(blade, 0.78);
-        g.fillTriangle(28, 22, 36, 30, 32, 36);
-        g.lineStyle(2, glow, 0.45);
-        g.lineBetween(30, 24, 34, 32);
+        arcStroke(g, 28, 30, 12, Math.PI * 0.1, Math.PI * 0.55, false, 3.5, blade, 0.55);
+        arcStroke(g, 28, 30, 14, Math.PI * 0.12, Math.PI * 0.52, false, 2, glow, 0.35);
       },
       (g) => {
-        g.fillStyle(blade, 0.88);
-        g.fillTriangle(22, 10, 30, 22, 18, 22);
-        g.fillStyle(bladeEdge, 0.75);
-        g.fillTriangle(24, 12, 28, 20, 22, 20);
-        g.lineStyle(2, glow, 0.65);
-        g.lineBetween(24, 8, 24, 22);
+        arcStroke(g, 30, 28, 16, Math.PI * 1.15, Math.PI * 1.65, false, 5, blade, 0.78);
+        arcStroke(g, 30, 28, 18, Math.PI * 1.12, Math.PI * 1.62, false, 2.5, bladeEdge, 0.55);
+        arcStroke(g, 30, 28, 20, Math.PI * 1.1, Math.PI * 1.6, false, 2, glow, 0.4);
       },
       (g) => {
-        g.fillStyle(blade, 0.98);
-        g.fillTriangle(22, 6, 30, 18, 18, 18);
-        g.fillTriangle(18, 18, 30, 18, 24, 24);
-        g.fillStyle(bladeEdge, 0.92);
-        g.fillTriangle(23, 10, 27, 16, 24, 17);
-        g.lineStyle(2.5, glow, 0.9);
-        g.lineBetween(24, 4, 24, 20);
-        g.lineStyle(3, glow, 0.28);
-        g.lineBetween(20, 6, 28, 20);
-      },
-      (g) => {
-        g.fillStyle(blade, 0.5);
-        g.fillTriangle(20, 2, 28, 8, 16, 8);
-        g.lineStyle(2, glow, 0.5);
-        g.lineBetween(22, 0, 26, 6);
-        g.lineBetween(20, 2, 24, 8);
-        g.lineBetween(18, 4, 22, 10);
+        arcStroke(g, 24, 36, 28, Math.PI * 1.35, Math.PI * 1.92, false, 6.5, blade, 0.95);
+        arcStroke(g, 24, 36, 28, Math.PI * 1.35, Math.PI * 1.92, false, 3.5, bladeEdge, 0.8);
+        arcStroke(g, 24, 36, 30, Math.PI * 1.33, Math.PI * 1.9, false, 3, glow, 0.5);
+        arcStroke(g, 24, 36, 26, Math.PI * 1.38, Math.PI * 1.88, false, 1.6, 0xffffff, 0.48);
         g.fillStyle(TEAL_BRIGHT, 0.4);
-        g.fillCircle(24, 4, 2);
+        g.fillCircle(24, 4, 2.5);
+      },
+      (g) => {
+        arcStroke(g, 22, 32, 22, Math.PI * 1.05, Math.PI * 1.45, false, 3.5, blade, 0.4);
+        arcStroke(g, 22, 32, 24, Math.PI * 1.03, Math.PI * 1.42, false, 2, glow, 0.3);
       },
     ],
     down: [
       (g) => {
-        g.fillStyle(blade, 0.78);
-        g.fillTriangle(20, 22, 28, 18, 24, 12);
-        g.lineStyle(2, glow, 0.45);
-        g.lineBetween(22, 20, 26, 14);
+        arcStroke(g, 20, 18, 12, Math.PI * 0.45, Math.PI * 0.9, false, 3.5, blade, 0.55);
+        arcStroke(g, 20, 18, 14, Math.PI * 0.48, Math.PI * 0.88, false, 2, glow, 0.35);
       },
       (g) => {
-        g.fillStyle(blade, 0.88);
-        g.fillTriangle(22, 32, 30, 26, 18, 26);
-        g.fillStyle(bladeEdge, 0.75);
-        g.fillTriangle(23, 30, 27, 26, 24, 26);
-        g.lineStyle(2, glow, 0.65);
-        g.lineBetween(24, 34, 24, 26);
+        arcStroke(g, 22, 16, 17, Math.PI * -0.35, Math.PI * 0.15, false, 5, blade, 0.78);
+        arcStroke(g, 22, 16, 19, Math.PI * -0.33, Math.PI * 0.13, false, 2.5, bladeEdge, 0.55);
+        arcStroke(g, 22, 16, 21, Math.PI * -0.3, Math.PI * 0.18, false, 2, glow, 0.4);
       },
       (g) => {
-        g.fillStyle(blade, 0.98);
-        g.fillTriangle(24, 38, 30, 26, 18, 26);
-        g.fillTriangle(18, 26, 30, 26, 22, 20);
-        g.fillStyle(bladeEdge, 0.92);
-        g.fillTriangle(23, 32, 27, 28, 24, 29);
-        g.lineStyle(2.5, glow, 0.9);
-        g.lineBetween(24, 44, 24, 28);
-        g.lineStyle(3, glow, 0.28);
-        g.lineBetween(20, 42, 28, 26);
-      },
-      (g) => {
-        g.fillStyle(blade, 0.5);
-        g.fillTriangle(22, 44, 30, 38, 16, 38);
-        g.lineStyle(2, glow, 0.5);
-        g.lineBetween(24, 46, 24, 40);
-        g.lineBetween(20, 44, 28, 40);
+        arcStroke(g, 24, 8, 30, Math.PI * -0.08, Math.PI * 0.62, false, 6.5, blade, 0.95);
+        arcStroke(g, 24, 8, 30, Math.PI * -0.08, Math.PI * 0.62, false, 3.5, bladeEdge, 0.8);
+        arcStroke(g, 24, 8, 32, Math.PI * -0.05, Math.PI * 0.6, false, 3, glow, 0.5);
+        arcStroke(g, 24, 8, 28, Math.PI * -0.1, Math.PI * 0.58, false, 1.6, 0xffffff, 0.48);
         g.fillStyle(TEAL_BRIGHT, 0.4);
-        g.fillCircle(24, 44, 2);
+        g.fillCircle(24, 42, 2.5);
+      },
+      (g) => {
+        arcStroke(g, 24, 12, 24, Math.PI * 0.35, Math.PI * 0.85, false, 3.5, blade, 0.4);
+        arcStroke(g, 24, 12, 26, Math.PI * 0.33, Math.PI * 0.83, false, 2, glow, 0.3);
       },
     ],
   };
