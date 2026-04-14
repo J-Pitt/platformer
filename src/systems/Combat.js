@@ -1,3 +1,5 @@
+import { shakeScene } from './CameraRig.js';
+
 const SLASH_DURATION = 320;
 const SLASH_COOLDOWN = 400;
 const SLASH_KNOCKBACK = 200;
@@ -210,7 +212,7 @@ export class CombatSystem {
       if (this.scene && this.scene.physics) this.scene.physics.resume();
     }, HIT_FREEZE_DURATION);
 
-    this.scene.cameras.main.shake(50, 0.008);
+    shakeScene(this.scene, 50, 0.008);
 
     if (hitbox.slashDirection === 'down') {
       this.player.body.velocity.y = POGO_BOUNCE;
@@ -295,7 +297,7 @@ export class CombatSystem {
       if (this.scene && this.scene.physics) this.scene.physics.resume();
     }, HIT_FREEZE_DURATION);
 
-    this.scene.cameras.main.shake(60, 0.01);
+    shakeScene(this.scene, 60, 0.01);
     const kb = KICK_KNOCKBACK;
     if (enemy.body) {
       enemy.body.velocity.x = hitbox.kickDir * kb;
@@ -316,7 +318,7 @@ export class CombatSystem {
       if (this.player.active) this.player.clearTint();
     });
 
-    this.scene.cameras.main.shake(100, 0.01);
+    shakeScene(this.scene, 100, 0.01);
 
     if (this.player.hp <= 0) {
       this.player.die();

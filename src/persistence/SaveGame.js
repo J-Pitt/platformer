@@ -3,7 +3,26 @@ import { DEFAULT_SIDEKICK_ID, isValidSidekickId } from '../characters/sidekickRe
 
 const STORAGE_KEY = 'abyssal_depths_save_v1';
 const PLAYER_NAME_KEY = 'abyssal_depths_player_name';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
+
+function normalizeLoadedSave(s) {
+  if (!s || typeof s !== 'object') return null;
+  if (s.version === 1) {
+    return {
+      ...s,
+      version: 2,
+      world: { flags: {}, bosses: {} },
+    };
+  }
+  if (s.version !== SAVE_VERSION) return null;
+  if (!s.world || typeof s.world !== 'object') {
+    s.world = { flags: {}, bosses: {} };
+  } else {
+    if (!s.world.flags || typeof s.world.flags !== 'object') s.world.flags = {};
+    if (!s.world.bosses || typeof s.world.bosses !== 'object') s.world.bosses = {};
+  }
+  return s;
+}
 
 export function getStoredPlayerName() {
   try {
@@ -27,8 +46,9 @@ export function loadGameState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const s = JSON.parse(raw);
-    if (!s || s.version !== SAVE_VERSION || typeof s.roomId !== 'string') return null;
+    const parsed = JSON.parse(raw);
+    const s = normalizeLoadedSave(parsed);
+    if (!s || typeof s.roomId !== 'string') return null;
     if (!rooms[s.roomId]) return null;
     return s;
   } catch {
@@ -78,6 +98,11 @@ export function buildSaveState(scene) {
   const tileX = Math.floor(p.x / TILE_SIZE);
   const tileY = Math.floor(p.y / TILE_SIZE);
 
+  const world =
+    scene.gameState && typeof scene.gameState.toJSON === 'function'
+      ? scene.gameState.toJSON()
+      : { flags: {}, bosses: {} };
+
   return {
     version: SAVE_VERSION,
     playerName,
@@ -96,6 +121,7 @@ export function buildSaveState(scene) {
     sidekickId: isValidSidekickId(scene.selectedSidekickId)
       ? scene.selectedSidekickId
       : DEFAULT_SIDEKICK_ID,
+    world,
     savedAt: new Date().toISOString(),
   };
 }

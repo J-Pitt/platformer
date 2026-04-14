@@ -20,12 +20,10 @@ export function isJpProfileName(name) {
 }
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y, playerIndex = 0) {
+  constructor(scene, x, y) {
     super(scene, x, y, 'player');
     scene.add.existing(this);
     scene.physics.add.existing(this);
-
-    this.playerIndex = playerIndex;
 
     this.body.setSize(16, 28);
     this.body.setOffset(16, 14);
@@ -50,14 +48,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.visitedRooms = new Set();
 
     this.currentAnim = 'idle';
-    /** When true, position/velocity come from network; skip local input physics. */
-    this.remoteMode = false;
+
+    /** Land / jump squash–stretch (solo feel). */
+    this._wasOnGround = false;
+    this._juiceBusy = false;
 
     this.setupAnimations();
 
-    if (playerIndex === 1) {
-      this.setTint(0x6688ff);
-    }
   }
 
   setupAnimations() {
@@ -80,27 +77,62 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   getInputState() {
-    const mgr = this.scene.inputManager;
-    return this.playerIndex === 1 ? mgr.state2 : mgr.state;
+    return this.scene.inputManager.state;
+  }
+
+  playLandSquash() {
+    if (this._juiceBusy || this.movement.isDashing || this.isDead) return;
+    this._juiceBusy = true;
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 1.1,
+      scaleY: 0.9,
+      duration: 55,
+      yoyo: true,
+      ease: 'Sine.easeOut',
+      onComplete: () => {
+        this.setScale(1, 1);
+        this._juiceBusy = false;
+      },
+    });
+  }
+
+  playJumpSquash() {
+    if (this._juiceBusy || this.movement.isDashing || this.isDead) return;
+    this._juiceBusy = true;
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.92,
+      scaleY: 1.08,
+      duration: 45,
+      yoyo: true,
+      ease: 'Sine.easeOut',
+      onComplete: () => {
+        this.setScale(1, 1);
+        this._juiceBusy = false;
+      },
+    });
   }
 
   update(dt) {
     if (this.isDead) return;
-
-    if (this.remoteMode) {
-      this.updateAnimation();
-      return;
-    }
 
     const input = this.getInputState();
 
     this.movement.update(dt, input);
     this.combat.update(dt, input);
 
+    const onGround = this.body.blocked.down || this.body.touching.down;
+    if (!this._wasOnGround && onGround && !this.movement.isDashing) {
+      this.playLandSquash();
+    } else if (this._wasOnGround && !onGround && this.body.velocity.y < -80) {
+      this.playJumpSquash();
+    }
+    this._wasOnGround = onGround;
+
     this.updateAnimation();
 
     // Running particles
-    const onGround = this.body.blocked.down || this.body.touching.down;
     if (onGround && Math.abs(this.body.velocity.x) > 80 && Math.random() < 0.3) {
       if (this.scene.dustEmitter) {
         this.scene.dustEmitter.emitParticleAt(this.x, this.y + 16, 1);
@@ -187,21 +219,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.velocity.set(0, 0);
     this.body.allowGravity = false;
 
-    if (this.playerIndex === 1) {
-      this.scene.tweens.add({
-        targets: this,
-        alpha: 0, scaleX: 1.5, scaleY: 1.5,
-        duration: 400, ease: 'Power2',
-        onComplete: () => { this.scene.respawnPlayer2(); },
-      });
-    } else {
-      this.scene.tweens.add({
-        targets: this,
-        alpha: 0, scaleX: 1.5, scaleY: 1.5,
-        duration: 600, ease: 'Power2',
-        onComplete: () => { this.scene.respawnPlayer(); },
-      });
-    }
+    this.scene.tweens.add({
+      targets: this,
+      alpha: 0, scaleX: 1.5, scaleY: 1.5,
+      duration: 600, ease: 'Power2',
+      onComplete: () => { this.scene.respawnPlayer(); },
+    });
   }
 
   respawn() {
@@ -211,7 +234,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setAlpha(1);
     this.setScale(1);
     this.clearTint();
-    if (this.playerIndex === 1) this.setTint(0x6688ff);
     this.setPosition(this.spawnX, this.spawnY);
     this.body.velocity.set(0, 0);
     this.combat.isInvulnerable = false;
@@ -228,7 +250,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.combat.invulnTimer = 0;
     this.setAlpha(1);
     this.clearTint();
-    if (this.playerIndex === 1) this.setTint(0x6688ff);
     if (this.combat.isSlashing) {
       this.combat.endSlash();
     }

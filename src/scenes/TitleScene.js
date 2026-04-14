@@ -1,8 +1,3 @@
-import {
-  createPlatformerRoom,
-  joinPlatformerRoom,
-  getPlatformerRoom,
-} from '../net/platformerRoomApi.js';
 import * as SaveGame from '../persistence/SaveGame.js';
 
 function fadeToScene(scene, key, payload) {
@@ -25,24 +20,25 @@ export class TitleScene extends Phaser.Scene {
 
     this.add.rectangle(cx, cy, cam.width, cam.height, 0x050508);
 
-    this.add.text(cx, cy - 110, 'ABYSSAL DEPTHS', {
+    this.add.text(cx, cy - 148, 'ABYSSAL DEPTHS', {
       fontSize: '42px', fontFamily: 'monospace', color: '#44ff66',
       stroke: '#000', strokeThickness: 6,
     }).setOrigin(0.5);
 
-    this.add.text(cx, cy - 68, 'Into the Bone Throne', {
+    this.add.text(cx, cy - 108, 'Into the Bone Throne', {
       fontSize: '14px', fontFamily: 'monospace', color: '#6a5838',
       stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5);
 
+    let menuTop = cy - 62;
     const summary = SaveGame.getSummary();
     if (summary) {
       const sub = summary.savedAt
         ? `${summary.roomName} · ${new Date(summary.savedAt).toLocaleString()}`
         : summary.roomName;
-      this.add.text(
+      const saveBlurb = this.add.text(
         cx,
-        cy - 44,
+        cy - 88,
         `${summary.playerName} — ${sub}\nSaved in this browser — highlight CONTINUE to resume`,
         {
           fontSize: '11px',
@@ -51,17 +47,18 @@ export class TitleScene extends Phaser.Scene {
           stroke: '#000',
           strokeThickness: 2,
           align: 'center',
-          lineSpacing: 5,
-          wordWrap: { width: cam.width - 40 },
+          lineSpacing: 6,
+          wordWrap: { width: cam.width - 56 },
         },
-      ).setOrigin(0.5);
+      ).setOrigin(0.5, 0);
+      menuTop = saveBlurb.y + saveBlurb.height + 18;
     }
 
     const touchEl = document.getElementById('touch-controls');
     if (touchEl) touchEl.classList.remove('visible');
 
-    const mkOpt = (y, label) => {
-      const txt = this.add.text(cx, cy + y, label, {
+    const mkOpt = (absY, label) => {
+      const txt = this.add.text(cx, absY, label, {
         fontSize: '19px', fontFamily: 'monospace', color: '#d4c8a8',
         stroke: '#000', strokeThickness: 4,
         padding: { top: 6, bottom: 6, left: 16, right: 16 },
@@ -96,7 +93,7 @@ export class TitleScene extends Phaser.Scene {
     }
 
     menuEntries.push({
-      label: '1 PLAYER (NEW GAME)',
+      label: 'NEW GAME',
       onSelect: () => {
         const nm = window.prompt('Player name', SaveGame.getStoredPlayerName() || 'Traveler');
         if (nm === null) return;
@@ -105,21 +102,6 @@ export class TitleScene extends Phaser.Scene {
           profileName: SaveGame.getStoredPlayerName(),
         });
       },
-    });
-
-    menuEntries.push({
-      label: '2 PLAYERS (LOCAL + GAMEPAD)',
-      onSelect: () => fadeToGame({ coopMode: true }),
-    });
-
-    menuEntries.push({
-      label: 'ONLINE \u2014 HOST (GET CODE)',
-      onSelect: () => startOnlineHost(),
-    });
-
-    menuEntries.push({
-      label: 'ONLINE \u2014 JOIN (ENTER CODE)',
-      onSelect: () => startOnlineJoin(),
     });
 
     if (SaveGame.hasSavedGame()) {
@@ -134,18 +116,18 @@ export class TitleScene extends Phaser.Scene {
       });
     }
 
-    const rowH = 30;
-    const totalH = (menuEntries.length - 1) * rowH;
-    let y0 = 8 - totalH / 2;
+    const rowH = 32;
+    const menuBottom = menuTop + (menuEntries.length - 1) * rowH;
+    const hintY = Math.min(cam.height - 28, menuBottom + 36);
 
     const options = [];
     for (let i = 0; i < menuEntries.length; i++) {
-      const t = mkOpt(y0 + i * rowH, menuEntries[i].label);
+      const t = mkOpt(menuTop + i * rowH, menuEntries[i].label);
       options.push(t);
       menuEntries[i]._txt = t;
     }
 
-    const hint = this.add.text(cx, cy + 118, '↑↓ select · ENTER · New solo game: pick an ally next · Saves in browser · Online needs server + Redis', {
+    const hint = this.add.text(cx, hintY, '↑↓ select · ENTER · Choose an ally on the next screen · Progress saves in this browser', {
       fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',
       stroke: '#000', strokeThickness: 2,
       align: 'center',
@@ -166,84 +148,6 @@ export class TitleScene extends Phaser.Scene {
       });
     };
     updateSelection();
-
-    const startOnlineHost = () => {
-      const name = window.prompt('Your display name', 'Host');
-      if (name === null) return;
-      (async () => {
-        try {
-          const cr = await createPlatformerRoom(name.trim() || 'Host');
-          options.forEach((o) => o.setVisible(false));
-          arrow.setVisible(false);
-          hint.setVisible(false);
-          const wait = this.add.text(
-            cx,
-            cy + 20,
-            `Room code: ${cr.gameCode}\n\nSend this code to your friend.\nWaiting for them to join…`,
-            {
-              fontSize: '16px',
-              fontFamily: 'monospace',
-              color: '#44ff66',
-              stroke: '#000',
-              strokeThickness: 4,
-              align: 'center',
-            },
-          ).setOrigin(0.5);
-
-          const poll = this.time.addEvent({
-            delay: 750,
-            loop: true,
-            callback: async () => {
-              try {
-                const r = await getPlatformerRoom(cr.roomId);
-                if (r.players?.length >= 2) {
-                  poll.remove();
-                  wait.destroy();
-                  fadeToGame({
-                    coopMode: false,
-                    online: {
-                      roomId: cr.roomId,
-                      isHost: true,
-                      playerName: (name.trim() || 'Host'),
-                      gameCode: cr.gameCode,
-                    },
-                  });
-                }
-              } catch (e) {
-                console.warn(e);
-              }
-            },
-          });
-          this.events.once('shutdown', () => poll.remove());
-        } catch (e) {
-          alert(e.message || String(e));
-          this.scene.start('TitleScene');
-        }
-      })();
-    };
-
-    const startOnlineJoin = () => {
-      const code = window.prompt('Room code (6 letters/numbers)');
-      if (code === null) return;
-      const name = window.prompt('Your display name', 'Player');
-      if (name === null) return;
-      (async () => {
-        try {
-          const r = await joinPlatformerRoom(code, name.trim() || 'Player');
-          if (!r.roomId) throw new Error('Join failed');
-          fadeToGame({
-            coopMode: false,
-            online: {
-              roomId: r.roomId,
-              isHost: false,
-              playerName: (name.trim() || 'Player'),
-            },
-          });
-        } catch (e) {
-          alert(e.message || String(e));
-        }
-      })();
-    };
 
     const runSelection = () => {
       const e = menuEntries[this.selectedIndex];

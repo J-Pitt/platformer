@@ -1,3 +1,5 @@
+import { shakeScene } from '../systems/CameraRig.js';
+
 const PATROL_SPEED = 35;
 const CHASE_SPEED = 70;
 const DETECT_RANGE = 250;
@@ -58,9 +60,7 @@ export class Brute extends Phaser.Physics.Arcade.Sprite {
         p.takeDamage(this.damage, this.x);
       }
     }
-    if (this.scene.cameras && this.scene.cameras.main) {
-      this.scene.cameras.main.shake(100, 0.006);
-    }
+    shakeScene(this.scene, 100, 0.006);
   }
 
   update(dt, players) {

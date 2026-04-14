@@ -1,4 +1,5 @@
 import { DEFAULT_SIDEKICK_ID, getSidekickConfig } from '../characters/sidekickRegistry.js';
+import { shakeScene } from '../systems/CameraRig.js';
 
 export class Sidekick extends Phaser.Physics.Arcade.Sprite {
   /**
@@ -102,7 +103,7 @@ export class Sidekick extends Phaser.Physics.Arcade.Sprite {
 
     const dir = this.facing > 0 ? 'right' : 'left';
     enemy.takeDamage(this.cfg.damage, dir);
-    this.scene.cameras.main.shake(35, 0.004);
+    shakeScene(this.scene, 35, 0.004);
   }
 
   update(dt) {

@@ -3,9 +3,10 @@ import { Sidekick } from '../entities/Sidekick.js';
 import { LevelManager } from '../level/LevelManager.js';
 import { HUD } from '../ui/HUD.js';
 import { InputManager } from '../systems/InputManager.js';
-import { PlatformerOnlineSync } from '../net/PlatformerOnlineSync.js';
 import { TILE_SIZE, rooms } from '../level/rooms.js';
 import * as SaveGame from '../persistence/SaveGame.js';
+import { GameState } from '../state/GameState.js';
+import { CameraRig } from '../systems/CameraRig.js';
 import {
   DEFAULT_SIDEKICK_ID,
   getSidekickConfig,
@@ -18,11 +19,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(data) {
-    this.online = data?.online ?? null;
-    this.coopMode = !!(data && data.coopMode);
-    this.onlineSync = null;
-    this._pendingNetRoom = null;
-
     this.setupInput();
     this.setupParticleEmitters();
 
@@ -30,11 +26,6 @@ export class GameScene extends Phaser.Scene {
     if (touchEl) touchEl.classList.remove('visible');
 
     this.inputManager = new InputManager(this);
-    if (this.online) {
-      this.inputManager.setOnlineMode(true, data.online.isHost ? 0 : 1);
-    } else {
-      this.inputManager.coopMode = this.coopMode;
-    }
 
     const urlParams = new URLSearchParams(
       typeof window !== 'undefined' ? window.location.search : '',
@@ -50,26 +41,18 @@ export class GameScene extends Phaser.Scene {
       }).setOrigin(0, 0).setDepth(300).setScrollFactor(0);
     }
 
-    this.player = new Player(this, 0, 0, 0);
-    this.player2 = null;
-    if (this.online) {
-      this.player2 = new Player(this, 0, 0, 1);
-      const host = !!data.online.isHost;
-      this.player.remoteMode = !host;
-      this.player2.remoteMode = host;
-    } else if (this.coopMode) {
-      this.player2 = new Player(this, 0, 0, 1);
-    }
+    this.player = new Player(this, 0, 0);
 
     this.levelManager = new LevelManager(this);
+    this.gameState = new GameState();
+    this.cameraRig = new CameraRig(this);
 
     this.transitioning = false;
     this.paused = false;
     this.pauseElements = [];
     this.dialogueActive = false;
 
-    const solo = !this.online && !this.coopMode;
-    const saved = solo && data?.fromSave ? SaveGame.loadGameState() : null;
+    const saved = data?.fromSave ? SaveGame.loadGameState() : null;
 
     let sidekickId = DEFAULT_SIDEKICK_ID;
     if (saved && isValidSidekickId(saved.sidekickId)) {
@@ -79,27 +62,26 @@ export class GameScene extends Phaser.Scene {
     }
     this.selectedSidekickId = sidekickId;
 
-    this.sidekick = null;
-    if (solo) {
-      this.sidekick = new Sidekick(this, getSidekickConfig(sidekickId));
-    }
+    this.sidekick = new Sidekick(this, getSidekickConfig(sidekickId));
 
     if (saved) {
       this.savedPlayerName = saved.playerName || SaveGame.getStoredPlayerName() || 'Traveler';
+      this.gameState.fromJSON(saved.world);
       this.levelManager.loadRoom(saved.roomId, saved.spawnTileX, saved.spawnTileY);
       this.player.applySaveState(saved);
     } else {
+      this.gameState.reset();
       this.savedPlayerName =
         (data?.profileName && String(data.profileName).trim()) ||
         SaveGame.getStoredPlayerName() ||
         'Traveler';
       this.levelManager.loadRoom('room1');
-      if (solo && isJpProfileName(this.savedPlayerName)) {
+      if (isJpProfileName(this.savedPlayerName)) {
         this.player.applyJpUnlock();
       }
     }
 
-    if (this.sidekick) this.sidekick.snapNearPlayer();
+    this.sidekick.snapNearPlayer();
 
     this.hud = new HUD(this);
 
@@ -108,11 +90,6 @@ export class GameScene extends Phaser.Scene {
       this.playerRimLight.setBlendMode(Phaser.BlendModes.ADD);
       this.playerRimLight.setDepth(6);
       this.playerRimLight.setAlpha(0.32);
-    }
-
-    if (this.online) {
-      this.onlineSync = new PlatformerOnlineSync(this, this.online);
-      this.onlineSync.start();
     }
 
     this.input.keyboard.on('keydown-P', () => this.togglePause());
@@ -126,13 +103,8 @@ export class GameScene extends Phaser.Scene {
     this._upStuckHoldMs = 0;
     this._upRecoverArmed = true;
 
-    if (solo) {
-      this.setupSoloAutosave();
-      this.time.delayedCall(2000, () => this.saveGameIfEligible(false));
-    }
-
-    this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
-    this.cameras.main.setDeadzone(60, 40);
+    this.setupSoloAutosave();
+    this.time.delayedCall(2000, () => this.saveGameIfEligible(false));
 
     if (this.textures.exists('screen_vignette')) {
       this.add.image(480, 270, 'screen_vignette')
@@ -206,18 +178,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   localFollowTarget() {
-    if (this.online && !this.online.isHost) return this.player2;
     return this.player;
   }
 
   update(time, delta) {
-    if (this._pendingNetRoom && !this.transitioning) {
-      const p = this._pendingNetRoom;
-      this._pendingNetRoom = null;
-      this.transitionToRoom(p.roomId, p.spawnX, p.spawnY);
-      return;
-    }
-
     if (this.transitioning) return;
 
     const dt = Math.min(delta, 33.33);
@@ -234,7 +198,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (this.paused) {
-      if (!this.online && !this.coopMode && Phaser.Input.Keyboard.JustDown(this.keys.saveGame)) {
+      if (Phaser.Input.Keyboard.JustDown(this.keys.saveGame)) {
         this.saveGameIfEligible(true);
       }
       return;
@@ -249,8 +213,7 @@ export class GameScene extends Phaser.Scene {
     this.pollUpHoldSoftRecover(dt);
 
     this.player.update(dt);
-    if (this.player2) this.player2.update(dt);
-    if (this.sidekick) this.sidekick.update(dt);
+    this.sidekick.update(dt);
     if (this.levelManager) this.levelManager.update(dt);
 
     if (this.playerRimLight) {
@@ -265,19 +228,6 @@ export class GameScene extends Phaser.Scene {
     if (this.player.y > roomH + 32 && !this.player.isDead) {
       this.player.die();
     }
-    if (this.player2 && this.player2.y > roomH + 32 && !this.player2.isDead) {
-      this.player2.die();
-    }
-
-    // P2 tether: local co-op only (online uses free range + net sync)
-    if (this.player2 && !this.online && !this.player2.isDead && !this.player.isDead) {
-      const dx = Math.abs(this.player2.x - this.player.x);
-      const dy = Math.abs(this.player2.y - this.player.y);
-      if (dx > 700 || dy > 500) {
-        this.respawnPlayer2();
-      }
-    }
-
     const activePlayers = this.getActivePlayers();
     if (this.enemies) {
       this.enemies.getChildren().forEach((enemy) => {
@@ -293,7 +243,6 @@ export class GameScene extends Phaser.Scene {
   pollSecretWarpDirectionalEdges() {
     if (!this.sys.isActive() || this.transitioning) return;
     if (!this.levelManager?.currentRoom) return;
-    if (this.online && !this.online.isHost) return;
 
     const st = this.inputManager.state;
     const prev = this._secretWarpPrevDirs;
@@ -313,7 +262,6 @@ export class GameScene extends Phaser.Scene {
   feedSecretWarpDirection(dir) {
     if (!this.sys.isActive() || this.transitioning) return;
     if (!this.levelManager?.currentRoom) return;
-    if (this.online && !this.online.isHost) return;
 
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
     const pat = this._secretWarpPattern;
@@ -345,7 +293,6 @@ export class GameScene extends Phaser.Scene {
 
   secretWarpRandomRoom() {
     if (this.transitioning) return;
-    if (this.online && !this.online.isHost) return;
 
     const cur = this.levelManager.currentRoomId;
     let ids = Object.keys(rooms).filter((id) => rooms[id] && id !== cur);
@@ -384,12 +331,6 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.fade(300, 0, 0, 0, false, (cam, progress) => {
       if (progress >= 1) {
         this.levelManager.loadRoom(roomId, spawnX, spawnY);
-        if (this.player2) {
-          this.player2.setPosition(this.player.x + 20, this.player.y);
-          this.player2.body.velocity.set(0, 0);
-        }
-        this.onlineSync?.queueHostLead(roomId, spawnX, spawnY);
-        this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
         this.saveGameIfEligible(false);
@@ -437,7 +378,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   saveGameIfEligible(showToast) {
-    if (this.online || this.coopMode) return;
     const st = SaveGame.buildSaveState(this);
     if (!st) return;
     SaveGame.persistState(st);
@@ -464,9 +404,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   getActivePlayers() {
-    const list = [this.player];
-    if (this.player2) list.push(this.player2);
-    return list;
+    return [this.player];
   }
 
   respawnPlayer() {
@@ -476,33 +414,11 @@ export class GameScene extends Phaser.Scene {
       if (progress >= 1) {
         this.levelManager.loadRoom(this.levelManager.currentRoomId);
         this.player.respawn();
-        if (this.player2) {
-          this.player2.respawn();
-          this.player2.setPosition(this.player.x + 20, this.player.y);
-        }
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
         this.saveGameIfEligible(false);
       }
     });
-  }
-
-  respawnPlayer2() {
-    if (!this.player2) return;
-    this.player2.isDead = false;
-    this.player2.hp = this.player2.maxHp;
-    this.player2.body.allowGravity = true;
-    this.player2.setAlpha(1);
-    this.player2.setScale(1);
-    this.player2.clearTint();
-    this.player2.setTint(0x6688ff);
-    this.player2.setPosition(this.player.x + 20, this.player.y);
-    this.player2.body.velocity.set(0, 0);
-    this.player2.combat.isInvulnerable = true;
-    this.player2.combat.invulnTimer = 1500;
-    this.player2.movement.isDashing = false;
-    this.player2.movement.dashTimer = 0;
-    this.player2.currentAnim = 'idle';
   }
 
   findCheckpointRoom() {
@@ -511,7 +427,6 @@ export class GameScene extends Phaser.Scene {
 
   /** Hold UP 10s → reload checkpoint room (recover from soft-locks). Release UP before it can trigger again. */
   pollUpHoldSoftRecover(dt) {
-    if (this.online && !this.online.isHost) return;
     if (!this.player || this.player.isDead) return;
     if (!this.levelManager?.currentRoom) return;
 
@@ -532,25 +447,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   resetLocalPlayersAfterRecover() {
-    for (const pl of [this.player, this.player2]) {
-      if (!pl || pl.remoteMode) continue;
-      pl.body.velocity.set(0, 0);
-      pl.movement.isDashing = false;
-      pl.movement.dashTimer = 0;
-      pl.movement.dashCooldownTimer = 0;
-      pl.movement.wallJumpLockoutTimer = 0;
-      pl.movement.airJumpsUsed = 0;
-      if (pl.combat.isSlashing) pl.combat.endSlash();
-      if (pl.combat.isKicking) pl.combat.endKick();
-      pl.combat.isInvulnerable = false;
-      pl.combat.invulnTimer = 0;
-      pl.setAlpha(1);
-    }
+    const pl = this.player;
+    pl.body.velocity.set(0, 0);
+    pl.movement.isDashing = false;
+    pl.movement.dashTimer = 0;
+    pl.movement.dashCooldownTimer = 0;
+    pl.movement.wallJumpLockoutTimer = 0;
+    pl.movement.airJumpsUsed = 0;
+    if (pl.combat.isSlashing) pl.combat.endSlash();
+    if (pl.combat.isKicking) pl.combat.endKick();
+    pl.combat.isInvulnerable = false;
+    pl.combat.invulnTimer = 0;
+    pl.setAlpha(1);
   }
 
   softRecoverGameplay() {
     if (this.transitioning) return;
-    if (this.online && !this.online.isHost) return;
     if (!this.levelManager?.currentRoom || !this.player) return;
 
     this.transitioning = true;
@@ -564,12 +476,6 @@ export class GameScene extends Phaser.Scene {
       if (progress < 1) return;
       this.levelManager.loadRoom(roomId, tx, ty);
       this.resetLocalPlayersAfterRecover();
-      if (this.player2 && !this.player2.remoteMode) {
-        this.player2.setPosition(this.player.x + 20, this.player.y);
-        this.player2.body.velocity.set(0, 0);
-      }
-      this.onlineSync?.queueHostLead(roomId, tx, ty);
-      this.cameras.main.startFollow(this.localFollowTarget(), true, 0.08, 0.08);
       this.cameras.main.fadeIn(320, 0, 0, 0);
       this.transitioning = false;
       this.saveGameIfEligible(false);
@@ -623,7 +529,7 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
     this.pauseElements.push(title);
 
-    if (!this.online && !this.coopMode && this.savedPlayerName) {
+    if (this.savedPlayerName) {
       const who = this.add.text(cx, cy - 58, this.savedPlayerName, {
         fontSize: '13px', fontFamily: 'monospace', color: '#8a7858',
         stroke: '#000', strokeThickness: 3,
@@ -633,7 +539,7 @@ export class GameScene extends Phaser.Scene {
 
     const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
     let resumeHint = isMobile ? '[ TAP PAUSE TO RESUME ]' : '[ P OR ESC TO RESUME ]';
-    if (!this.online && !this.coopMode && !isMobile) {
+    if (!isMobile) {
       resumeHint += '  ·  B SAVE';
     }
     const hint = this.add.text(cx, cy + 30, resumeHint, {
@@ -642,7 +548,7 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
     this.pauseElements.push(hint);
 
-    if (!this.online && !this.coopMode && isMobile) {
+    if (isMobile) {
       const saveT = this.add.text(cx, cy + 58, '[ TAP TO SAVE ]', {
         fontSize: '14px', fontFamily: 'monospace', color: '#40ffd8',
         stroke: '#000', strokeThickness: 3,

@@ -1,3 +1,5 @@
+import { shakeScene } from './CameraRig.js';
+
 const MOVE_SPEED = 180;
 const ACCELERATION = 1400;
 const DECELERATION = 2000;
@@ -143,7 +145,7 @@ export class MovementSystem {
     p.body.velocity.y = 0;
     p.body.allowGravity = false;
     p.setInvulnerable(true);
-    this.scene.cameras.main.shake(80, 0.005);
+    shakeScene(this.scene, 80, 0.005);
   }
 
   updateDash(dt) {

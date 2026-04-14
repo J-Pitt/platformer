@@ -89,6 +89,8 @@ function buildRoom1() {
     name: 'The Broken Threshold',
     width: W,
     height: H,
+    /** Optional per-room follow feel (see CameraRig). */
+    camera: { deadzoneHeight: 52, lerpY: 0.09 },
     tiles,
     playerSpawn: { x: 4, y: f },
     objects: [

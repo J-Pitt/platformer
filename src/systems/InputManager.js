@@ -20,30 +20,12 @@ export class InputManager {
     this.padIndex = -1;
     this.shown = false;
     this.hintShown = false;
-    this.coopMode = false;
-    this.onlineMode = false;
-    /** 0 = local is P1 (green), 1 = local is P2 (blue) */
-    this.localPlayerSlot = 0;
 
     this.touch = new TouchControls();
 
     this.prevButtons = {};
-    this.prevButtons2 = {};
 
     this.state = {
-      left: false,
-      right: false,
-      up: false,
-      down: false,
-      jumpPressed: false,
-      jumpHeld: false,
-      dashPressed: false,
-      slashPressed: false,
-      interactPressed: false,
-      kickPressed: false,
-    };
-
-    this.state2 = {
       left: false,
       right: false,
       up: false,
@@ -83,12 +65,6 @@ export class InputManager {
 
     this.refreshGamepads();
     this._maybeShowHint();
-  }
-
-  setOnlineMode(enabled, localPlayerSlot) {
-    this.onlineMode = !!enabled;
-    this.localPlayerSlot = localPlayerSlot === 1 ? 1 : 0;
-    if (this.onlineMode) this.coopMode = false;
   }
 
   /** Scan navigator.getGamepads() every time — required for Firefox (snapshot updates each poll). */
@@ -262,97 +238,24 @@ export class InputManager {
 
     const pad = this.getGamepad();
 
-    if (this.onlineMode) {
-      let gpState = null;
-      if (pad) {
-        if (!this.shown) this.showControllerConnected(pad.id);
-        gpState = this.readGamepadState(pad, this.prevButtons);
-        this.storePrevButtons(pad);
-      }
-
-      const local = {
-        left: kbLeft || tLeft || (gpState && gpState.left),
-        right: kbRight || tRight || (gpState && gpState.right),
-        up: kbUp || tUp || (gpState && gpState.up),
-        down: kbDown || tDown || (gpState && gpState.down),
-        jumpPressed: kbJumpPressed || tJumpPressed || (gpState && gpState.jumpPressed),
-        jumpHeld: kbJumpHeld || tJumpHeld || (gpState && gpState.jumpHeld),
-        dashPressed: kbDashPressed || tDashPressed || (gpState && gpState.dashPressed),
-        slashPressed: kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed),
-        interactPressed: kbInteractPressed || (gpState && gpState.interactPressed),
-        kickPressed: kbKickPressed,
-      };
-
-      const z = () => ({
-        left: false, right: false, up: false, down: false,
-        jumpPressed: false, jumpHeld: false, dashPressed: false, slashPressed: false, interactPressed: false, kickPressed: false,
-      });
-
-      if (this.localPlayerSlot === 0) {
-        Object.assign(this.state, local);
-        Object.assign(this.state2, z());
-      } else {
-        Object.assign(this.state2, local);
-        Object.assign(this.state, z());
-      }
-    } else if (this.coopMode) {
-      // Co-op: keyboard + touch -> P1, gamepad -> P2
-      this.state.left = kbLeft || tLeft;
-      this.state.right = kbRight || tRight;
-      this.state.up = kbUp || tUp;
-      this.state.down = kbDown || tDown;
-      this.state.jumpPressed = kbJumpPressed || tJumpPressed;
-      this.state.jumpHeld = kbJumpHeld || tJumpHeld;
-      this.state.dashPressed = kbDashPressed || tDashPressed;
-      this.state.slashPressed = kbSlashPressed || tSlashPressed;
-      this.state.interactPressed = kbInteractPressed;
-      this.state.kickPressed = kbKickPressed;
-
-      if (pad) {
-        if (!this.shown) this.showControllerConnected(pad.id);
-        const gp = this.readGamepadState(pad, this.prevButtons);
-        this.state2.left = gp.left;
-        this.state2.right = gp.right;
-        this.state2.up = gp.up;
-        this.state2.down = gp.down;
-        this.state2.jumpPressed = gp.jumpPressed;
-        this.state2.jumpHeld = gp.jumpHeld;
-        this.state2.dashPressed = gp.dashPressed;
-        this.state2.slashPressed = gp.slashPressed;
-        this.state2.interactPressed = gp.interactPressed;
-        this.storePrevButtons(pad);
-      } else {
-        this.state2.left = false;
-        this.state2.right = false;
-        this.state2.up = false;
-        this.state2.down = false;
-        this.state2.jumpPressed = false;
-        this.state2.jumpHeld = false;
-        this.state2.dashPressed = false;
-        this.state2.slashPressed = false;
-        this.state2.interactPressed = false;
-      }
-    } else {
-      // Solo: keyboard + touch + gamepad all -> P1
-      let gpState = null;
-      if (pad) {
-        if (!this.shown) this.showControllerConnected(pad.id);
-        gpState = this.readGamepadState(pad, this.prevButtons);
-        this.storePrevButtons(pad);
-      }
-
-      this.state.left = kbLeft || tLeft || (gpState && gpState.left);
-      this.state.right = kbRight || tRight || (gpState && gpState.right);
-      this.state.up = kbUp || tUp || (gpState && gpState.up);
-      this.state.down = kbDown || tDown || (gpState && gpState.down);
-      this.state.jumpPressed = kbJumpPressed || tJumpPressed || (gpState && gpState.jumpPressed);
-      this.state.jumpHeld = kbJumpHeld || tJumpHeld || (gpState && gpState.jumpHeld);
-      this.state.dashPressed = kbDashPressed || tDashPressed || (gpState && gpState.dashPressed);
-      this.state.slashPressed = kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed);
-      this.state.interactPressed = kbInteractPressed
-        || (gpState && gpState.interactPressed);
-      this.state.kickPressed = kbKickPressed;
+    let gpState = null;
+    if (pad) {
+      if (!this.shown) this.showControllerConnected(pad.id);
+      gpState = this.readGamepadState(pad, this.prevButtons);
+      this.storePrevButtons(pad);
     }
+
+    this.state.left = kbLeft || tLeft || (gpState && gpState.left);
+    this.state.right = kbRight || tRight || (gpState && gpState.right);
+    this.state.up = kbUp || tUp || (gpState && gpState.up);
+    this.state.down = kbDown || tDown || (gpState && gpState.down);
+    this.state.jumpPressed = kbJumpPressed || tJumpPressed || (gpState && gpState.jumpPressed);
+    this.state.jumpHeld = kbJumpHeld || tJumpHeld || (gpState && gpState.jumpHeld);
+    this.state.dashPressed = kbDashPressed || tDashPressed || (gpState && gpState.dashPressed);
+    this.state.slashPressed = kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed);
+    this.state.interactPressed = kbInteractPressed
+      || (gpState && gpState.interactPressed);
+    this.state.kickPressed = kbKickPressed;
 
     return this.state;
   }

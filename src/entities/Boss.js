@@ -1,3 +1,5 @@
+import { shakeScene } from '../systems/CameraRig.js';
+
 const BOSS_HP = 20;
 const BOSS_DAMAGE = 2;
 const DETECT_RANGE = 300;
@@ -179,7 +181,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
         this.setTint(0xff8866);
       }
     });
-    this.scene.cameras.main.shake(300, 0.015);
+    shakeScene(this.scene, 300, 0.015);
   }
 
   startMeleeAttack(player) {
@@ -240,7 +242,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
       this.body.velocity.y = 350;
       this.scene.time.delayedCall(200, () => {
         if (this.isDead || !this.active) return;
-        this.scene.cameras.main.shake(200, 0.02);
+        shakeScene(this.scene, 200, 0.02);
         this.createSlamWave();
       });
     });
@@ -416,7 +418,12 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     if (this.scene.enemyDeathEmitter) {
       this.scene.enemyDeathEmitter.emitParticleAt(this.x, this.y, 25);
     }
-    this.scene.cameras.main.shake(500, 0.025);
+    shakeScene(this.scene, 500, 0.025);
+
+    const rid = this.scene.levelManager?.currentRoomId;
+    if (rid && this.scene.gameState) {
+      this.scene.gameState.setBossDefeated(`boss_${rid}`);
+    }
 
     for (const p of this.scene.getActivePlayers()) {
       if (!p.isDead) {

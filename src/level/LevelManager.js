@@ -1,4 +1,5 @@
 import { rooms, TILE_SIZE } from './rooms.js';
+import { meetsAbilityRequirements } from './abilityGates.js';
 import { organicDecorRng } from './organicCaveGen.js';
 import { Crawler } from '../entities/Crawler.js';
 import { Flyer } from '../entities/Flyer.js';
@@ -81,6 +82,8 @@ export class LevelManager {
     if (this.roomLocked) {
       this.lockDoors();
     }
+
+    this.scene.cameraRig?.applyRoom(room);
   }
 
   createParallaxBackground(room) {
@@ -694,9 +697,7 @@ export class LevelManager {
   }
 
   get allPlayers() {
-    const list = [this.scene.player];
-    if (this.scene.player2) list.push(this.scene.player2);
-    return list;
+    return [this.scene.player];
   }
 
   setupCollisions() {
@@ -757,15 +758,6 @@ export class LevelManager {
     this.scene.player.checkpointY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
     this.scene.player._checkpointRoom = this.currentRoomId;
     this.scene.player.visitedRooms.add(this.currentRoomId);
-    if (this.scene.player2) {
-      this.scene.player2.visitedRooms.add(this.currentRoomId);
-      this.scene.player2.setPosition(sx + 20, sy);
-      this.scene.player2.body.velocity.set(0, 0);
-      this.scene.player2.spawnX = sx;
-      this.scene.player2.spawnY = sy;
-      this.scene.player2.checkpointX = this.scene.player.checkpointX;
-      this.scene.player2.checkpointY = this.scene.player.checkpointY;
-    }
     if (this.scene.sidekick) {
       this.scene.sidekick.snapNearPlayer();
     }
@@ -783,11 +775,12 @@ export class LevelManager {
     door.targetRoom = obj.targetRoom;
     door.spawnX = obj.spawnX;
     door.spawnY = obj.spawnY;
+    door.requiresAbilities = Array.isArray(obj.requiresAbilities) ? obj.requiresAbilities : [];
     door.setAlpha(0.5);
 
-    const onDoor = () => {
+    const onDoor = (player) => {
       if (this.roomLocked) return;
-      if (this.scene.onlineSync && !this.scene.onlineSync.isHost) return;
+      if (!meetsAbilityRequirements(player, door.requiresAbilities)) return;
       this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
     };
 
@@ -1197,6 +1190,7 @@ export class LevelManager {
     pad.targetRoom = obj.targetRoom;
     pad.spawnX = obj.spawnX;
     pad.spawnY = obj.spawnY;
+    pad.requiresAbilities = Array.isArray(obj.requiresAbilities) ? obj.requiresAbilities : [];
 
     const glow = this.scene.add.image(x, y, 'particle_teal');
     glow.setScale(6);
@@ -1213,8 +1207,9 @@ export class LevelManager {
       targets: pad, angle: 360, duration: 6000, repeat: -1, ease: 'Linear',
     });
 
-    const onTeleport = () => {
+    const onTeleport = (player) => {
       if (this.roomLocked) return;
+      if (!meetsAbilityRequirements(player, pad.requiresAbilities)) return;
       this.scene.transitionToRoom(pad.targetRoom, pad.spawnX, pad.spawnY);
     };
 
