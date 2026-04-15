@@ -1,5 +1,3 @@
-import { generateAllSidekickTextures } from '../characters/sidekickRegistry.js';
-
 const TEAL = 0x00e8c0;
 const TEAL_DARK = 0x008870;
 const TEAL_GLOW = 0x40ffd8;
@@ -44,7 +42,6 @@ export function generateAllTextures(scene) {
   generateCoinTextures(scene);
   generateTeleportTexture(scene);
   generateKickTextures(scene);
-  generateAllSidekickTextures(scene);
 }
 
 /** Royal greatsword + gold guard + pommel (hx,hy = hand / crossguard center) */

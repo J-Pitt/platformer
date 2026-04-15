@@ -2227,32 +2227,52 @@ function buildRoom17() {
   // Arena floor
   fillRect(tiles, H - 2, 1, H - 1, W - 2, 1);
 
-  // Raised side platforms
-  fillRow(tiles, 18, 3, 8, 2);
-  fillRow(tiles, 18, W - 9, W - 4, 2);
-  fillRow(tiles, 14, 4, 10, 2);
-  fillRow(tiles, 14, W - 11, W - 5, 2);
-  fillRow(tiles, 10, 6, 10, 2);
-  fillRow(tiles, 10, W - 11, W - 7, 2);
+  // Lava pits near old pillar footings
+  clearRect(tiles, H - 2, 13, H - 2, 16);
+  clearRect(tiles, H - 2, W - 17, H - 2, W - 14);
 
-  // Central elevated platform
+  // ── Lower “maze” band: staggered islands so every tile is reachable from floor ──
+  fillRow(tiles, 20, 5, 9, 2);
+  fillRow(tiles, 20, 11, 15, 2);
+  fillRow(tiles, 20, 18, 23, 2);
+  fillRow(tiles, 20, 28, 33, 2);
+  fillRow(tiles, 20, 35, 39, 2);
+
+  // Wide side wings (routes toward centre) + centre bridge (no huge horizontal gap)
+  fillRow(tiles, 18, 3, 13, 2);
+  fillRow(tiles, 18, 14, 30, 2);
+  fillRow(tiles, 18, 30, 42, 2);
+
+  // Mid-level shelves — short dead ends + a narrow centre bridge (forces weave)
+  fillRow(tiles, 17, 8, 18, 2);
+  fillRow(tiles, 17, 19, 25, 2);
+  fillRow(tiles, 17, 29, 37, 2);
+
+  // Central spine: 2-tile vertical steps (always jumpable) up to the bench tier
+  fillRow(tiles, 19, 15, 29, 2);
   fillRow(tiles, 16, 16, 28, 2);
+  fillRow(tiles, 15, 17, 27, 2);
+  fillRow(tiles, 14, 17, 27, 2);
   fillRow(tiles, 12, 18, 26, 2);
+  fillRow(tiles, 10, 19, 25, 2);
   fillRow(tiles, 8, 20, 24, 2);
+  fillRow(tiles, 6, 20, 24, 2);
 
-  // Arena pillars
-  fillRect(tiles, 4, 12, 16, 12, 1);
-  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+  // Interior wall segments — maze-like channels (not full seals)
+  fillRect(tiles, 11, 10, 15, 10, 1);
+  fillRect(tiles, 11, 33, 15, 33, 1);
+  fillRect(tiles, 13, 16, 13, 18, 1);
+  fillRect(tiles, 13, 25, 13, 27, 1);
+
+  // Shorter arena pillars (visual weight without blocking the new climb lines)
+  fillRect(tiles, 9, 12, 18, 12, 1);
+  fillRect(tiles, 9, 31, 18, 31, 1);
 
   // Vaulted ceiling
   fillRect(tiles, 2, 4, 5, W - 5, 1);
   clearRect(tiles, 3, 18, 4, 26);
 
-  // Lava pits near pillars
-  clearRect(tiles, H - 2, 13, H - 2, 16);
-  clearRect(tiles, H - 2, W - 17, H - 2, W - 14);
-
-  // Terrain bumps
+  // Floor nubs
   fillRect(tiles, f, 10, f + 1, 11, 1);
   fillRect(tiles, f, W - 12, f + 1, W - 11, 1);
 
@@ -2269,34 +2289,34 @@ function buildRoom17() {
     objects: [
       { type: 'door', targetRoom: 'room16', x: 1, y: f, spawnX: 52, spawnY: 19 },
       { type: 'door', targetRoom: 'room18', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
-      { type: 'bench', x: 22, y: 7 },
+      { type: 'bench', x: 22, y: 6 },
       { type: 'brute', x: 16, y: f },
       { type: 'brute', x: 28, y: f },
-      { type: 'brute', x: 22, y: 15 },
+      { type: 'brute', x: 22, y: 16 },
       { type: 'crawler', x: 8, y: f },
       { type: 'crawler', x: 36, y: f },
-      { type: 'crawler', x: 20, y: 15 },
-      { type: 'crawler', x: 26, y: 15 },
-      { type: 'flyer', x: 10, y: 6 },
+      { type: 'crawler', x: 19, y: 15 },
+      { type: 'crawler', x: 25, y: 15 },
+      { type: 'flyer', x: 10, y: 5 },
       { type: 'flyer', x: 22, y: 4 },
-      { type: 'flyer', x: 34, y: 6 },
-      { type: 'flyer', x: 16, y: 10 },
-      { type: 'flyer', x: 28, y: 10 },
+      { type: 'flyer', x: 34, y: 5 },
+      { type: 'flyer', x: 15, y: 9 },
+      { type: 'flyer', x: 29, y: 9 },
       { type: 'magma_pool', x: 13, y: 22, width: 4 },
       { type: 'magma_pool', x: W - 17, y: 22, width: 4 },
       { type: 'spike_wall', x: 12, y: 8, width: 16, height: 96 },
       { type: 'spike_wall', x: W - 13, y: 8, width: 16, height: 96 },
       { type: 'spike_wall', x: 13, y: 21, width: 128, height: 16 },
       { type: 'spike_wall', x: W - 17, y: 21, width: 128, height: 16 },
-      { type: 'pendulum_trap', x: 22, y: 6, length: 80, swing: 48, speed: 1.9, phase: 0 },
-      { type: 'pendulum_trap', x: 14, y: 10, length: 72, swing: 42, speed: 1.7, phase: 1.2 },
-      { type: 'pendulum_trap', x: 30, y: 10, length: 72, swing: 42, speed: 1.7, phase: 0.6 },
-      { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 160, speed: 1.3, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 12, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 0.5, spin: 0 },
-      { type: 'moving_platform', x: W - 13, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 1.5, spin: 0 },
+      { type: 'pendulum_trap', x: 22, y: 5, length: 80, swing: 48, speed: 1.9, phase: 0 },
+      { type: 'pendulum_trap', x: 14, y: 9, length: 72, swing: 42, speed: 1.7, phase: 1.2 },
+      { type: 'pendulum_trap', x: 30, y: 9, length: 72, swing: 42, speed: 1.7, phase: 0.6 },
+      { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 120, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 11, y: 11, axis: 'y', range: 96, speed: 1, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: W - 12, y: 11, axis: 'y', range: 96, speed: 1, phase: 1.5, spin: 0 },
       { type: 'health_pickup', x: 22, y: 11 },
-      { type: 'health_pickup', x: 8, y: 13 },
-      { type: 'health_pickup', x: W - 9, y: 13 },
+      { type: 'health_pickup', x: 20, y: 13 },
+      { type: 'health_pickup', x: 24, y: 13 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 22, y: 1 },
       { type: 'stalactite', x: 34, y: 1 },

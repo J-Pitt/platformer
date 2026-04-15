@@ -2,7 +2,6 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene.js';
 import { IntroScene } from './scenes/IntroScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
-import { SidekickSelectScene } from './scenes/SidekickSelectScene.js';
 import { GameScene } from './scenes/GameScene.js';
 
 const config = {
@@ -27,7 +26,7 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, IntroScene, TitleScene, SidekickSelectScene, GameScene],
+  scene: [BootScene, IntroScene, TitleScene, GameScene],
 };
 
 new Phaser.Game(config);

@@ -1,5 +1,4 @@
 import { Player, isJpProfileName } from '../entities/Player.js';
-import { Sidekick } from '../entities/Sidekick.js';
 import { LevelManager } from '../level/LevelManager.js';
 import { HUD } from '../ui/HUD.js';
 import { InputManager } from '../systems/InputManager.js';
@@ -7,12 +6,6 @@ import { TILE_SIZE, rooms } from '../level/rooms.js';
 import * as SaveGame from '../persistence/SaveGame.js';
 import { GameState } from '../state/GameState.js';
 import { CameraRig } from '../systems/CameraRig.js';
-import {
-  DEFAULT_SIDEKICK_ID,
-  getSidekickConfig,
-  isValidSidekickId,
-} from '../characters/sidekickRegistry.js';
-
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
@@ -54,16 +47,6 @@ export class GameScene extends Phaser.Scene {
 
     const saved = data?.fromSave ? SaveGame.loadGameState() : null;
 
-    let sidekickId = DEFAULT_SIDEKICK_ID;
-    if (saved && isValidSidekickId(saved.sidekickId)) {
-      sidekickId = saved.sidekickId;
-    } else if (data?.sidekickId && isValidSidekickId(data.sidekickId)) {
-      sidekickId = data.sidekickId;
-    }
-    this.selectedSidekickId = sidekickId;
-
-    this.sidekick = new Sidekick(this, getSidekickConfig(sidekickId));
-
     if (saved) {
       this.savedPlayerName = saved.playerName || SaveGame.getStoredPlayerName() || 'Traveler';
       this.gameState.fromJSON(saved.world);
@@ -80,8 +63,6 @@ export class GameScene extends Phaser.Scene {
         this.player.applyJpUnlock();
       }
     }
-
-    this.sidekick.snapNearPlayer();
 
     this.hud = new HUD(this);
 
@@ -213,7 +194,6 @@ export class GameScene extends Phaser.Scene {
     this.pollUpHoldSoftRecover(dt);
 
     this.player.update(dt);
-    this.sidekick.update(dt);
     if (this.levelManager) this.levelManager.update(dt);
 
     if (this.playerRimLight) {

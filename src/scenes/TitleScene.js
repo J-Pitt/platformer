@@ -1,13 +1,5 @@
 import * as SaveGame from '../persistence/SaveGame.js';
 
-function fadeToScene(scene, key, payload) {
-  scene.cameras.main.fade(300, 0, 0, 0, false, (_cam, progress) => {
-    if (progress >= 1) {
-      scene.scene.start(key, payload);
-    }
-  });
-}
-
 export class TitleScene extends Phaser.Scene {
   constructor() {
     super('TitleScene');
@@ -98,9 +90,7 @@ export class TitleScene extends Phaser.Scene {
         const nm = window.prompt('Player name', SaveGame.getStoredPlayerName() || 'Traveler');
         if (nm === null) return;
         SaveGame.setStoredPlayerName(nm.trim() || 'Traveler');
-        fadeToScene(this, 'SidekickSelectScene', {
-          profileName: SaveGame.getStoredPlayerName(),
-        });
+        fadeToGame({ profileName: SaveGame.getStoredPlayerName() });
       },
     });
 
@@ -127,7 +117,7 @@ export class TitleScene extends Phaser.Scene {
       menuEntries[i]._txt = t;
     }
 
-    const hint = this.add.text(cx, hintY, '↑↓ select · ENTER · Choose an ally on the next screen · Progress saves in this browser', {
+    const hint = this.add.text(cx, hintY, '↑↓ select · ENTER · Progress saves in this browser', {
       fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',
       stroke: '#000', strokeThickness: 2,
       align: 'center',

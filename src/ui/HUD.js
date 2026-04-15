@@ -58,6 +58,18 @@ export class HUD {
       fontSize: '14px', fontFamily: 'monospace', color: '#ffc840',
       stroke: '#000', strokeThickness: 3,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(100);
+
+    /** Playtest: show `rooms.js` id + human name for room-by-room notes. */
+    this._roomLabelKey = '';
+    this.roomDebugLabel = this.scene.add.text(8, 92, '', {
+      fontSize: '10px',
+      fontFamily: 'monospace',
+      color: '#9a8a68',
+      stroke: '#000',
+      strokeThickness: 3,
+      lineSpacing: 3,
+      wordWrap: { width: Math.min(240, cam.width - 120) },
+    }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
   }
 
   setupMapInput() {
@@ -122,6 +134,15 @@ export class HUD {
 
     if (this.coinText) {
       this.coinText.setText(`${player.coins}`);
+    }
+
+    const lm = this.scene.levelManager;
+    const rid = lm?.currentRoomId || '—';
+    const rname = lm?.currentRoom?.name || '';
+    const key = `${rid}\n${rname}`;
+    if (key !== this._roomLabelKey && this.roomDebugLabel) {
+      this._roomLabelKey = key;
+      this.roomDebugLabel.setText(rname ? `${rid}\n${rname}` : rid);
     }
   }
 

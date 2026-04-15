@@ -1,5 +1,4 @@
 import { TILE_SIZE, rooms } from '../level/rooms.js';
-import { DEFAULT_SIDEKICK_ID, isValidSidekickId } from '../characters/sidekickRegistry.js';
 
 const STORAGE_KEY = 'abyssal_depths_save_v1';
 const PLAYER_NAME_KEY = 'abyssal_depths_player_name';
@@ -118,9 +117,6 @@ export function buildSaveState(scene) {
     checkpointRoom: p._checkpointRoom || lm.currentRoomId,
     checkpointTileX: Math.floor(p.checkpointX / TILE_SIZE),
     checkpointTileY: Math.floor(p.checkpointY / TILE_SIZE),
-    sidekickId: isValidSidekickId(scene.selectedSidekickId)
-      ? scene.selectedSidekickId
-      : DEFAULT_SIDEKICK_ID,
     world,
     savedAt: new Date().toISOString(),
   };
