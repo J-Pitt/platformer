@@ -32,6 +32,9 @@ export class LevelManager {
     this.teleports = [];
     this.roomLockVisuals = [];
     this.roomLockTweens = [];
+    /** Fixed-screen notice when entering enemy-locked rooms */
+    this.roomLockNoticeText = null;
+    this.roomLockNoticeTimer = null;
   }
 
   get roomWidth() {
@@ -127,7 +130,7 @@ export class LevelManager {
     const mid = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, keys.mid);
     mid.setScrollFactor(0.14, 0.16);
     mid.setDepth(-6);
-    const midAlpha = amb.startsWith('tunnel') ? 0.62 : 0.88;
+    const midAlpha = amb.startsWith('tunnel') ? 0.56 : 0.82;
     mid.setAlpha(midAlpha);
     this.parallaxLayers.push(mid);
 
@@ -136,10 +139,10 @@ export class LevelManager {
     const mist = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, 'bg_fog_mist');
     mist.setScrollFactor(0.05, 0.04);
     mist.setDepth(-5);
-    let mistA = 0.72;
-    if (amb === 'fungal' || amb === 'tunnel_fungal') mistA = 0.82;
-    else if (amb === 'crystal' || amb === 'tunnel_crystal') mistA = 0.78;
-    else if (amb.startsWith('tunnel')) mistA = 0.8;
+    let mistA = 0.56;
+    if (amb === 'fungal' || amb === 'tunnel_fungal') mistA = 0.68;
+    else if (amb === 'crystal' || amb === 'tunnel_crystal') mistA = 0.64;
+    else if (amb.startsWith('tunnel')) mistA = 0.66;
     mist.setAlpha(mistA);
     mist.setBlendMode(Phaser.BlendModes.MULTIPLY);
     this.parallaxLayers.push(mist);
@@ -158,17 +161,17 @@ export class LevelManager {
       tunnel_guardian: 0x120818,
     };
     const tintAlpha = {
-      cavern: 0.5,
-      mountain: 0.48,
-      mountain_shaft: 0.52,
-      shaft: 0.5,
-      fungal: 0.52,
-      crystal: 0.5,
-      guardian: 0.52,
-      tunnel: 0.58,
-      tunnel_fungal: 0.6,
-      tunnel_crystal: 0.58,
-      tunnel_guardian: 0.62,
+      cavern: 0.42,
+      mountain: 0.4,
+      mountain_shaft: 0.44,
+      shaft: 0.42,
+      fungal: 0.44,
+      crystal: 0.42,
+      guardian: 0.44,
+      tunnel: 0.5,
+      tunnel_fungal: 0.52,
+      tunnel_crystal: 0.5,
+      tunnel_guardian: 0.54,
     };
     const overlay = this.scene.add.rectangle(
       rpw / 2, rph / 2, rpw, rph,
@@ -180,17 +183,17 @@ export class LevelManager {
     this.parallaxLayers.push(overlay);
 
     const castCfg = {
-      fungal: { color: 0x22ffaa, alpha: 0.09 },
-      crystal: { color: 0xaa66ff, alpha: 0.1 },
-      cavern: { color: 0x4488cc, alpha: 0.07 },
-      mountain: { color: 0x5588aa, alpha: 0.06 },
-      mountain_shaft: { color: 0x5588cc, alpha: 0.07 },
-      shaft: { color: 0x5588cc, alpha: 0.08 },
-      guardian: { color: 0xcc4488, alpha: 0.09 },
-      tunnel: { color: 0x3366aa, alpha: 0.06 },
-      tunnel_fungal: { color: 0x18aa66, alpha: 0.07 },
-      tunnel_crystal: { color: 0x7744cc, alpha: 0.08 },
-      tunnel_guardian: { color: 0xaa3366, alpha: 0.07 },
+      fungal: { color: 0x22ffaa, alpha: 0.065 },
+      crystal: { color: 0xaa66ff, alpha: 0.072 },
+      cavern: { color: 0x4488cc, alpha: 0.052 },
+      mountain: { color: 0x5588aa, alpha: 0.045 },
+      mountain_shaft: { color: 0x5588cc, alpha: 0.052 },
+      shaft: { color: 0x5588cc, alpha: 0.06 },
+      guardian: { color: 0xcc4488, alpha: 0.065 },
+      tunnel: { color: 0x3366aa, alpha: 0.045 },
+      tunnel_fungal: { color: 0x18aa66, alpha: 0.052 },
+      tunnel_crystal: { color: 0x7744cc, alpha: 0.06 },
+      tunnel_guardian: { color: 0xaa3366, alpha: 0.052 },
     };
     const cc = castCfg[amb];
     if (cc) {
@@ -436,10 +439,20 @@ export class LevelManager {
    * Guide: foreground is displayed above main layer for 3D depth, placed at margins. */
   renderForegroundElements(room) {
     if (!room.foreground) return;
-    const rpw = room.width * TILE_SIZE;
-    const rph = room.height * TILE_SIZE;
+    const H = room.height;
+    const W = room.width;
+
+    const coversDoorway = (fg) => {
+      const t = fg.type;
+      if (t !== 'fg_rock_formation' && t !== 'fg_rock_formation_sm' && t !== 'fg_pillar_fragment') {
+        return false;
+      }
+      if (fg.y < H - 2) return false;
+      return fg.x <= 3 || fg.x >= W - 4;
+    };
 
     for (const fg of room.foreground) {
+      if (coversDoorway(fg)) continue;
       const key = fg.type;
       if (!this.scene.textures.exists(key)) continue;
 
@@ -506,17 +519,32 @@ export class LevelManager {
       const shaft = this.scene.add.image(bx, by, shaftKey);
       shaft.setOrigin(0.5, 0);
       shaft.setDepth(8);
-      const baseAlpha = (beam.alpha || 0.15) * 2.5;
+      const baseAlpha = (beam.alpha || 0.15) * 1.85;
+      const scale = (beam.scale || 1) * 1.45;
       shaft.setAlpha(baseAlpha);
-      shaft.setScale((beam.scale || 1) * 1.5);
+      shaft.setScale(scale);
       shaft.setRotation(Phaser.Math.DegToRad(beam.angle || 0));
       shaft.setBlendMode(Phaser.BlendModes.ADD);
       this.scene.tweens.add({
-        targets: shaft, alpha: baseAlpha * 0.45,
+        targets: shaft, alpha: baseAlpha * 0.5,
         duration: 3000 + Math.random() * 2000, yoyo: true, repeat: -1,
         ease: 'Sine.easeInOut',
       });
       this.parallaxLayers.push(shaft);
+
+      const glow = this.scene.add.image(bx, by, shaftKey);
+      glow.setOrigin(0.5, 0);
+      glow.setDepth(7);
+      glow.setAlpha(baseAlpha * 0.28);
+      glow.setScale(scale * 2.15);
+      glow.setRotation(Phaser.Math.DegToRad(beam.angle || 0));
+      glow.setBlendMode(Phaser.BlendModes.ADD);
+      this.scene.tweens.add({
+        targets: glow, alpha: baseAlpha * 0.12,
+        duration: 3400 + Math.random() * 1800, yoyo: true, repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      this.parallaxLayers.push(glow);
     }
 
     if (room.lighting.ambientColor != null) {
@@ -752,19 +780,43 @@ export class LevelManager {
   }
 
   createDoor(x, y, obj) {
+    const portalGlow = this.scene.add.image(x, y, 'door');
+    portalGlow.setDepth(3);
+    portalGlow.setBlendMode(Phaser.BlendModes.ADD);
+    portalGlow.setAlpha(0.2);
+    portalGlow.setScale(1.12);
+    const glowTween = this.scene.tweens.add({
+      targets: portalGlow,
+      scaleX: 1.24,
+      scaleY: 1.3,
+      duration: 1600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
     const door = this.scene.physics.add.image(x, y, 'door');
     door.body.allowGravity = false;
     door.body.setImmovable(true);
-    const bw = Math.max(TILE_SIZE, door.width * 0.9);
-    const bh = Math.max(TILE_SIZE * 2, door.height * 0.95);
+    const bw = Math.max(TILE_SIZE, door.width * 0.88);
+    const bh = Math.max(TILE_SIZE * 2, door.height * 0.9);
     door.body.setSize(bw, bh);
     door.body.setOffset((door.width - bw) / 2, (door.height - bh) / 2);
-    door.setDepth(1);
+    door.setDepth(5);
     door.targetRoom = obj.targetRoom;
     door.spawnX = obj.spawnX;
     door.spawnY = obj.spawnY;
     door.requiresAbilities = Array.isArray(obj.requiresAbilities) ? obj.requiresAbilities : [];
-    door.setAlpha(0.5);
+    door.setAlpha(0.96);
+
+    const pulseTween = this.scene.tweens.add({
+      targets: door,
+      alpha: { from: 0.9, to: 1 },
+      duration: 1400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
 
     const onDoor = (player) => {
       if (this.roomLocked) return;
@@ -775,7 +827,7 @@ export class LevelManager {
     for (const player of this.allPlayers) {
       this.scene.physics.add.overlap(player, door, onDoor);
     }
-    this.doorZones.push({ door });
+    this.doorZones.push({ door, portalGlow, glowTween, pulseTween });
   }
 
   createAbilityOrb(x, y, obj) {
@@ -1614,6 +1666,36 @@ export class LevelManager {
     player.takeDamage(1, fromX);
   }
 
+  /**
+   * Immovable moving platforms update by setting position; Arcade does not carry the player.
+   * Nudge the player by the same delta when they are standing on the platform top.
+   */
+  carryPlayerWithMovingPlatform(platformSprite, dx, dy) {
+    if (dx === 0 && dy === 0) return;
+    const player = this.scene.player;
+    if (!player?.body || player.isDead) return;
+
+    const pb = player.body;
+    const b = platformSprite.body;
+    if (!b) return;
+
+    const margin = 2;
+    const footSlop = 8;
+    const horizOverlap = pb.right > b.left + margin && pb.left < b.right - margin;
+    if (!horizOverlap) return;
+
+    const feet = pb.bottom;
+    const platTop = b.top;
+    const onTop = feet >= platTop - footSlop && feet <= platTop + footSlop + 6;
+    if (!onTop) return;
+
+    if (pb.velocity.y < -100) return;
+
+    player.x += dx;
+    player.y += dy;
+    pb.updateFromGameObject();
+  }
+
   update(dt) {
     this.hazardDamageCooldown = Math.max(0, this.hazardDamageCooldown - dt);
 
@@ -1621,15 +1703,22 @@ export class LevelManager {
 
     for (const plat of this.movingPlatforms) {
       if (!plat.sprite || !plat.sprite.active) continue;
+      const s = plat.sprite;
+      const prevX = s.x;
+      const prevY = s.y;
       if (plat.axis === 'y') {
-        plat.sprite.y = plat.baseY + Math.sin(t * plat.speed + plat.phase) * plat.range;
+        s.y = plat.baseY + Math.sin(t * plat.speed + plat.phase) * plat.range;
       } else {
-        plat.sprite.x = plat.baseX + Math.sin(t * plat.speed + plat.phase) * plat.range;
+        s.x = plat.baseX + Math.sin(t * plat.speed + plat.phase) * plat.range;
       }
       if (plat.spin) {
-        plat.sprite.rotation += plat.spin * (dt / 1000);
+        s.rotation += plat.spin * (dt / 1000);
       }
-      if (plat.sprite.body) plat.sprite.body.updateFromGameObject();
+      if (s.body) s.body.updateFromGameObject();
+
+      const dx = s.x - prevX;
+      const dy = s.y - prevY;
+      this.carryPlayerWithMovingPlatform(s, dx, dy);
     }
 
     for (const hz of this.hazardZones) {
@@ -1707,18 +1796,32 @@ export class LevelManager {
 
   lockDoors() {
     for (const d of this.doorZones) {
-      d.door.setTint(0xff2222);
-      d.door.setAlpha(0.8);
+      if (d.pulseTween) d.pulseTween.pause();
+      if (d.glowTween) d.glowTween.pause();
+      d.door.setTint(0xff3333);
+      d.door.setAlpha(0.78);
+      if (d.portalGlow) {
+        d.portalGlow.setTint(0xff4444);
+        d.portalGlow.setAlpha(0.32);
+      }
     }
     this.showRoomLockBarrier();
+    this.showRoomLockEnemyNotice();
   }
 
   unlockDoors() {
+    this.clearRoomLockNotice();
     this.destroyRoomLockVisuals();
     this.roomLocked = false;
     for (const d of this.doorZones) {
       d.door.clearTint();
-      d.door.setAlpha(0.5);
+      d.door.setAlpha(0.96);
+      if (d.portalGlow) {
+        d.portalGlow.clearTint();
+        d.portalGlow.setAlpha(0.2);
+      }
+      if (d.pulseTween) d.pulseTween.resume();
+      if (d.glowTween) d.glowTween.resume();
     }
     this.scene.cameras.main.flash(300, 64, 232, 192);
   }
@@ -1788,16 +1891,52 @@ export class LevelManager {
       ease: 'Sine.easeInOut',
     });
     this.roomLockTweens.push(twG);
+  }
 
-    const banner = this.scene.add.text(rpw / 2, band + 14,
-      'ROOM SEALED — Defeat every enemy to unlock exits', {
-        fontSize: '12px',
-        fontFamily: 'monospace',
-        color: '#ff5566',
-        stroke: '#1a0000',
-        strokeThickness: 5,
-      }).setOrigin(0.5, 0).setDepth(12).setScrollFactor(1);
-    this.roomLockVisuals.push(banner);
+  clearRoomLockNotice() {
+    if (this.roomLockNoticeTimer) {
+      this.roomLockNoticeTimer.remove(false);
+      this.roomLockNoticeTimer = null;
+    }
+    if (this.roomLockNoticeText?.active) {
+      this.scene.tweens.killTweensOf(this.roomLockNoticeText);
+      this.roomLockNoticeText.destroy();
+    }
+    this.roomLockNoticeText = null;
+  }
+
+  /** Big red screen-fixed message: enemy-locked room (shown 7s). */
+  showRoomLockEnemyNotice() {
+    this.clearRoomLockNotice();
+
+    const cam = this.scene.cameras.main;
+    const msg = 'This room is sealed until you\ndefeat every enemy.\nClear them to unlock the exits.';
+    const text = this.scene.add.text(cam.centerX, cam.height * 0.2, msg, {
+      fontSize: '36px',
+      fontFamily: 'monospace',
+      color: '#ff2222',
+      stroke: '#1a0000',
+      strokeThickness: 10,
+      align: 'center',
+      lineSpacing: 10,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(55);
+
+    this.roomLockNoticeText = text;
+
+    this.roomLockNoticeTimer = this.scene.time.delayedCall(7000, () => {
+      this.roomLockNoticeTimer = null;
+      if (!text.active) return;
+      this.scene.tweens.add({
+        targets: text,
+        alpha: 0,
+        duration: 450,
+        ease: 'Sine.easeIn',
+        onComplete: () => {
+          if (text.active) text.destroy();
+          if (this.roomLockNoticeText === text) this.roomLockNoticeText = null;
+        },
+      });
+    });
   }
 
   checkRoomCleared() {
@@ -1843,10 +1982,17 @@ export class LevelManager {
   }
 
   clearCurrentRoom() {
+    this.clearRoomLockNotice();
+
     if (this.wallLayer) { this.wallLayer.clear(true, true); this.wallLayer = null; }
     if (this.platformGroup) { this.platformGroup.clear(true, true); this.platformGroup = null; }
 
-    for (const d of this.doorZones) { d.door.destroy(); }
+    for (const d of this.doorZones) {
+      if (d.glowTween) d.glowTween.stop();
+      if (d.pulseTween) d.pulseTween.stop();
+      if (d.portalGlow && d.portalGlow.active) d.portalGlow.destroy();
+      d.door.destroy();
+    }
     this.doorZones = [];
 
     for (const o of this.abilityOrbs) {

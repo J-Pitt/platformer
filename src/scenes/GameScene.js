@@ -70,7 +70,7 @@ export class GameScene extends Phaser.Scene {
       this.playerRimLight = this.add.image(0, 0, 'player_rim_light');
       this.playerRimLight.setBlendMode(Phaser.BlendModes.ADD);
       this.playerRimLight.setDepth(6);
-      this.playerRimLight.setAlpha(0.32);
+      this.playerRimLight.setAlpha(0.38);
     }
 
     this.input.keyboard.on('keydown-P', () => this.togglePause());

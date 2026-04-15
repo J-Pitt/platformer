@@ -106,7 +106,6 @@ function buildRoom1() {
       { type: 'crawler', x: 12, y: f },
       { type: 'crawler', x: 40, y: 19 },
       { type: 'flyer', x: 44, y: 12 },
-      { type: 'health_pickup', x: 8, y: 13 },
       { type: 'pendulum_trap', x: 28, y: 16, length: 80, swing: 44, speed: 1.4, phase: 0 },
       { type: 'spike_wall', x: 18, y: 18, width: 64, height: 16 },
       { type: 'spike_wall', x: 48, y: 8, width: 16, height: 96 },
@@ -119,7 +118,6 @@ function buildRoom1() {
       { type: 'moving_platform', x: 28, y: 21, axis: 'x', range: 128, speed: 1.1, phase: 0, spin: 0 },
       { type: 'flyer', x: 18, y: 8 },
       { type: 'flyer', x: 36, y: 10 },
-      { type: 'health_pickup', x: 5, y: 11 },
       { type: 'magma_pool', x: 28, y: 22, width: 5 },
       { type: 'flyer', x: 18, y: 10 },
       { type: 'moving_platform', x: 28, y: 18, axis: 'x', range: 64, speed: 1.0, phase: 1.5, spin: 0 },
@@ -239,7 +237,6 @@ function buildRoom2() {
         'The walls have eyes here, traveler. The stone remembers. And it serves him still.',
         'If you mean to press deeper, learn to read the walls. Sometimes what looks solid will crumble, and what looks empty hides teeth.',
       ]},
-      { type: 'health_pickup', x: 17, y: 21 },
       { type: 'flyer', x: 11, y: 16 },
       { type: 'moving_platform', x: 11, y: 13, axis: 'x', range: 128, speed: 0.8, phase: 0, spin: 0 },
       { type: 'pendulum_trap', x: 11, y: 20, length: 64, swing: 36, speed: 1.5, phase: 0.5 },
@@ -354,8 +351,6 @@ function buildRoom3() {
       { type: 'crumble_platform', x: 28, y: 10, collapseDelay: 380, respawnDelay: 2600 },
       { type: 'pendulum_trap', x: 17, y: 9, length: 72, swing: 42, speed: 1.8, phase: 0.5 },
       { type: 'spike_wall', x: 2, y: 10, width: 16, height: 96, flipX: false },
-      { type: 'health_pickup', x: 26, y: 10 },
-      { type: 'health_pickup', x: 12, y: 11 },
       { type: 'flyer', x: 8, y: 6 },
       { type: 'flyer', x: 20, y: 5 },
       { type: 'flyer', x: 32, y: 4 },
@@ -508,7 +503,6 @@ function buildRoom4() {
       { type: 'pendulum_trap', x: 31, y: 9, length: 78, swing: 50, speed: 1.9, phase: 1.8 },
       { type: 'crumble_platform', x: 40, y: 11, collapseDelay: 380, respawnDelay: 2200 },
       { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 500, respawnDelay: 2800 },
-      { type: 'health_pickup', x: 22, y: 9 },
       { type: 'spike_wall', x: 22, y: 20, width: 96, height: 16 },
       { type: 'spike_wall', x: 11, y: 8, width: 16, height: 96 },
       { type: 'spike_wall', x: 32, y: 8, width: 16, height: 96 },
@@ -642,7 +636,6 @@ function buildRoom5() {
       { type: 'door', targetRoom: 'room4', x: 1, y: 21, spawnX: 47, spawnY: 19 },
       { type: 'door', targetRoom: 'room8', x: W - 2, y: 21, spawnX: 46, spawnY: 23 },
       { type: 'magma_pool', x: 17, y: 22, width: 6 },
-      { type: 'health_pickup', x: 20, y: 9 },
       { type: 'moving_platform', x: 20, y: 14, axis: 'x', range: 160, speed: 1.2, phase: 0, spin: 0 },
       { type: 'pendulum_trap', x: 12, y: 9, length: 88, swing: 44, speed: 1.5, phase: 0.2 },
       { type: 'pendulum_trap', x: 28, y: 9, length: 88, swing: 44, speed: 1.7, phase: 1.6 },
@@ -798,8 +791,6 @@ function buildRoom6() {
       { type: 'door', targetRoom: 'room7', x: W - 2, y: 8, spawnX: 2, spawnY: 19 },
       { type: 'ability_orb', ability: 'doubleJump', x: 54, y: 6, hint: 'Press jump again in mid-air!' },
       { type: 'bench', x: 30, y: 13 },
-      { type: 'health_pickup', x: 18, y: 9 },
-      { type: 'health_pickup', x: 50, y: 9 },
       // Lava pits
       { type: 'magma_pool', x: 15, y: 20, width: 5 },
       { type: 'magma_pool', x: 31, y: 20, width: 5 },
@@ -963,8 +954,6 @@ function buildRoom7() {
         'If you defeat him, the binding may break. Or it may not. But either way, you will have your answer about what lies at the bottom of the world.',
         'Go. The Crucible awaits beyond the next chamber. And beyond the Crucible... the Throne.',
       ]},
-      { type: 'health_pickup', x: 6, y: 5 },
-      { type: 'health_pickup', x: 24, y: 7 },
       // Lava at bottom
       { type: 'magma_pool', x: 10, y: 26, width: 10 },
       { type: 'spike_wall', x: 10, y: 25, width: 320, height: 16 },
@@ -1145,9 +1134,6 @@ function buildRoom8() {
       { type: 'flyer', x: 35, y: 9 },
       { type: 'flyer', x: 25, y: 11 },
       // Health
-      { type: 'health_pickup', x: 25, y: 7 },
-      { type: 'health_pickup', x: 8, y: 13 },
-      { type: 'health_pickup', x: 42, y: 13 },
       // Decorations
       { type: 'stalactite', x: 12, y: 1 },
       { type: 'stalactite', x: 25, y: 1 },
@@ -1255,9 +1241,6 @@ function buildRoom9() {
       { type: 'door', targetRoom: 'room10', x: W - 2, y: f, spawnX: 3, spawnY: 19 },
       { type: 'boss', x: 28, y: f },
       { type: 'bench', x: 5, y: f },
-      { type: 'health_pickup', x: 6, y: 9 },
-      { type: 'health_pickup', x: W - 7, y: 9 },
-      { type: 'health_pickup', x: 22, y: 7 },
       // Lava pits on the sides for danger
       { type: 'magma_pool', x: 12, y: f + 1, width: 3 },
       { type: 'magma_pool', x: W - 14, y: f + 1, width: 3 },
@@ -1387,7 +1370,6 @@ function buildRoom10() {
       { type: 'spike_wall', x: 34, y: 8, width: 16, height: 64 },
       { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 450, respawnDelay: 2800 },
       { type: 'crumble_platform', x: 38, y: 10, collapseDelay: 400, respawnDelay: 2600 },
-      { type: 'health_pickup', x: 36, y: 7 },
       { type: 'wood_bridge', x: 15, y: f },
       { type: 'wood_bridge', x: 31, y: f },
       { type: 'crystal', x: 6, y: f },
@@ -1505,7 +1487,6 @@ function buildRoom11() {
       { type: 'crumble_platform', x: 16, y: 20, collapseDelay: 400, respawnDelay: 2600 },
       { type: 'crumble_platform', x: 6, y: 14, collapseDelay: 380, respawnDelay: 2400 },
       { type: 'crumble_platform', x: 16, y: 12, collapseDelay: 350, respawnDelay: 2200 },
-      { type: 'health_pickup', x: 6, y: 9 },
       { type: 'crystal', x: 5, y: f },
       { type: 'crystal', x: 18, y: f },
       { type: 'crystal_cluster', x: 10, y: f },
@@ -1631,8 +1612,6 @@ function buildRoom12() {
       { type: 'crumble_platform', x: 12, y: 14, collapseDelay: 420, respawnDelay: 2600 },
       { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 380, respawnDelay: 2400 },
       { type: 'crumble_platform', x: 48, y: 14, collapseDelay: 450, respawnDelay: 2800 },
-      { type: 'health_pickup', x: 24, y: 11 },
-      { type: 'health_pickup', x: 44, y: 15 },
       { type: 'crystal', x: 6, y: f },
       { type: 'crystal', x: 22, y: f },
       { type: 'crystal', x: 36, y: f },
@@ -1759,9 +1738,6 @@ function buildRoom13() {
       { type: 'pendulum_trap', x: 20, y: 6, length: 80, swing: 46, speed: 1.8, phase: 0 },
       { type: 'pendulum_trap', x: 10, y: 10, length: 64, swing: 40, speed: 1.6, phase: 1.0 },
       { type: 'moving_platform', x: 20, y: 10, axis: 'x', range: 128, speed: 1.2, phase: 0, spin: 0 },
-      { type: 'health_pickup', x: 20, y: 7 },
-      { type: 'health_pickup', x: 8, y: 13 },
-      { type: 'health_pickup', x: W - 9, y: 13 },
       { type: 'crystal', x: 6, y: f },
       { type: 'crystal', x: 18, y: f },
       { type: 'crystal', x: 32, y: f },
@@ -1907,8 +1883,6 @@ function buildRoom14() {
       { type: 'flyer', x: 30, y: 6 },
       { type: 'flyer', x: 42, y: 8 },
       { type: 'flyer', x: 10, y: 14 },
-      { type: 'health_pickup', x: 36, y: 9 },
-      { type: 'health_pickup', x: 6, y: f },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 24, y: 1 },
       { type: 'stalactite', x: 40, y: 1 },
@@ -2030,8 +2004,6 @@ function buildRoom15() {
       { type: 'flyer', x: 8, y: 10 },
       { type: 'flyer', x: 18, y: 6 },
       { type: 'flyer', x: 6, y: 4 },
-      { type: 'health_pickup', x: 8, y: 7 },
-      { type: 'health_pickup', x: 22, y: 3 },
       { type: 'stalactite', x: 8, y: 1 },
       { type: 'stalactite', x: 20, y: 1 },
       { type: 'stalactite_sm', x: 4, y: 1 },
@@ -2160,8 +2132,6 @@ function buildRoom16() {
       { type: 'flyer', x: 44, y: 6 },
       { type: 'flyer', x: 20, y: 10 },
       { type: 'flyer', x: 38, y: 8 },
-      { type: 'health_pickup', x: 20, y: 11 },
-      { type: 'health_pickup', x: 50, y: 7 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 26, y: 1 },
       { type: 'stalactite', x: 42, y: 1 },
@@ -2231,46 +2201,45 @@ function buildRoom17() {
   clearRect(tiles, H - 2, 13, H - 2, 16);
   clearRect(tiles, H - 2, W - 17, H - 2, W - 14);
 
-  // ── Lower “maze” band: staggered islands so every tile is reachable from floor ──
+  // ── Lower band: staggered row-20 islands ──
   fillRow(tiles, 20, 5, 9, 2);
   fillRow(tiles, 20, 11, 15, 2);
   fillRow(tiles, 20, 18, 23, 2);
   fillRow(tiles, 20, 28, 33, 2);
   fillRow(tiles, 20, 35, 39, 2);
 
-  // Wide side wings (routes toward centre) + centre bridge (no huge horizontal gap)
-  fillRow(tiles, 18, 3, 13, 2);
-  fillRow(tiles, 18, 14, 30, 2);
-  fillRow(tiles, 18, 30, 42, 2);
+  // Row 18: side catwalks only — mid gap so you cannot elevator straight up the middle
+  fillRow(tiles, 18, 3, 12, 2);
+  fillRow(tiles, 18, 32, 42, 2);
 
-  // Mid-level shelves — short dead ends + a narrow centre bridge (forces weave)
-  fillRow(tiles, 17, 8, 18, 2);
+  // Row 17: short side shelves + one centre ledge (rest stop / brute arena)
+  fillRow(tiles, 17, 7, 12, 2);
   fillRow(tiles, 17, 19, 25, 2);
-  fillRow(tiles, 17, 29, 37, 2);
+  fillRow(tiles, 17, 32, 37, 2);
 
-  // Central spine: 2-tile vertical steps (always jumpable) up to the bench tier
-  fillRow(tiles, 19, 15, 29, 2);
-  fillRow(tiles, 16, 16, 28, 2);
-  fillRow(tiles, 15, 17, 27, 2);
-  fillRow(tiles, 14, 17, 27, 2);
-  fillRow(tiles, 12, 18, 26, 2);
-  fillRow(tiles, 10, 19, 25, 2);
-  fillRow(tiles, 8, 20, 24, 2);
-  fillRow(tiles, 6, 20, 24, 2);
+  // ── Zigzag climb: 2-row vertical gaps, alternating L/R (row-17 centre shelf is the landing between 19↔15) ──
+  fillRow(tiles, 19, 14, 18, 2);
+  fillRow(tiles, 15, 12, 16, 2);
+  fillRow(tiles, 13, 20, 24, 2);
+  fillRow(tiles, 11, 14, 18, 2);
+  fillRow(tiles, 9, 19, 23, 2);
+  fillRow(tiles, 7, 16, 20, 2);
+  // Bench landing (open vault above — was sealed by row-5 ceiling slab)
+  fillRow(tiles, 6, 15, 29, 2);
 
-  // Interior wall segments — maze-like channels (not full seals)
-  fillRect(tiles, 11, 10, 15, 10, 1);
-  fillRect(tiles, 11, 33, 15, 33, 1);
-  fillRect(tiles, 13, 16, 13, 18, 1);
-  fillRect(tiles, 13, 25, 13, 27, 1);
+  // Mid-air crumbs: link side shelves to centre without a full runway (still tricky)
+  fillRow(tiles, 16, 13, 16, 2);
+  fillRow(tiles, 16, 28, 28, 2);
 
-  // Shorter arena pillars (visual weight without blocking the new climb lines)
-  fillRect(tiles, 9, 12, 18, 12, 1);
-  fillRect(tiles, 9, 31, 18, 31, 1);
+  // Light interior ribs — break sightlines without sealing the climb
+  fillRect(tiles, 12, 8, 14, 8, 1);
+  fillRect(tiles, 12, 36, 14, 36, 1);
+  fillRect(tiles, 15, 11, 15, 13, 1);
+  fillRect(tiles, 15, 31, 15, 33, 1);
 
-  // Vaulted ceiling
-  fillRect(tiles, 2, 4, 5, W - 5, 1);
-  clearRect(tiles, 3, 18, 4, 26);
+  // Vaulted ceiling: only side lintels — wide open centre (cols ~12–32) through rows 2–5
+  fillRect(tiles, 2, 4, 5, 11, 1);
+  fillRect(tiles, 2, 33, 5, W - 5, 1);
 
   // Floor nubs
   fillRect(tiles, f, 10, f + 1, 11, 1);
@@ -2292,11 +2261,11 @@ function buildRoom17() {
       { type: 'bench', x: 22, y: 6 },
       { type: 'brute', x: 16, y: f },
       { type: 'brute', x: 28, y: f },
-      { type: 'brute', x: 22, y: 16 },
+      { type: 'brute', x: 22, y: 17 },
       { type: 'crawler', x: 8, y: f },
       { type: 'crawler', x: 36, y: f },
-      { type: 'crawler', x: 19, y: 15 },
-      { type: 'crawler', x: 25, y: 15 },
+      { type: 'crawler', x: 14, y: 15 },
+      { type: 'crawler', x: 22, y: 13 },
       { type: 'flyer', x: 10, y: 5 },
       { type: 'flyer', x: 22, y: 4 },
       { type: 'flyer', x: 34, y: 5 },
@@ -2314,9 +2283,6 @@ function buildRoom17() {
       { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 120, speed: 1.2, phase: 0, spin: 0 },
       { type: 'moving_platform', x: 11, y: 11, axis: 'y', range: 96, speed: 1, phase: 0.5, spin: 0 },
       { type: 'moving_platform', x: W - 12, y: 11, axis: 'y', range: 96, speed: 1, phase: 1.5, spin: 0 },
-      { type: 'health_pickup', x: 22, y: 11 },
-      { type: 'health_pickup', x: 20, y: 13 },
-      { type: 'health_pickup', x: 24, y: 13 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 22, y: 1 },
       { type: 'stalactite', x: 34, y: 1 },
@@ -2453,7 +2419,6 @@ function buildRoom18() {
       { type: 'spike_wall', x: 34, y: 8, width: 16, height: 64 },
       { type: 'crumble_platform', x: 20, y: 14, collapseDelay: 400, respawnDelay: 2600 },
       { type: 'crumble_platform', x: 40, y: 16, collapseDelay: 380, respawnDelay: 2400 },
-      { type: 'health_pickup', x: 38, y: 7 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 26, y: 1 },
       { type: 'stalactite', x: 42, y: 1 },
@@ -2575,8 +2540,6 @@ function buildRoom19() {
       { type: 'crumble_platform', x: 14, y: 10, collapseDelay: 380, respawnDelay: 2400 },
       { type: 'crumble_platform', x: 6, y: 16, collapseDelay: 350, respawnDelay: 2200 },
       { type: 'crumble_platform', x: 16, y: 22, collapseDelay: 320, respawnDelay: 2000 },
-      { type: 'health_pickup', x: 6, y: 11 },
-      { type: 'health_pickup', x: 18, y: 25 },
       { type: 'stalactite', x: 6, y: 1 },
       { type: 'stalactite', x: 16, y: 1 },
       { type: 'stalactite_sm', x: 3, y: 1 },
@@ -2701,7 +2664,6 @@ function buildRoom20() {
       { type: 'spike_wall', x: 40, y: 8, width: 16, height: 64 },
       { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 420, respawnDelay: 2600 },
       { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 380, respawnDelay: 2400 },
-      { type: 'health_pickup', x: 24, y: 11 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 26, y: 1 },
       { type: 'stalactite', x: 44, y: 1 },
@@ -2836,9 +2798,6 @@ function buildRoom21() {
       { type: 'pendulum_trap', x: 14, y: 10, length: 72, swing: 42, speed: 1.7, phase: 1.2 },
       { type: 'pendulum_trap', x: 30, y: 10, length: 72, swing: 42, speed: 1.7, phase: 0.6 },
       { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 160, speed: 1.3, phase: 0, spin: 0 },
-      { type: 'health_pickup', x: 22, y: 7 },
-      { type: 'health_pickup', x: 8, y: 13 },
-      { type: 'health_pickup', x: W - 9, y: 13 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 22, y: 1 },
       { type: 'stalactite', x: 34, y: 1 },
@@ -2975,7 +2934,6 @@ function buildRoom22() {
       { type: 'spike_wall', x: 34, y: 8, width: 16, height: 64 },
       { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 450, respawnDelay: 2800 },
       { type: 'crumble_platform', x: 36, y: 10, collapseDelay: 400, respawnDelay: 2600 },
-      { type: 'health_pickup', x: 24, y: 11 },
       { type: 'fungus', x: 3, y: f },
       { type: 'fungus', x: 18, y: f },
       { type: 'fungus', x: 34, y: f },
@@ -3103,8 +3061,6 @@ function buildRoom23() {
       { type: 'pendulum_trap', x: 12, y: 10, length: 56, swing: 36, speed: 1.8, phase: 1.0 },
       { type: 'moving_platform', x: 12, y: 24, axis: 'x', range: 64, speed: 1.0, phase: 0, spin: 0 },
       { type: 'moving_platform', x: 12, y: 14, axis: 'x', range: 64, speed: 1.1, phase: 0.5, spin: 0 },
-      { type: 'health_pickup', x: 6, y: 11 },
-      { type: 'health_pickup', x: 20, y: 3 },
       { type: 'fungus', x: 4, y: f },
       { type: 'fungus', x: 16, y: f },
       { type: 'fungus_small', x: 8, y: f },
@@ -3245,8 +3201,6 @@ function buildRoom24() {
       { type: 'crumble_platform', x: 26, y: 12, collapseDelay: 350, respawnDelay: 2200 },
       { type: 'crumble_platform', x: 42, y: 14, collapseDelay: 400, respawnDelay: 2600 },
       { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 320, respawnDelay: 2000 },
-      { type: 'health_pickup', x: 20, y: 7 },
-      { type: 'health_pickup', x: 46, y: 9 },
       { type: 'fungus', x: 4, y: f },
       { type: 'fungus', x: 22, y: f },
       { type: 'fungus', x: 36, y: f },
@@ -3387,9 +3341,6 @@ function buildRoom25() {
       { type: 'moving_platform', x: 22, y: 10, axis: 'x', range: 160, speed: 1.3, phase: 0, spin: 0 },
       { type: 'moving_platform', x: 12, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 0.5, spin: 0 },
       { type: 'moving_platform', x: W - 13, y: 10, axis: 'y', range: 128, speed: 1.1, phase: 1.5, spin: 0 },
-      { type: 'health_pickup', x: 22, y: 7 },
-      { type: 'health_pickup', x: 8, y: 13 },
-      { type: 'health_pickup', x: W - 9, y: 13 },
       { type: 'fungus', x: 4, y: f },
       { type: 'fungus', x: 18, y: f },
       { type: 'fungus', x: 34, y: f },
@@ -3543,8 +3494,6 @@ function buildRoom26() {
       { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 350, respawnDelay: 2200 },
       { type: 'crumble_platform', x: 30, y: 12, collapseDelay: 320, respawnDelay: 2000 },
       { type: 'crumble_platform', x: 42, y: 14, collapseDelay: 350, respawnDelay: 2200 },
-      { type: 'health_pickup', x: 20, y: 11 },
-      { type: 'health_pickup', x: 44, y: 15 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 24, y: 1 },
       { type: 'stalactite', x: 40, y: 1 },
@@ -3674,8 +3623,6 @@ function buildRoom27() {
       { type: 'moving_platform', x: 14, y: 8, axis: 'x', range: 48, speed: 1.5, phase: 0.5, spin: 0 },
       { type: 'magma_pool', x: 7, y: 30, width: 12 },
       { type: 'spike_wall', x: 7, y: 29, width: 384, height: 16 },
-      { type: 'health_pickup', x: 6, y: 11 },
-      { type: 'health_pickup', x: 20, y: 5 },
       { type: 'stalactite', x: 6, y: 1 },
       { type: 'stalactite', x: 18, y: 1 },
       { type: 'stalactite_sm', x: 3, y: 1 },
@@ -3811,8 +3758,6 @@ function buildRoom28() {
       { type: 'crumble_platform', x: 24, y: 12, collapseDelay: 280, respawnDelay: 1800 },
       { type: 'crumble_platform', x: 30, y: 12, collapseDelay: 280, respawnDelay: 1800 },
       { type: 'crumble_platform', x: 40, y: 14, collapseDelay: 300, respawnDelay: 2000 },
-      { type: 'health_pickup', x: 27, y: 7 },
-      { type: 'health_pickup', x: 10, y: 13 },
       { type: 'stalactite', x: 12, y: 1 },
       { type: 'stalactite', x: 27, y: 1 },
       { type: 'stalactite', x: 42, y: 1 },
@@ -3926,9 +3871,6 @@ function buildRoom29() {
     objects: [
       { type: 'door', targetRoom: 'room28', x: 1, y: f, spawnX: 52, spawnY: 23 },
       { type: 'boss', x: 30, y: f },
-      { type: 'health_pickup', x: 6, y: 11 },
-      { type: 'health_pickup', x: W - 7, y: 11 },
-      { type: 'health_pickup', x: 24, y: 5 },
       { type: 'magma_pool', x: 2, y: 20, width: 5 },
       { type: 'magma_pool', x: W - 7, y: 20, width: 5 },
       { type: 'spike_wall', x: 2, y: 19, width: 160, height: 16 },

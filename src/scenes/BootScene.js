@@ -7,6 +7,23 @@ export class BootScene extends Phaser.Scene {
 
   create() {
     generateAllTextures(this);
+
+    const canvas = this.game.canvas;
+    if (canvas) {
+      canvas.setAttribute('tabindex', '0');
+      canvas.style.outline = 'none';
+    }
+    const host = document.getElementById('game-container');
+    if (host && canvas) {
+      host.addEventListener('pointerdown', () => {
+        try {
+          canvas.focus({ preventScroll: true });
+        } catch {
+          canvas.focus();
+        }
+      }, { passive: true });
+    }
+
     this.scene.start('IntroScene');
   }
 }

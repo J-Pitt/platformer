@@ -784,106 +784,147 @@ function lerpRgb(c1, c2, t) {
   return (r << 16) | (g << 8) | b;
 }
 
-/** Chunky carved stone with top-left key light + depth (less “flat tile”) */
+/** Procedural tiles generated at this size, scaled to TILE_SIZE in LevelManager */
+const TILE_TEX_SIZE = 64;
+
+function frac01(n) {
+  return n - Math.floor(n);
+}
+
+/** Deterministic 0..1 noise for texture grain */
+function hashNoise(x, y, seed = 0) {
+  const s = Math.sin(x * 12.9898 + y * 78.233 + seed * 4.17) * 43758.5453123;
+  return frac01(s);
+}
+
+function scatterTileNoise(g, seed, baseRgb, strength = 0.06) {
+  const S = TILE_TEX_SIZE;
+  const nDots = 48;
+  for (let i = 0; i < nDots; i++) {
+    const px = (hashNoise(i, seed * 3, seed) * (S - 4)) + 2;
+    const py = (hashNoise(seed, i * 2, i) * (S - 4)) + 2;
+    const n = hashNoise(px, py, seed + i);
+    g.fillStyle(0x000000, strength * (0.4 + n));
+    g.fillCircle(px, py, 0.6 + n * 1.2);
+    g.fillStyle(lerpRgb(baseRgb, 0xffffff, n * 0.15), strength * 0.5);
+    g.fillCircle(px - 0.3, py - 0.3, 0.35);
+  }
+  g.setAlpha(1);
+}
+
+/** Chunky carved stone with top-left key light + depth (64px source, scaled to grid in LevelManager) */
 function drawWallTile(g, seed, mossy) {
+  const S = TILE_TEX_SIZE;
   const litTop = mossy ? 0x5a4830 : 0x6a5040;
   const litMid = mossy ? 0x3a2c1c : 0x4a3828;
   const shadowBot = mossy ? 0x1a1008 : 0x2a1c14;
-  const rightOcc = mossy ? 0x100a04 : 0x1a1008;
 
-  for (let y = 0; y < 32; y++) {
-    const t = y / 31;
+  for (let y = 0; y < S; y++) {
+    const t = y / (S - 1);
     const rowCol = lerpRgb(litTop, shadowBot, t * t);
     g.fillStyle(rowCol);
-    g.fillRect(0, y, 32, 1);
+    g.fillRect(0, y, S, 1);
+  }
+  for (let y = 0; y < S; y += 2) {
+    const n = hashNoise(y, seed * 2, 7);
+    g.fillStyle(0x000000, 0.018 * n);
+    g.fillRect(0, y, S, 1);
   }
 
-  // Left: key light (vertical rake)
   g.fillStyle(0xffffff);
-  g.setAlpha(0.06);
-  g.fillRect(0, 0, 3, 32);
+  g.setAlpha(0.055);
+  g.fillRect(0, 0, 6, S);
   g.setAlpha(1);
   g.fillStyle(0x8a7858);
-  g.setAlpha(0.14);
-  g.fillRect(3, 0, 2, 32);
+  g.setAlpha(0.12);
+  g.fillRect(6, 0, 4, S);
   g.setAlpha(1);
 
-  // Right: occlusion / ambient shadow
   g.fillStyle(0x000000);
-  g.setAlpha(0.35);
-  g.fillRect(28, 0, 4, 32);
+  g.setAlpha(0.28);
+  g.fillRect(56, 0, 8, S);
   g.setAlpha(1);
 
-  // Inner face plane
   g.fillStyle(litMid);
-  g.fillRect(5, 4, 22, 24);
+  g.fillRect(10, 8, 44, 48);
   g.fillStyle(0x000000);
-  g.setAlpha(0.15);
-  g.fillRect(26, 4, 2, 24);
+  g.setAlpha(0.12);
+  g.fillRect(52, 8, 4, 48);
   g.setAlpha(1);
 
-  // Mortar / course lines (horizontal strata)
-  g.lineStyle(1, 0x000000, 0.2);
-  for (let y = 8; y < 28; y += 8) {
-    g.lineBetween(5, y, 27, y);
+  g.fillStyle(0x000000);
+  g.setAlpha(0.18);
+  g.fillRect(0, 0, 14, 14);
+  g.fillRect(S - 14, 0, 14, 14);
+  g.fillRect(0, S - 10, 12, 10);
+  g.fillRect(S - 12, S - 10, 12, 10);
+  g.setAlpha(1);
+
+  g.lineStyle(1, 0x000000, 0.14);
+  for (let y = 16; y < 52; y += 16) {
+    g.lineBetween(10, y, 54, y);
   }
 
   const cracks = [
-    [[6, 0], [8, 32]], [[24, 0], [22, 32]], [[0, 10], [32, 14]],
-    [[0, 22], [32, 20]], [[14, 0], [18, 32]],
+    [[12, 0], [16, S]], [[48, 0], [44, S]], [[0, 20], [S, 28]],
+    [[0, 44], [S, 40]], [[28, 0], [36, S]],
   ];
-  g.lineStyle(1, 0x100804, 0.6);
+  g.lineStyle(1, 0x100804, 0.5);
   const c = cracks[seed % cracks.length];
   g.lineBetween(c[0][0], c[0][1], c[1][0], c[1][1]);
-  g.lineStyle(1, 0x3a2818, 0.35);
-  g.lineBetween((seed * 3) % 20 + 4, 0, (seed * 5) % 20 + 8, 32);
+  g.lineStyle(1, 0x3a2818, 0.3);
+  g.lineBetween((seed * 3) % 40 + 8, 0, (seed * 5) % 40 + 16, S);
 
   g.fillStyle(0x1a1008);
-  g.setAlpha(0.25);
-  g.fillRect(0, 28, 32, 4);
+  g.setAlpha(0.22);
+  g.fillRect(0, 56, S, 8);
   g.setAlpha(1);
 
-  for (let i = 0; i < 14; i++) {
-    const px = ((seed * 17 + i * 13) % 24) + 5;
-    const py = ((seed * 11 + i * 7) % 24) + 5;
+  for (let i = 0; i < 22; i++) {
+    const px = ((seed * 17 + i * 13) % 48) + 10;
+    const py = ((seed * 11 + i * 7) % 48) + 10;
     g.fillStyle(0x000000);
-    g.setAlpha(0.12);
-    g.fillCircle(px, py, 1.2);
+    g.setAlpha(0.09);
+    g.fillCircle(px, py, 2.2);
     g.setAlpha(1);
     g.fillStyle(lerpRgb(0x5a4830, 0x3a2818, (i % 5) / 5));
-    g.fillCircle(px, py, 0.45);
+    g.fillCircle(px, py, 0.9);
   }
 
   if (mossy) {
     g.fillStyle(0x2a5020);
-    g.setAlpha(0.28);
-    for (let i = 0; i < 8; i++) {
-      g.fillEllipse(2 + (i * 4 + seed) % 28, 1 + (i % 3), 5, 3);
+    g.setAlpha(0.26);
+    for (let i = 0; i < 14; i++) {
+      g.fillEllipse(4 + (i * 8 + seed) % 56, 2 + (i % 5), 10, 6);
     }
-    g.setAlpha(0.4);
+    g.setAlpha(0.36);
     g.fillStyle(0x1a3810);
-    g.fillRect(0, 0, 32, 7);
+    g.fillRect(0, 0, S, 14);
     g.setAlpha(1);
-    g.lineStyle(1, 0x2a5820, 0.4);
-    g.lineBetween(0, 6, 32, 5);
+    g.lineStyle(1, 0x2a5820, 0.35);
+    g.lineBetween(0, 12, S, 10);
   }
 
-  // Main layer: clear silhouette vs background (pixel-platformer guide)
-  g.lineStyle(1, 0x000000, 0.9);
-  g.strokeRect(0, 0, 32, 32);
+  scatterTileNoise(g, seed + (mossy ? 99 : 0), litMid, 0.055);
+
+  g.lineStyle(2, 0x1a1410, 0.42);
+  g.strokeRect(1, 1, S - 2, S - 2);
+  g.lineStyle(1, 0x000000, 0.22);
+  g.strokeRect(0.5, 0.5, S - 1, S - 1);
 }
 
 function generateTileTextures(scene) {
+  const TS = TILE_TEX_SIZE;
   for (let s = 0; s < 3; s++) {
     const g = scene.make.graphics({ add: false });
     drawWallTile(g, s, false);
-    g.generateTexture(s === 0 ? 'tile_wall' : `tile_wall_${s + 1}`, 32, 32);
+    g.generateTexture(s === 0 ? 'tile_wall' : `tile_wall_${s + 1}`, TS, TS);
     g.destroy();
   }
 
   const gm = scene.make.graphics({ add: false });
   drawWallTile(gm, 2, true);
-  gm.generateTexture('tile_wall_mossy', 32, 32);
+  gm.generateTexture('tile_wall_mossy', TS, TS);
   gm.destroy();
 
   /** Island-style thick platform: rounded top, earthy body, shaded underside */
@@ -895,45 +936,48 @@ function generateTileTextures(scene) {
     const faceLo = 0x2a1c10;
     const edge = 0x140e06;
 
-    for (let y = 6; y < 28; y++) {
-      const t = (y - 6) / 22;
+    for (let y = 12; y < 56; y++) {
+      const t = (y - 12) / 44;
       g2.fillStyle(lerpRgb(faceHi, faceLo, t));
-      g2.fillRect(1, y, 30, 1);
+      g2.fillRect(2, y, 60, 1);
     }
     g2.fillStyle(faceLo);
-    g2.fillEllipse(16, 28, 28, 8);
+    g2.fillEllipse(32, 56, 56, 16);
     g2.fillStyle(0x000000);
-    g2.setAlpha(0.22);
-    g2.fillRect(26, 6, 6, 22);
+    g2.setAlpha(0.2);
+    g2.fillRect(52, 12, 12, 44);
     g2.setAlpha(1);
     g2.fillStyle(0xffffff);
-    g2.setAlpha(0.08);
-    g2.fillRect(0, 4, 3, 20);
+    g2.setAlpha(0.07);
+    g2.fillRect(0, 8, 6, 40);
     g2.setAlpha(1);
     g2.fillStyle(topMid);
-    g2.fillRect(0, 4, 32, 4);
+    g2.fillRect(0, 8, TS, 8);
     g2.fillStyle(topHi);
-    g2.fillRoundedRect(0, 2, 32, 6, { tl: 4, tr: 4, bl: 0, br: 0 });
+    g2.fillRoundedRect(0, 4, TS, 12, { tl: 8, tr: 8, bl: 0, br: 0 });
     g2.fillStyle(0xffffff);
-    g2.setAlpha(0.18);
-    g2.fillRect(2, 2, 28, 2);
+    g2.setAlpha(0.15);
+    g2.fillRect(4, 4, 56, 4);
     g2.setAlpha(1);
     g2.fillStyle(TEAL_GLOW);
-    g2.setAlpha(0.1);
-    g2.fillRect(4, 1, 24, 1);
+    g2.setAlpha(0.09);
+    g2.fillRect(8, 2, 48, 2);
     g2.setAlpha(1);
-    g2.lineStyle(1, edge, 0.5);
-    g2.lineBetween(6, 8, 8, 24);
-    g2.lineBetween(22, 8, 20, 22);
-    g2.lineBetween(14, 10, 16, 26);
+    g2.lineStyle(1, edge, 0.42);
+    g2.lineBetween(12, 16, 16, 48);
+    g2.lineBetween(44, 16, 40, 44);
+    g2.lineBetween(28, 20, 32, 52);
     g2.fillStyle(0x000000);
-    g2.setAlpha(0.4);
-    g2.fillRect(1, 28, 30, 4);
+    g2.setAlpha(0.36);
+    g2.fillRect(2, 56, 60, 8);
     g2.setAlpha(1);
-    g2.lineStyle(1, 0x000000, 0.85);
-    g2.strokeRoundedRect(0, 0, 32, 32, 3);
+    scatterTileNoise(g2, hue * 31 + 40, faceHi, 0.05);
+    g2.lineStyle(2, edge, 0.38);
+    g2.strokeRoundedRect(1, 1, TS - 2, TS - 2, 6);
+    g2.lineStyle(1, 0x000000, 0.28);
+    g2.strokeRoundedRect(0.5, 0.5, TS - 1, TS - 1, 6);
 
-    g2.generateTexture(key, 32, 32);
+    g2.generateTexture(key, TS, TS);
     g2.destroy();
   };
   makePlat('tile_platform', 0);
@@ -959,101 +1003,98 @@ function generateTileTextures(scene) {
     const g3 = scene.make.graphics({ add: false });
     const P = terracePalettes[theme];
     const { faceHi, faceLo, topMid, topHi, rim, edge, speck } = P;
+    const TSz = TILE_TEX_SIZE;
 
-    // Body gradient
-    for (let y = 6; y < 28; y++) {
-      const t = (y - 6) / 22;
+    for (let y = 12; y < 56; y++) {
+      const t = (y - 12) / 44;
       g3.fillStyle(lerpRgb(faceHi, faceLo, t));
-      g3.fillRect(0, y, 32, 1);
+      g3.fillRect(0, y, TSz, 1);
     }
-    // Rounded bottom
     g3.fillStyle(faceLo);
-    g3.fillEllipse(16, 28, 28, 8);
-    // Right occlusion
+    g3.fillEllipse(32, 56, 56, 16);
     g3.fillStyle(0x000000);
-    g3.setAlpha(0.2);
-    g3.fillRect(24, 6, 8, 22);
+    g3.setAlpha(0.18);
+    g3.fillRect(48, 12, 16, 44);
     g3.setAlpha(1);
 
-    // Walking surface (thick, rounded top)
     g3.fillStyle(topMid);
-    g3.fillRect(0, 4, 32, 4);
+    g3.fillRect(0, 8, TSz, 8);
     g3.fillStyle(topHi);
-    g3.fillRoundedRect(0, 2, 32, 6, { tl: 4, tr: 4, bl: 0, br: 0 });
+    g3.fillRoundedRect(0, 4, TSz, 12, { tl: 8, tr: 8, bl: 0, br: 0 });
     g3.fillStyle(0xffffff);
-    g3.setAlpha(0.18);
-    g3.fillRect(2, 2, 28, 2);
-    g3.setAlpha(0.12);
-    g3.fillRect(10, 2, 12, 1);
-    g3.fillRect(22, 1, 10, 1);
+    g3.setAlpha(0.15);
+    g3.fillRect(4, 4, 56, 4);
+    g3.setAlpha(0.1);
+    g3.fillRect(20, 4, 24, 2);
+    g3.fillRect(44, 2, 20, 2);
     g3.setAlpha(1);
     g3.fillStyle(rim);
-    g3.setAlpha(0.32);
-    g3.fillRect(1, 1, 30, 1);
+    g3.setAlpha(0.28);
+    g3.fillRect(2, 2, 60, 2);
     g3.setAlpha(1);
 
-    // Ground grit / moss / crystal chips
-    for (let i = 0; i < 9; i++) {
-      const sx = ((i * 17 + variant.length * 3) % 28) + 2;
-      const sy = 2 + (i % 3);
+    for (let i = 0; i < 16; i++) {
+      const sx = ((i * 17 + variant.length * 3) % 56) + 4;
+      const sy = 4 + (i % 5);
       g3.fillStyle(speck);
-      g3.setAlpha(0.35 + (i % 4) * 0.08);
-      g3.fillRect(sx, sy, 1 + (i % 2), 1);
+      g3.setAlpha(0.32 + (i % 4) * 0.07);
+      g3.fillRect(sx, sy, 1 + (i % 2), 1 + (i % 2));
       g3.setAlpha(1);
     }
 
-    // Cracks in body
-    g3.lineStyle(1, edge, 0.4);
-    g3.lineBetween(8, 8, 10, 24);
-    g3.lineBetween(22, 8, 20, 22);
+    g3.lineStyle(1, edge, 0.34);
+    g3.lineBetween(16, 16, 20, 48);
+    g3.lineBetween(44, 16, 40, 44);
 
     if (variant === 'left') {
       g3.fillStyle(0xffffff);
-      g3.setAlpha(0.12);
-      g3.fillRect(0, 2, 5, 24);
+      g3.setAlpha(0.1);
+      g3.fillRect(0, 4, 10, 48);
       g3.setAlpha(1);
-      g3.lineStyle(1, lerpRgb(topHi, 0xffffff, 0.2), 0.5);
-      g3.lineBetween(0, 2, 0, 28);
+      g3.lineStyle(1, lerpRgb(topHi, 0xffffff, 0.2), 0.45);
+      g3.lineBetween(0, 4, 0, 56);
     }
     if (variant === 'right') {
       g3.fillStyle(0xffffff);
-      g3.setAlpha(0.1);
-      g3.fillRect(27, 2, 5, 24);
+      g3.setAlpha(0.08);
+      g3.fillRect(54, 4, 10, 48);
       g3.setAlpha(1);
-      g3.lineStyle(1, lerpRgb(faceHi, 0x000000, 0.3), 0.55);
-      g3.lineBetween(31, 2, 31, 28);
+      g3.lineStyle(1, lerpRgb(faceHi, 0x000000, 0.3), 0.48);
+      g3.lineBetween(63, 4, 63, 56);
     }
 
     if (variant === 'mid2') {
-      g3.lineStyle(1, lerpRgb(faceLo, faceHi, 0.5), 0.55);
-      g3.lineBetween(8, 8, 10, 24);
-      g3.lineBetween(22, 8, 20, 24);
+      g3.lineStyle(1, lerpRgb(faceLo, faceHi, 0.5), 0.48);
+      g3.lineBetween(16, 16, 20, 48);
+      g3.lineBetween(44, 16, 40, 48);
       g3.fillStyle(faceLo);
-      g3.fillRect(14, 10, 4, 14);
+      g3.fillRect(28, 20, 8, 28);
     }
     if (variant === 'solo') {
       g3.fillStyle(faceLo);
-      g3.fillRect(4, 20, 4, 6);
-      g3.fillRect(24, 20, 4, 6);
-      g3.lineStyle(1, edge, 0.4);
-      g3.lineBetween(6, 26, 6, 30);
-      g3.lineBetween(26, 26, 26, 30);
+      g3.fillRect(8, 40, 8, 12);
+      g3.fillRect(48, 40, 8, 12);
+      g3.lineStyle(1, edge, 0.34);
+      g3.lineBetween(12, 52, 12, 60);
+      g3.lineBetween(52, 52, 52, 60);
     }
 
-    // Bottom shadow
     g3.fillStyle(0x000000);
-    g3.setAlpha(0.45);
-    g3.fillRect(0, 28, 32, 4);
+    g3.setAlpha(0.4);
+    g3.fillRect(0, 56, TSz, 8);
     g3.setAlpha(1);
 
-    g3.lineStyle(1, edge, 0.35);
+    g3.lineStyle(1, edge, 0.3);
     if (variant === 'solo') {
-      g3.lineBetween(2, 4, 2, 28);
-      g3.lineBetween(30, 4, 30, 28);
+      g3.lineBetween(4, 8, 4, 56);
+      g3.lineBetween(60, 8, 60, 56);
     }
 
-    g3.lineStyle(1, 0x000000, 0.78);
-    g3.strokeRoundedRect(0, 0, 32, 32, 3);
+    scatterTileNoise(g3, variant.charCodeAt(0) + theme.length * 17, faceHi, 0.048);
+    g3.lineStyle(2, edge, 0.32);
+    g3.strokeRoundedRect(1, 1, TSz - 2, TSz - 2, 6);
+    g3.lineStyle(1, 0x000000, 0.26);
+    g3.strokeRoundedRect(0.5, 0.5, TSz - 1, TSz - 1, 6);
 
     return g3;
   };
@@ -1064,7 +1105,7 @@ function generateTileTextures(scene) {
       const g3 = drawTerracePlatform(v, th);
       const base = terraceKeys[th];
       const key = v === 'mid' ? base : `${base}_${v}`;
-      g3.generateTexture(key, 32, 32);
+      g3.generateTexture(key, TILE_TEX_SIZE, TILE_TEX_SIZE);
       g3.destroy();
     });
   });
@@ -1073,59 +1114,67 @@ function generateTileTextures(scene) {
   const stairG = scene.make.graphics({ add: false });
   const stTop = 0x8a7858;
   const stFace = 0x4a3828;
+  const TSt = TILE_TEX_SIZE;
   stairG.fillStyle(stFace);
-  stairG.fillRect(0, 0, 32, 32);
-  for (let y = 14; y < 32; y++) {
-    stairG.fillStyle(lerpRgb(0x4a3828, 0x1a1008, (y - 14) / 18));
-    stairG.fillRect(0, y, 32, 1);
+  stairG.fillRect(0, 0, TSt, TSt);
+  for (let y = 28; y < TSt; y++) {
+    stairG.fillStyle(lerpRgb(0x4a3828, 0x1a1008, (y - 28) / 36));
+    stairG.fillRect(0, y, TSt, 1);
   }
   stairG.fillStyle(stTop);
-  stairG.fillRect(0, 0, 32, 11);
+  stairG.fillRect(0, 0, TSt, 22);
   stairG.fillStyle(0xffffff);
-  stairG.setAlpha(0.2);
-  stairG.fillRect(1, 1, 30, 3);
+  stairG.setAlpha(0.18);
+  stairG.fillRect(2, 2, 60, 6);
+  stairG.setAlpha(1);
+  stairG.fillStyle(0x000000);
+  stairG.setAlpha(0.34);
+  stairG.fillRect(0, 22, TSt, 8);
+  stairG.setAlpha(1);
+  stairG.fillStyle(lerpRgb(stTop, 0x6a5838, 0.45));
+  stairG.fillRect(0, 30, TSt, 18);
+  stairG.fillStyle(0xffffff);
+  stairG.setAlpha(0.1);
+  stairG.fillRect(0, 30, TSt, 4);
   stairG.setAlpha(1);
   stairG.fillStyle(0x000000);
   stairG.setAlpha(0.38);
-  stairG.fillRect(0, 11, 32, 4);
+  stairG.fillRect(0, 48, TSt, 10);
   stairG.setAlpha(1);
-  stairG.fillStyle(lerpRgb(stTop, 0x6a5838, 0.45));
-  stairG.fillRect(0, 15, 32, 9);
-  stairG.fillStyle(0xffffff);
-  stairG.setAlpha(0.12);
-  stairG.fillRect(0, 15, 32, 2);
-  stairG.setAlpha(1);
-  stairG.fillStyle(0x000000);
-  stairG.setAlpha(0.42);
-  stairG.fillRect(0, 24, 32, 5);
-  stairG.setAlpha(1);
-  stairG.lineStyle(1, 0x140e06, 0.55);
-  stairG.lineBetween(0, 15, 32, 15);
-  stairG.lineBetween(0, 15, 0, 32);
-  stairG.lineBetween(31, 15, 31, 32);
-  stairG.lineStyle(1, 0x000000, 0.82);
-  stairG.strokeRect(0, 0, 32, 32);
-  stairG.generateTexture('tile_stair_block', 32, 32);
+  stairG.lineStyle(1, 0x140e06, 0.48);
+  stairG.lineBetween(0, 30, TSt, 30);
+  stairG.lineBetween(0, 30, 0, TSt);
+  stairG.lineBetween(TSt - 1, 30, TSt - 1, TSt);
+  scatterTileNoise(stairG, 901, stTop, 0.045);
+  stairG.lineStyle(2, 0x1a1410, 0.4);
+  stairG.strokeRect(1, 1, TSt - 2, TSt - 2);
+  stairG.lineStyle(1, 0x000000, 0.28);
+  stairG.strokeRect(0.5, 0.5, TSt - 1, TSt - 1);
+  stairG.generateTexture('tile_stair_block', TSt, TSt);
   stairG.destroy();
 
   /** Packed earth / worn path — full tile for stair landings in fungal/crystal rooms */
   const pathG = scene.make.graphics({ add: false });
+  const TP = TILE_TEX_SIZE;
   pathG.fillStyle(0x4a3828);
-  pathG.fillRect(0, 0, 32, 32);
+  pathG.fillRect(0, 0, TP, TP);
   pathG.fillStyle(0x6a5840);
-  pathG.fillRect(0, 0, 32, 9);
+  pathG.fillRect(0, 0, TP, 18);
   pathG.fillStyle(0x000000);
-  pathG.setAlpha(0.2);
-  pathG.fillRect(0, 9, 32, 6);
+  pathG.setAlpha(0.18);
+  pathG.fillRect(0, 18, TP, 12);
   pathG.setAlpha(1);
   pathG.fillStyle(0x5a4835);
-  pathG.fillRect(0, 0, 32, 5);
-  pathG.lineStyle(1, 0x3a2818, 0.35);
-  pathG.lineBetween(0, 5, 32, 5);
-  pathG.lineBetween(4, 8, 28, 12);
-  pathG.lineStyle(1, 0x000000, 0.75);
-  pathG.strokeRect(0, 0, 32, 32);
-  pathG.generateTexture('tile_ground_path', 32, 32);
+  pathG.fillRect(0, 0, TP, 10);
+  pathG.lineStyle(1, 0x3a2818, 0.32);
+  pathG.lineBetween(0, 10, TP, 10);
+  pathG.lineBetween(8, 16, 56, 24);
+  scatterTileNoise(pathG, 702, 0x5a4835, 0.052);
+  pathG.lineStyle(2, 0x2a2018, 0.35);
+  pathG.strokeRect(1, 1, TP - 2, TP - 2);
+  pathG.lineStyle(1, 0x000000, 0.26);
+  pathG.strokeRect(0.5, 0.5, TP - 1, TP - 1);
+  pathG.generateTexture('tile_ground_path', TP, TP);
   pathG.destroy();
 }
 
@@ -1449,17 +1498,55 @@ function generateBackgroundTextures(scene) {
   sp.destroy();
 }
 
+/** Break up flat parallax fills with deterministic grain + soft highlights */
+function enrichParallaxSurface(g, W, H, seed, opts = {}) {
+  const step = opts.step ?? 4;
+  const darkStr = opts.darkStr ?? 0.024;
+  const hiStr = opts.hiStr ?? 0.014;
+  const hiCount = opts.hiCount ?? 480;
+  for (let y = 0; y < H; y += step) {
+    for (let x = 0; x < W; x += step) {
+      const n = hashNoise(x * 0.045, y * 0.045, seed);
+      g.fillStyle(0x000000, darkStr * (0.35 + n * 0.65));
+      g.fillRect(x, y, step, step);
+    }
+  }
+  for (let i = 0; i < hiCount; i++) {
+    const x = (hashNoise(i * 2, seed, 8) * (W - 8)) | 0;
+    const y = (hashNoise(seed, i, 9) * (H - 8)) | 0;
+    const n = hashNoise(x, y, seed + i);
+    g.fillStyle(0xffffff, hiStr * n);
+    g.fillRect(x, y, 2 + (i % 4), 1 + (i % 2));
+  }
+  g.setAlpha(1);
+}
+
+/** Soften hard triangle silhouettes with a low-alpha fringe along the bottom third */
+function fringeParallaxSilhouettes(g, W, H, seed, color, alpha = 0.14) {
+  g.fillStyle(color);
+  g.setAlpha(alpha);
+  for (let i = 0; i < 18; i++) {
+    const x = (hashNoise(i, seed, 2) * (W - 40)) | 0;
+    const w = 28 + ((i * 7) % 24);
+    const yBase = H - 80 - (i % 5) * 12;
+    g.fillEllipse(x + w * 0.5, yBase + 20, w, 36);
+  }
+  g.setAlpha(1);
+}
+
 /** Vertical atmosphere gradient + painterly parallax (HK / Metroid-inspired) */
 function generateParallaxTextures(scene) {
   const W = 960;
   const H = 540;
 
-  const drawAbyssGradient = (g) => {
+  const drawAbyssGradient = (g, gradSeed = 1) => {
     for (let y = 0; y < H; y++) {
       const t = y / H;
-      const r = Math.floor(Phaser.Math.Linear(18, 6, t));
-      const gg = Math.floor(Phaser.Math.Linear(12, 4, t));
-      const b = Math.floor(Phaser.Math.Linear(8, 2, t));
+      const wobble = (hashNoise(y, gradSeed, 0) - 0.5) * 0.055;
+      const tw = Phaser.Math.Clamp(t + wobble, 0, 1);
+      const r = Math.floor(Phaser.Math.Linear(18, 6, tw));
+      const gg = Math.floor(Phaser.Math.Linear(12, 4, tw));
+      const b = Math.floor(Phaser.Math.Linear(8, 2, tw));
       g.fillStyle((r << 16) | (gg << 8) | b);
       g.fillRect(0, y, W, 1);
     }
@@ -1467,7 +1554,7 @@ function generateParallaxTextures(scene) {
 
   // --- Cavern far: deep earthy abyss + distant rock silhouettes + warm glow ---
   const gfar = scene.make.graphics({ add: false });
-  drawAbyssGradient(gfar);
+  drawAbyssGradient(gfar, 11);
   gfar.fillStyle(0x0e0a04);
   for (let i = 0; i < 8; i++) {
     const x = i * 120 + (i % 2) * 40;
@@ -1496,6 +1583,8 @@ function generateParallaxTextures(scene) {
   gfar.setAlpha(0.35);
   gfar.fillRect(0, H - 120, W, 120);
   gfar.setAlpha(1);
+  fringeParallaxSilhouettes(gfar, W, H, 41, 0x120c06, 0.09);
+  enrichParallaxSurface(gfar, W, H, 101, { darkStr: 0.026, hiStr: 0.012 });
   gfar.generateTexture('bg_far_cavern', W, H);
   gfar.destroy();
 
@@ -1503,9 +1592,11 @@ function generateParallaxTextures(scene) {
   const gfarf = scene.make.graphics({ add: false });
   for (let y = 0; y < H; y++) {
     const t = y / H;
-    const r = Math.floor(Phaser.Math.Linear(6, 2, t));
-    const gg = Math.floor(Phaser.Math.Linear(14, 4, t));
-    const b = Math.floor(Phaser.Math.Linear(12, 6, t));
+    const wobble = (hashNoise(y, 22, 0) - 0.5) * 0.05;
+    const tw = Phaser.Math.Clamp(t + wobble, 0, 1);
+    const r = Math.floor(Phaser.Math.Linear(6, 2, tw));
+    const gg = Math.floor(Phaser.Math.Linear(14, 4, tw));
+    const b = Math.floor(Phaser.Math.Linear(12, 6, tw));
     gfarf.fillStyle((r << 16) | (gg << 8) | b);
     gfarf.fillRect(0, y, W, 1);
   }
@@ -1525,6 +1616,8 @@ function generateParallaxTextures(scene) {
   gfarf.setAlpha(0.4);
   gfarf.fillRect(0, H - 100, W, 100);
   gfarf.setAlpha(1);
+  fringeParallaxSilhouettes(gfarf, W, H, 52, 0x061410, 0.08);
+  enrichParallaxSurface(gfarf, W, H, 202, { darkStr: 0.022, hiStr: 0.016, hiCount: 420 });
   gfarf.generateTexture('bg_far_fungal', W, H);
   gfarf.destroy();
 
@@ -1532,9 +1625,11 @@ function generateParallaxTextures(scene) {
   const gfarc = scene.make.graphics({ add: false });
   for (let y = 0; y < H; y++) {
     const t = y / H;
-    const r = Math.floor(Phaser.Math.Linear(10, 3, t));
-    const gg = Math.floor(Phaser.Math.Linear(6, 2, t));
-    const b = Math.floor(Phaser.Math.Linear(24, 10, t));
+    const wobble = (hashNoise(y, 33, 0) - 0.5) * 0.048;
+    const tw = Phaser.Math.Clamp(t + wobble, 0, 1);
+    const r = Math.floor(Phaser.Math.Linear(10, 3, tw));
+    const gg = Math.floor(Phaser.Math.Linear(6, 2, tw));
+    const b = Math.floor(Phaser.Math.Linear(24, 10, tw));
     gfarc.fillStyle((r << 16) | (gg << 8) | b);
     gfarc.fillRect(0, y, W, 1);
   }
@@ -1555,6 +1650,8 @@ function generateParallaxTextures(scene) {
   gfarc.setAlpha(0.06);
   gfarc.fillCircle(480, 160, 90);
   gfarc.setAlpha(1);
+  fringeParallaxSilhouettes(gfarc, W, H, 63, 0x0a0818, 0.07);
+  enrichParallaxSurface(gfarc, W, H, 303, { darkStr: 0.024, hiStr: 0.018 });
   gfarc.generateTexture('bg_far_crystal', W, H);
   gfarc.destroy();
 
@@ -1581,6 +1678,7 @@ function generateParallaxTextures(scene) {
   gmid.setAlpha(0.5);
   gmid.fillEllipse(480, H + 40, 900, 100);
   gmid.setAlpha(1);
+  enrichParallaxSurface(gmid, W, H, 404, { darkStr: 0.032, hiStr: 0.01, hiCount: 360, step: 5 });
   gmid.generateTexture('bg_mid_cavern', W, H);
   gmid.destroy();
 
@@ -1600,6 +1698,7 @@ function generateParallaxTextures(scene) {
   gmidf.fillCircle(400, 400, 32);
   gmidf.fillCircle(700, 390, 26);
   gmidf.setAlpha(1);
+  enrichParallaxSurface(gmidf, W, H, 505, { darkStr: 0.03, hiStr: 0.013, hiCount: 400 });
   gmidf.generateTexture('bg_mid_fungal', W, H);
   gmidf.destroy();
 }
@@ -1610,7 +1709,7 @@ function generateAtmosphereTextures(scene) {
   const g = scene.make.graphics({ add: false });
   for (let y = 0; y < H; y++) {
     const t = y / H;
-    const a = Math.pow(t, 1.6) * 0.72;
+    const a = Math.pow(t, 1.55) * 0.56;
     g.fillStyle(0x020210, a);
     g.fillRect(0, y, W, 1);
   }
@@ -1644,9 +1743,11 @@ function generateMountainParallaxTextures(scene) {
   const gsky = scene.make.graphics({ add: false });
   for (let y = 0; y < H; y++) {
     const t = y / H;
-    const r = Math.floor(Phaser.Math.Linear(18, 6, t));
-    const gg = Math.floor(Phaser.Math.Linear(14, 4, t));
-    const b = Math.floor(Phaser.Math.Linear(10, 2, t));
+    const wobble = (hashNoise(y, 77, 0) - 0.5) * 0.05;
+    const tw = Phaser.Math.Clamp(t + wobble, 0, 1);
+    const r = Math.floor(Phaser.Math.Linear(18, 6, tw));
+    const gg = Math.floor(Phaser.Math.Linear(14, 4, tw));
+    const b = Math.floor(Phaser.Math.Linear(10, 2, tw));
     const col = (r << 16) | (gg << 8) | b;
     gsky.fillStyle(col);
     gsky.fillRect(0, y, W, 1);
@@ -1655,6 +1756,7 @@ function generateMountainParallaxTextures(scene) {
   gsky.setAlpha(0.04);
   gsky.fillCircle(680, 100, 50);
   gsky.setAlpha(1);
+  enrichParallaxSurface(gsky, W, H, 606, { darkStr: 0.02, hiStr: 0.011, hiCount: 320 });
   gsky.generateTexture('bg_sky_mountain', W, H);
   gsky.destroy();
 
@@ -1681,6 +1783,8 @@ function generateMountainParallaxTextures(scene) {
   gfar.setAlpha(0.05);
   gfar.fillRect(0, 300, W, 100);
   gfar.setAlpha(1);
+  fringeParallaxSilhouettes(gfar, W, H, 88, 0x181208, 0.07);
+  enrichParallaxSurface(gfar, W, H, 707, { darkStr: 0.025, hiStr: 0.012 });
   gfar.generateTexture('bg_far_mountain', W, H);
   gfar.destroy();
 
@@ -1698,6 +1802,7 @@ function generateMountainParallaxTextures(scene) {
   }
   gmid.fillStyle(0x0a0804);
   gmid.fillRect(0, H - 48, W, 48);
+  enrichParallaxSurface(gmid, W, H, 808, { darkStr: 0.03, hiStr: 0.01, hiCount: 340, step: 5 });
   gmid.generateTexture('bg_mid_mountain', W, H);
   gmid.destroy();
 }
@@ -1969,17 +2074,35 @@ function generateParticleTexture(scene) {
 }
 
 function generateDoorTexture(scene) {
+  const PW = 36;
+  const PH = 60;
   const g = scene.make.graphics({ add: false });
-  g.fillStyle(TEAL_DARK);
-  g.setAlpha(0.25);
-  g.fillRoundedRect(0, 0, 20, 56, 3);
-  g.lineStyle(1, TEAL_GLOW, 0.4);
-  g.strokeRoundedRect(0, 0, 20, 56, 3);
-  g.fillStyle(TEAL_GLOW);
-  g.setAlpha(0.1);
-  g.fillRect(6, 4, 8, 48);
-  g.setAlpha(1);
-  g.generateTexture('door', 20, 56);
+  const cx = PW / 2;
+  const cy = PH / 2 + 2;
+
+  for (let i = 0; i < 4; i++) {
+    g.fillStyle(TEAL_GLOW, 0.05 + i * 0.03);
+    g.fillEllipse(cx, cy, PW - 4 + i * 5, PH - 6 + i * 6);
+  }
+
+  g.fillStyle(0x1a0a2a, 0.5);
+  g.fillEllipse(cx, cy, PW - 4, PH - 8);
+
+  g.lineStyle(4, TEAL_BRIGHT, 0.9);
+  g.strokeEllipse(cx, cy, PW - 8, PH - 14);
+  g.lineStyle(2, 0xffffff, 0.4);
+  g.strokeEllipse(cx, cy, PW - 12, PH - 20);
+  g.lineStyle(3, TEAL_DARK, 0.95);
+  g.strokeEllipse(cx, cy, PW - 16, PH - 26);
+
+  g.fillStyle(0x030510, 0.98);
+  g.fillEllipse(cx, cy + 1, PW - 20, PH - 32);
+  g.fillStyle(TEAL, 0.12);
+  g.fillEllipse(cx, cy + 5, PW - 28, PH - 40);
+  g.fillStyle(TEAL_GLOW, 0.08);
+  g.fillEllipse(cx, cy + 8, 10, 8);
+
+  g.generateTexture('door', PW, PH);
   g.destroy();
 }
 

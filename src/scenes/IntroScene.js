@@ -1,3 +1,5 @@
+import { getFirstConnectedGamepad, pollAnyGamepadActionEdge } from '../utils/menuRemoteInput.js';
+
 export class IntroScene extends Phaser.Scene {
   constructor() {
     super('IntroScene');
@@ -13,6 +15,7 @@ export class IntroScene extends Phaser.Scene {
     this._elements = [];
     this._skipped = false;
     this._transitioning = false;
+    this._introGpBtnPrev = [];
 
     const bg = this.add.rectangle(cx, cy, W, H, 0x000000);
     this._elements.push(bg);
@@ -175,6 +178,18 @@ export class IntroScene extends Phaser.Scene {
         this.input.gamepad.once('down', () => this.skipIntro());
       }
     });
+  }
+
+  update() {
+    if (this._skipped || this._transitioning) return;
+    const pad = getFirstConnectedGamepad();
+    if (!pad) {
+      this._introGpBtnPrev = [];
+      return;
+    }
+    if (pollAnyGamepadActionEdge(pad, this._introGpBtnPrev)) {
+      this.skipIntro();
+    }
   }
 
   makeText(x, y, content, style) {

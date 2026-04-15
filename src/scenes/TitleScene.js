@@ -1,4 +1,9 @@
 import * as SaveGame from '../persistence/SaveGame.js';
+import {
+  getFirstConnectedGamepad,
+  interpretMenuRemoteKeydown,
+  pollMenuGamepadEdges,
+} from '../utils/menuRemoteInput.js';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -117,12 +122,17 @@ export class TitleScene extends Phaser.Scene {
       menuEntries[i]._txt = t;
     }
 
-    const hint = this.add.text(cx, hintY, '↑↓ select · ENTER · Progress saves in this browser', {
-      fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',
-      stroke: '#000', strokeThickness: 2,
-      align: 'center',
-      wordWrap: { width: cam.width - 48 },
-    }).setOrigin(0.5);
+    const hint = this.add.text(
+      cx,
+      hintY,
+      'D-pad / stick · OK or ENTER · keyboard · Progress saves in this browser',
+      {
+        fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',
+        stroke: '#000', strokeThickness: 2,
+        align: 'center',
+        wordWrap: { width: cam.width - 48 },
+      },
+    ).setOrigin(0.5);
 
     this.selectedIndex = 0;
     const nOpt = options.length;
@@ -140,8 +150,17 @@ export class TitleScene extends Phaser.Scene {
     updateSelection();
 
     const runSelection = () => {
-      const e = menuEntries[this.selectedIndex];
-      if (e) e.onSelect();
+      const entry = menuEntries[this.selectedIndex];
+      if (entry) entry.onSelect();
+    };
+
+    const navUp = () => {
+      this.selectedIndex = (this.selectedIndex + nOpt - 1) % nOpt;
+      updateSelection();
+    };
+    const navDown = () => {
+      this.selectedIndex = (this.selectedIndex + 1) % nOpt;
+      updateSelection();
     };
 
     for (let i = 0; i < nOpt; i++) {
@@ -157,19 +176,62 @@ export class TitleScene extends Phaser.Scene {
       });
     }
 
-    this.input.keyboard.on('keydown-UP', () => {
-      this.selectedIndex = (this.selectedIndex + nOpt - 1) % nOpt;
-      updateSelection();
+    this._titleKeyHandler = (e) => {
+      const { navUp: ku, navDown: kd, confirm } = interpretMenuRemoteKeydown(e);
+      if (!ku && !kd && !confirm) return;
+      e.preventDefault();
+      if (ku) navUp();
+      else if (kd) navDown();
+      else if (confirm) runSelection();
+    };
+    window.addEventListener('keydown', this._titleKeyHandler, true);
+
+    this._titleMenu = { nOpt, updateSelection, runSelection };
+    this._menuGpHeld = { up: false, down: false, confirm: false };
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      window.removeEventListener('keydown', this._titleKeyHandler, true);
+      this._titleMenu = null;
     });
-    this.input.keyboard.on('keydown-DOWN', () => {
-      this.selectedIndex = (this.selectedIndex + 1) % nOpt;
-      updateSelection();
-    });
-    this.input.keyboard.on('keydown-ENTER', runSelection);
-    this.input.keyboard.on('keydown-SPACE', runSelection);
+
+    const canvas = this.game.canvas;
+    if (canvas) {
+      requestAnimationFrame(() => {
+        try {
+          canvas.focus({ preventScroll: true });
+        } catch {
+          canvas.focus();
+        }
+      });
+    }
 
     this.tweens.add({
       targets: hint, alpha: 0.4, duration: 1500, yoyo: true, repeat: -1,
     });
+  }
+
+  update() {
+    const menu = this._titleMenu;
+    if (!menu) return;
+
+    const pad = getFirstConnectedGamepad();
+    if (!pad) {
+      this._menuGpHeld = { up: false, down: false, confirm: false };
+      return;
+    }
+
+    const edges = pollMenuGamepadEdges(pad, this._menuGpHeld);
+    this._menuGpHeld = { up: edges.up, down: edges.down, confirm: edges.confirm };
+
+    const { nOpt, updateSelection, runSelection } = menu;
+    if (edges.upEdge) {
+      this.selectedIndex = (this.selectedIndex + nOpt - 1) % nOpt;
+      updateSelection();
+    } else if (edges.downEdge) {
+      this.selectedIndex = (this.selectedIndex + 1) % nOpt;
+      updateSelection();
+    } else if (edges.confirmEdge) {
+      runSelection();
+    }
   }
 }
