@@ -1159,68 +1159,11 @@ export class LevelManager {
   }
 
   createBench(x, y) {
-    // y is tile center; pod sits on floor at bottom of that tile
-    const floorY = y + TILE_SIZE / 2;
-
-    const podBack = this.scene.add.image(x, floorY, 'rest_pod_back');
-    podBack.setOrigin(0.5, 1);
-    podBack.setDepth(2);
-
-    const podFront = this.scene.add.image(x, floorY, 'rest_pod_front');
-    podFront.setOrigin(0.5, 1);
-    podFront.setDepth(7); // player depth 5 — reads as standing inside the pod
-
-    const glow = this.scene.add.image(x, floorY - 44, 'particle_teal');
-    glow.setScale(9);
-    glow.setAlpha(0.1);
-    glow.setDepth(1);
-    this.scene.tweens.add({
-      targets: glow, alpha: 0.03, scaleX: 11, scaleY: 11,
-      duration: 2200, yoyo: true, repeat: -1,
-    });
-
-    const trigger = this.scene.physics.add.image(x, floorY - 44, 'particle_teal');
-    trigger.setVisible(false);
-    trigger.body.allowGravity = false;
-    trigger.body.setImmovable(true);
-    trigger.body.setSize(38, 52);
-
-    const state = {
-      podBack,
-      podFront,
-      glow,
-      trigger,
-      floorY,
-    };
-
-    for (const player of this.allPlayers) {
-      this.scene.physics.add.overlap(
-        player, trigger, () => this.interactRestPod(state),
-      );
-    }
-    this.benches.push(state);
-  }
-
-  interactRestPod(state) {
-    if (state._resting) return;
-    state._resting = true;
-    const { podBack, floorY } = state;
-    for (const p of this.allPlayers) {
-      p.setCheckpoint(podBack.x, floorY - 18);
-      p.fullHeal();
-    }
-
-    this.scene.cameras.main.flash(200, 0, 128, 96);
-    const text = this.scene.add.text(podBack.x, floorY - 86, 'RESTING...', {
-      fontSize: '16px', fontFamily: 'monospace', color: '#40ffd8', stroke: '#000', strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(20);
-
-    if (this.scene.hud) this.scene.hud.refresh();
-
-    this.scene.tweens.add({
-      targets: text, alpha: 0, y: '-=20', duration: 1500, delay: 800,
-      onComplete: () => { text.destroy(); state._resting = false; },
-    });
+    // Legacy "rest pod" doorway has been retired in favor of the obelisk
+    // shrine. Room data still contains {type:'bench'} entries; we route
+    // them through the same checkpoint-shrine path so existing save points
+    // are preserved (and end up with the nicer obelisk visual).
+    this.createCheckpointShrine(x, y, {});
   }
 
   createCrawler(x, y) {
@@ -1902,11 +1845,14 @@ export class LevelManager {
     const sprite = this.scene.add.image(x, y, 'floor_spikes_down').setDepth(4);
     sprite.setOrigin(0.5, 1);
 
-    const zone = this.scene.physics.add.image(x, y - 8, 'particle_dust');
+    // Hit zone covers the full height of the extended spikes (24 tall) so
+    // the new taller forged spikes actually hurt along their whole length,
+    // not just their base.
+    const zone = this.scene.physics.add.image(x, y - 10, 'particle_dust');
     zone.setVisible(false);
     zone.body.allowGravity = false;
     zone.body.setImmovable(true);
-    zone.body.setSize(28, 14);
+    zone.body.setSize(28, 20);
     zone.body.enable = false;
 
     for (const player of this.allPlayers) {
