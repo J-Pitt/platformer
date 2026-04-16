@@ -85,7 +85,7 @@ export class Crawler extends Phaser.Physics.Arcade.Sprite {
     this.isHit = true;
     this.hitCooldown = 300;
 
-    this.setTintFill(0xff4444);
+    this.setTint(0xff4444).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(100, () => {
       if (this.active) this.clearTint();
     });

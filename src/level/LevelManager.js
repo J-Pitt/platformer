@@ -7,6 +7,96 @@ import { Boss } from '../entities/Boss.js';
 import { Brute } from '../entities/Brute.js';
 import { NPC } from '../entities/NPC.js';
 
+/**
+ * Center + size (px) of the contiguous air gap at a wall/floor so door portals match the opening.
+ */
+function getDoorOpeningWorldBounds(room, doorCol, doorRow) {
+  const tiles = room.tiles;
+  if (!tiles?.length) return null;
+  const H = tiles.length;
+  const W = tiles[0].length;
+  const TS = TILE_SIZE;
+
+  const expandV = (openCol, seedR) => {
+    if (openCol < 0 || openCol >= W) return null;
+    let r = seedR;
+    if (tiles[r]?.[openCol] !== 0) {
+      let found = false;
+      for (let d = 0; d < H && !found; d++) {
+        if (r + d < H && tiles[r + d][openCol] === 0) {
+          r = r + d;
+          found = true;
+          break;
+        }
+        if (r - d >= 0 && tiles[r - d][openCol] === 0) {
+          r = r - d;
+          found = true;
+          break;
+        }
+      }
+      if (!found) return null;
+    }
+    let rMin = r;
+    let rMax = r;
+    while (rMin > 0 && tiles[rMin - 1][openCol] === 0) rMin--;
+    while (rMax < H - 1 && tiles[rMax + 1][openCol] === 0) rMax++;
+    const h = (rMax - rMin + 1) * TS;
+    const w = TS;
+    const cx = openCol * TS + TS / 2;
+    const cy = rMin * TS + h / 2;
+    return { cx, cy, w, h };
+  };
+
+  const expandH = (openRow, seedC) => {
+    if (openRow < 0 || openRow >= H) return null;
+    let c = seedC;
+    if (tiles[openRow][c] !== 0) {
+      let found = false;
+      for (let d = 0; d < W && !found; d++) {
+        if (c + d < W && tiles[openRow][c + d] === 0) {
+          c = c + d;
+          found = true;
+          break;
+        }
+        if (c - d >= 0 && tiles[openRow][c - d] === 0) {
+          c = c - d;
+          found = true;
+          break;
+        }
+      }
+      if (!found) return null;
+    }
+    let cMin = c;
+    let cMax = c;
+    while (cMin > 0 && tiles[openRow][cMin - 1] === 0) cMin--;
+    while (cMax < W - 1 && tiles[openRow][cMax + 1] === 0) cMax++;
+    const w = (cMax - cMin + 1) * TS;
+    const h = TS;
+    const cx = cMin * TS + w / 2;
+    const cy = openRow * TS + TS / 2;
+    return { cx, cy, w, h };
+  };
+
+  if (doorCol <= 1) {
+    const b = expandV(0, doorRow);
+    if (b) return b;
+  }
+  if (doorCol >= W - 2) {
+    const b = expandV(W - 1, doorRow);
+    if (b) return b;
+  }
+  if (doorRow <= 3) {
+    const b = expandH(0, doorCol);
+    if (b) return b;
+  }
+  if (doorRow >= H - 4 && H >= 3) {
+    const b = expandH(H - 2, doorCol);
+    if (b) return b;
+  }
+
+  return null;
+}
+
 export class LevelManager {
   constructor(scene) {
     this.scene = scene;
@@ -779,35 +869,42 @@ export class LevelManager {
     this.scene.player.visitedRooms.add(this.currentRoomId);
   }
 
-  createDoor(x, y, obj) {
-    const portalGlow = this.scene.add.image(x, y, 'door');
+  createDoor(px, py, obj) {
+    const room = this.currentRoom;
+    const opening = room
+      ? getDoorOpeningWorldBounds(room, Math.floor(obj.x), Math.floor(obj.y))
+      : null;
+    const cx = opening?.cx ?? px;
+    const cy = opening?.cy ?? py;
+    const ow = opening?.w ?? TILE_SIZE * 2;
+    const oh = opening?.h ?? TILE_SIZE * 4;
+
+    const portalGlow = this.scene.add.image(cx, cy, 'door');
     portalGlow.setDepth(3);
     portalGlow.setBlendMode(Phaser.BlendModes.ADD);
-    portalGlow.setAlpha(0.2);
-    portalGlow.setScale(1.12);
+    portalGlow.setAlpha(0.22);
+    portalGlow.setDisplaySize(ow, oh);
     const glowTween = this.scene.tweens.add({
       targets: portalGlow,
-      scaleX: 1.24,
-      scaleY: 1.3,
+      alpha: { from: 0.14, to: 0.32 },
       duration: 1600,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
 
-    const door = this.scene.physics.add.image(x, y, 'door');
+    const door = this.scene.physics.add.image(cx, cy, 'door');
     door.body.allowGravity = false;
     door.body.setImmovable(true);
-    const bw = Math.max(TILE_SIZE, door.width * 0.88);
-    const bh = Math.max(TILE_SIZE * 2, door.height * 0.9);
-    door.body.setSize(bw, bh);
-    door.body.setOffset((door.width - bw) / 2, (door.height - bh) / 2);
+    door.setDisplaySize(ow, oh);
+    door.body.setSize(ow, oh);
     door.setDepth(5);
     door.targetRoom = obj.targetRoom;
     door.spawnX = obj.spawnX;
     door.spawnY = obj.spawnY;
     door.requiresAbilities = Array.isArray(obj.requiresAbilities) ? obj.requiresAbilities : [];
     door.setAlpha(0.96);
+    door.refreshBody();
 
     const pulseTween = this.scene.tweens.add({
       targets: door,
@@ -1666,59 +1763,30 @@ export class LevelManager {
     player.takeDamage(1, fromX);
   }
 
-  /**
-   * Immovable moving platforms update by setting position; Arcade does not carry the player.
-   * Nudge the player by the same delta when they are standing on the platform top.
-   */
-  carryPlayerWithMovingPlatform(platformSprite, dx, dy) {
-    if (dx === 0 && dy === 0) return;
-    const player = this.scene.player;
-    if (!player?.body || player.isDead) return;
-
-    const pb = player.body;
-    const b = platformSprite.body;
-    if (!b) return;
-
-    const margin = 2;
-    const footSlop = 8;
-    const horizOverlap = pb.right > b.left + margin && pb.left < b.right - margin;
-    if (!horizOverlap) return;
-
-    const feet = pb.bottom;
-    const platTop = b.top;
-    const onTop = feet >= platTop - footSlop && feet <= platTop + footSlop + 6;
-    if (!onTop) return;
-
-    if (pb.velocity.y < -100) return;
-
-    player.x += dx;
-    player.y += dy;
-    pb.updateFromGameObject();
-  }
-
   update(dt) {
     this.hazardDamageCooldown = Math.max(0, this.hazardDamageCooldown - dt);
 
     const t = this.scene.time.now / 1000;
+    const dtSec = dt / 1000;
 
     for (const plat of this.movingPlatforms) {
       if (!plat.sprite || !plat.sprite.active) continue;
       const s = plat.sprite;
-      const prevX = s.x;
-      const prevY = s.y;
+      const b = s.body;
+      if (!b) continue;
+
       if (plat.axis === 'y') {
-        s.y = plat.baseY + Math.sin(t * plat.speed + plat.phase) * plat.range;
+        const targetY = plat.baseY + Math.sin(t * plat.speed + plat.phase) * plat.range;
+        b.velocity.x = 0;
+        b.velocity.y = (targetY - s.y) / dtSec;
       } else {
-        s.x = plat.baseX + Math.sin(t * plat.speed + plat.phase) * plat.range;
+        const targetX = plat.baseX + Math.sin(t * plat.speed + plat.phase) * plat.range;
+        b.velocity.x = (targetX - s.x) / dtSec;
+        b.velocity.y = 0;
       }
       if (plat.spin) {
-        s.rotation += plat.spin * (dt / 1000);
+        s.rotation += plat.spin * dtSec;
       }
-      if (s.body) s.body.updateFromGameObject();
-
-      const dx = s.x - prevX;
-      const dy = s.y - prevY;
-      this.carryPlayerWithMovingPlatform(s, dx, dy);
     }
 
     for (const hz of this.hazardZones) {

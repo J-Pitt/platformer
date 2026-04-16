@@ -6,14 +6,14 @@ const SHADOW = 0x12121e;
 const SHADOW_LIGHT = 0x1e1e2e;
 const SHADOW_MID = 0x161622;
 
-const BONE = 0xd4c8a8;
-const BONE_HI = 0xe8dcc0;
-const BONE_SHADOW = 0x9a8868;
-const BONE_DARK = 0x6a5838;
-const CROWN_GOLD = 0xd4a020;
-const CROWN_BRIGHT = 0xffc840;
-const CROWN_DARK = 0x8a6a10;
-const EYE_GREEN = 0x44ff66;
+const BONE = 0xb8a888;
+const BONE_HI = 0xd0c4a0;
+const BONE_SHADOW = 0x78603c;
+const BONE_DARK = 0x4a3820;
+const CROWN_GOLD = 0x6a3010;
+const CROWN_BRIGHT = 0x983818;
+const CROWN_DARK = 0x380808;
+const EYE_GREEN = 0xff2020;
 
 const PW = 48;
 const PH = 48;
@@ -130,17 +130,31 @@ function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
   const attack = opts.attack;
   const armed = opts.armed !== false;
 
-  // Tattered royal cape
-  g.fillStyle(0x1a0828);
-  g.fillTriangle(cx - 13 + sway, 40, cx + 13 + sway, 40, cx + sway * 0.5, 18);
-  g.fillStyle(0x280c40);
-  g.fillTriangle(cx - 10 + sway, 38, cx + 10 + sway, 38, cx + sway * 0.5, 22);
-  g.lineStyle(1, 0x5a1888, 0.35);
-  g.lineBetween(cx - 12 + sway, 38, cx + sway * 0.5, 22);
-  g.lineBetween(cx + 12 + sway, 38, cx + sway * 0.5, 22);
-  g.lineStyle(1, 0x0c0414, 0.6);
-  g.lineBetween(cx - 7 + sway, 40, cx - 5 + sway, 36);
-  g.lineBetween(cx + 5 + sway, 40, cx + 3 + sway, 37);
+  // --- Ragged heavy cloak (layered, torn, dripping) ---
+  g.fillStyle(0x0a0410);
+  g.fillTriangle(cx - 15 + sway, 43, cx + 15 + sway, 43, cx + sway * 0.5, 16);
+  g.fillStyle(0x140820);
+  g.fillTriangle(cx - 12 + sway, 42, cx + 12 + sway, 42, cx + sway * 0.5, 19);
+  g.fillStyle(0x1c0c2c);
+  g.fillTriangle(cx - 9 + sway, 40, cx + 9 + sway, 40, cx + sway * 0.5, 22);
+  // Torn edges — jagged rips at hem
+  g.fillStyle(0x0a0410);
+  g.fillTriangle(cx - 14 + sway, 43, cx - 11 + sway, 43, cx - 12 + sway, 46);
+  g.fillTriangle(cx - 6 + sway, 43, cx - 3 + sway, 43, cx - 5 + sway, 47);
+  g.fillTriangle(cx + 3 + sway, 43, cx + 7 + sway, 43, cx + 5 + sway, 46);
+  g.fillTriangle(cx + 10 + sway, 43, cx + 14 + sway, 43, cx + 12 + sway, 45);
+  // Inner shadow folds
+  g.lineStyle(1, 0x060208, 0.7);
+  g.lineBetween(cx - 10 + sway, 40, cx - 4 + sway * 0.5, 22);
+  g.lineBetween(cx + 10 + sway, 40, cx + 4 + sway * 0.5, 22);
+  g.lineBetween(cx + sway * 0.8, 24, cx + sway, 42);
+  // Blood drip stains on cloak
+  g.fillStyle(0x300808);
+  g.setAlpha(0.4);
+  g.fillCircle(cx - 6 + sway, 38, 1.5);
+  g.fillCircle(cx + 4 + sway, 36, 1.2);
+  g.fillCircle(cx - 2 + sway, 40, 1.0);
+  g.setAlpha(1);
 
   const swordBehind = !attack || attack.frame < 2;
   if (armed) {
@@ -150,111 +164,191 @@ function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
       drawAttackSword(g, cx, attack.dir, attack.frame);
     }
   } else {
-    // Bare bone arms when unarmed
+    // Skeletal arms when unarmed — longer, thinner, clawed
     const armSway = sway * 0.3;
-    g.lineStyle(2, BONE_SHADOW);
-    g.lineBetween(cx - 9, 17, cx - 14 + armSway, 28);
-    g.lineStyle(1.5, BONE);
-    g.lineBetween(cx - 14 + armSway, 28, cx - 12 + armSway, 34);
-    g.fillStyle(BONE);
-    g.fillCircle(cx - 12 + armSway, 34, 2);
-    g.lineStyle(2, BONE_SHADOW);
-    g.lineBetween(cx + 9, 17, cx + 14 + armSway, 28);
-    g.lineStyle(1.5, BONE);
-    g.lineBetween(cx + 14 + armSway, 28, cx + 12 + armSway, 34);
-    g.fillStyle(BONE);
-    g.fillCircle(cx + 12 + armSway, 34, 2);
+    g.lineStyle(2, BONE_DARK);
+    g.lineBetween(cx - 9, 17, cx - 15 + armSway, 29);
+    g.lineStyle(1.5, BONE_SHADOW);
+    g.lineBetween(cx - 15 + armSway, 29, cx - 13 + armSway, 36);
+    // Claw fingers
+    g.lineStyle(1, BONE_DARK, 0.8);
+    g.lineBetween(cx - 13 + armSway, 36, cx - 15 + armSway, 39);
+    g.lineBetween(cx - 13 + armSway, 36, cx - 12 + armSway, 39);
+    g.lineBetween(cx - 13 + armSway, 36, cx - 10 + armSway, 38);
+    g.lineStyle(2, BONE_DARK);
+    g.lineBetween(cx + 9, 17, cx + 15 + armSway, 29);
+    g.lineStyle(1.5, BONE_SHADOW);
+    g.lineBetween(cx + 15 + armSway, 29, cx + 13 + armSway, 36);
+    g.lineStyle(1, BONE_DARK, 0.8);
+    g.lineBetween(cx + 13 + armSway, 36, cx + 15 + armSway, 39);
+    g.lineBetween(cx + 13 + armSway, 36, cx + 12 + armSway, 39);
+    g.lineBetween(cx + 13 + armSway, 36, cx + 10 + armSway, 38);
   }
 
-  // Bone legs
+  // --- Bone legs (thinner, darker, with claw-like feet) ---
   for (const leg of legOffsets) {
     const hipX = cx + leg.hipOff;
     const kneeX = hipX + leg.kneeOff;
     const footX = kneeX + leg.footOff;
-    g.lineStyle(2.5, BONE_SHADOW);
+    g.lineStyle(2.5, BONE_DARK);
     g.lineBetween(hipX, 30, kneeX, 36);
-    g.lineStyle(2, BONE);
+    g.lineStyle(2, BONE_SHADOW);
     g.lineBetween(kneeX, 36, footX, 42);
-    g.fillStyle(BONE);
-    g.fillCircle(kneeX, 36, 2);
-    g.fillStyle(BONE_SHADOW);
-    g.fillRect(footX - 3, 41, 6, 3);
-    g.lineStyle(1, BONE_DARK, 0.5);
-    g.lineBetween(footX - 2, 44, footX + 2, 44);
+    g.fillStyle(BONE_DARK);
+    g.fillCircle(kneeX, 36, 1.8);
+    g.fillStyle(0x2a1c10);
+    g.fillRect(footX - 3, 41, 7, 3);
+    // Claw toes
+    g.lineStyle(1, BONE_DARK, 0.7);
+    g.lineBetween(footX - 3, 44, footX - 4, 46);
+    g.lineBetween(footX + 3, 44, footX + 4, 46);
   }
 
-  // Ribcage torso
-  g.fillStyle(BONE_DARK);
+  // --- Ribcage torso (exposed, cracked, with inner glow) ---
+  g.fillStyle(0x1a1008);
   g.fillRoundedRect(cx - 9, 15, 18, 16, 3);
-  g.fillStyle(BONE_SHADOW);
+  g.fillStyle(BONE_DARK);
   g.fillRoundedRect(cx - 8, 16, 16, 14, 2);
-  g.lineStyle(1.5, BONE, 0.8);
+  // Inner cavity glow (red, sinister)
+  g.fillStyle(EYE_GREEN);
+  g.setAlpha(0.08);
+  g.fillCircle(cx, 23, 5);
+  g.setAlpha(1);
+  // Ribs
+  g.lineStyle(1.5, BONE_SHADOW, 0.85);
   for (let i = 0; i < 4; i++) {
     const ry = 18 + i * 3;
     g.lineBetween(cx - 6, ry, cx - 2, ry + 1);
     g.lineBetween(cx + 2, ry + 1, cx + 6, ry);
   }
-  g.lineStyle(1.5, BONE, 0.55);
-  g.lineBetween(cx, 16, cx, 30);
-  g.lineStyle(2, BONE_SHADOW, 0.65);
+  // Cracked sternum
+  g.lineStyle(1.5, BONE_DARK, 0.6);
+  g.lineBetween(cx, 16, cx - 1, 22);
+  g.lineBetween(cx - 1, 22, cx + 1, 26);
+  g.lineBetween(cx + 1, 26, cx, 30);
+  // Pelvis line
+  g.lineStyle(2, BONE_DARK, 0.7);
   g.lineBetween(cx - 6, 29, cx + 6, 29);
 
-  // Shoulder joints
-  g.fillStyle(BONE);
+  // --- Shoulder joints (spiked) ---
+  g.fillStyle(BONE_SHADOW);
   g.fillCircle(cx - 9, 16, 3.5);
   g.fillCircle(cx + 9, 16, 3.5);
   g.fillStyle(BONE_DARK);
-  g.fillCircle(cx - 9, 16, 1.8);
-  g.fillCircle(cx + 9, 16, 1.8);
+  g.fillCircle(cx - 9, 16, 2);
+  g.fillCircle(cx + 9, 16, 2);
+  // Bone spurs on shoulders
+  g.fillStyle(BONE_SHADOW);
+  g.fillTriangle(cx - 12, 16, cx - 9, 12, cx - 6, 16);
+  g.fillTriangle(cx + 6, 16, cx + 9, 12, cx + 12, 16);
 
-  // Skull
-  g.fillStyle(BONE_HI);
+  // --- Skull (cracked, scarred, terrifying) ---
+  // Base skull shape, slightly narrower jaw
+  g.fillStyle(BONE_SHADOW);
   g.fillCircle(cx, 9, 9);
   g.fillStyle(BONE);
-  g.fillCircle(cx, 10, 8);
-  g.fillStyle(BONE_HI);
-  g.fillRoundedRect(cx - 5, 13, 10, 4, 2);
-  g.lineStyle(1, BONE_DARK, 0.6);
-  for (let i = -3; i <= 3; i++) {
-    g.lineBetween(cx + i * 1.4, 14, cx + i * 1.4, 16);
-  }
-  g.fillStyle(0x000000);
-  g.setAlpha(0.45);
-  g.fillTriangle(cx - 1, 10, cx + 1, 10, cx, 12);
-  g.setAlpha(1);
-
-  // Eye sockets with eerie glow
-  g.fillStyle(0x000000);
-  g.fillCircle(cx - 4, 8, 2.8);
-  g.fillCircle(cx + 4, 8, 2.8);
-  g.fillStyle(EYE_GREEN);
-  g.fillCircle(cx - 4, 8, 1.8);
-  g.fillCircle(cx + 4, 8, 1.8);
-  g.fillStyle(0xffffff);
-  g.fillCircle(cx - 4.2, 7.5, 0.7);
-  g.fillCircle(cx + 3.8, 7.5, 0.7);
-  g.fillStyle(EYE_GREEN);
-  g.setAlpha(0.14);
-  g.fillCircle(cx - 4, 8, 4.5);
-  g.fillCircle(cx + 4, 8, 4.5);
-  g.setAlpha(1);
-
-  // Crown
-  g.fillStyle(CROWN_GOLD);
-  g.fillRect(cx - 8, 1, 16, 5);
-  g.fillTriangle(cx - 8, 2, cx - 6, -4, cx - 4, 2);
-  g.fillTriangle(cx - 2, 2, cx, -6, cx + 2, 2);
-  g.fillTriangle(cx + 4, 2, cx + 6, -4, cx + 8, 2);
-  g.fillStyle(EYE_GREEN);
-  g.fillCircle(cx - 6, -2, 1.1);
-  g.fillCircle(cx, -4, 1.4);
-  g.fillCircle(cx + 6, -2, 1.1);
-  g.fillStyle(CROWN_DARK);
+  g.fillCircle(cx, 9, 8);
+  // Darker lower skull for sunken cheeks
+  g.fillStyle(BONE_DARK);
   g.setAlpha(0.35);
-  g.fillRect(cx - 7, 4, 14, 2);
+  g.fillCircle(cx - 5, 11, 3);
+  g.fillCircle(cx + 5, 11, 3);
   g.setAlpha(1);
-  g.lineStyle(1, CROWN_DARK, 0.5);
-  g.lineBetween(cx - 8, 5, cx + 8, 5);
+
+  // Jaw / teeth — grinning maw
+  g.fillStyle(BONE);
+  g.fillRoundedRect(cx - 5, 13, 10, 5, 2);
+  g.fillStyle(BONE_HI);
+  g.fillRect(cx - 4, 13, 8, 2);
+  // Individual teeth (sharper, more visible)
+  g.lineStyle(1, 0x1a1008, 0.8);
+  for (let i = -3; i <= 3; i++) {
+    g.lineBetween(cx + i * 1.3, 13, cx + i * 1.3, 17);
+  }
+  // Lower teeth
+  g.lineStyle(1, 0x1a1008, 0.5);
+  for (let i = -2; i <= 2; i++) {
+    g.lineBetween(cx + i * 1.5, 16, cx + i * 1.5, 18);
+  }
+
+  // Nose cavity (dark, menacing)
+  g.fillStyle(0x000000);
+  g.setAlpha(0.6);
+  g.fillTriangle(cx - 1.5, 10, cx + 1.5, 10, cx, 12.5);
+  g.setAlpha(1);
+
+  // Skull cracks
+  g.lineStyle(1, BONE_DARK, 0.6);
+  g.lineBetween(cx + 2, 2, cx + 4, 7);
+  g.lineBetween(cx + 4, 7, cx + 7, 9);
+  g.lineBetween(cx + 4, 7, cx + 3, 10);
+  g.lineStyle(1, BONE_DARK, 0.4);
+  g.lineBetween(cx - 3, 4, cx - 5, 8);
+  g.lineBetween(cx - 5, 8, cx - 7, 10);
+
+  // --- Eye sockets (deep, red hellfire glow) ---
+  // Deep black sockets
+  g.fillStyle(0x000000);
+  g.fillCircle(cx - 4, 8, 3.2);
+  g.fillCircle(cx + 4, 8, 3.2);
+  // Inner dark ring
+  g.fillStyle(0x100000);
+  g.fillCircle(cx - 4, 8, 2.5);
+  g.fillCircle(cx + 4, 8, 2.5);
+  // Red eye glow — hot center
+  g.fillStyle(0xff4020);
+  g.fillCircle(cx - 4, 8, 1.6);
+  g.fillCircle(cx + 4, 8, 1.6);
+  g.fillStyle(0xff8040);
+  g.fillCircle(cx - 4, 7.8, 0.8);
+  g.fillCircle(cx + 4, 7.8, 0.8);
+  // Specular
+  g.fillStyle(0xffcc80);
+  g.fillCircle(cx - 4.3, 7.3, 0.4);
+  g.fillCircle(cx + 3.7, 7.3, 0.4);
+  // Wide hellfire glow bleeding out of sockets
+  g.fillStyle(EYE_GREEN);
+  g.setAlpha(0.12);
+  g.fillCircle(cx - 4, 8, 6);
+  g.fillCircle(cx + 4, 8, 6);
+  g.setAlpha(0.06);
+  g.fillCircle(cx, 8, 10);
+  g.setAlpha(1);
+
+  // --- Crown (blackened iron, broken prongs, blood-crusted) ---
+  // Base band — dark corroded iron
+  g.fillStyle(CROWN_GOLD);
+  g.fillRect(cx - 9, 1, 18, 5);
+  g.fillStyle(CROWN_DARK);
+  g.setAlpha(0.5);
+  g.fillRect(cx - 9, 4, 18, 2);
+  g.setAlpha(1);
+  // Broken/jagged prongs (asymmetric — damaged)
+  g.fillStyle(CROWN_GOLD);
+  g.fillTriangle(cx - 9, 2, cx - 7, -5, cx - 5, 2);
+  g.fillTriangle(cx - 2, 2, cx, -7, cx + 2, 2);
+  g.fillTriangle(cx + 5, 2, cx + 7, -4, cx + 9, 2);
+  // One prong is broken off
+  g.fillStyle(CROWN_BRIGHT);
+  g.fillTriangle(cx - 2, 2, cx, -7, cx + 1, 2);
+  // Broken prong stub on the right
+  g.fillStyle(CROWN_DARK);
+  g.fillRect(cx + 6, 0, 3, 3);
+  // Blood-crusted edges
+  g.fillStyle(0x400808);
+  g.setAlpha(0.45);
+  g.fillRect(cx - 8, 4, 16, 2);
+  g.setAlpha(1);
+  // Crown jewels (dark red, like coagulated blood)
+  g.fillStyle(0x880808);
+  g.fillCircle(cx - 7, -3, 1.2);
+  g.fillCircle(cx, -5, 1.5);
+  // Empty socket where a jewel was ripped out
+  g.fillStyle(0x000000);
+  g.fillCircle(cx + 7, -2, 1.0);
+  // Edge shadow
+  g.lineStyle(1, 0x200404, 0.6);
+  g.lineBetween(cx - 9, 5, cx + 9, 5);
 
   if (armed && attack && !swordBehind) {
     drawAttackSword(g, cx, attack.dir, attack.frame);
@@ -1569,16 +1663,6 @@ function generateParallaxTextures(scene) {
     const x = 40 + i * 78;
     gfar.fillTriangle(x, 0, x + 8 + (i % 3) * 4, 100 + (i % 5) * 25, x + 18, 0);
   }
-  gfar.fillStyle(0xc08840);
-  gfar.setAlpha(0.1);
-  gfar.fillCircle(200, 320, 90);
-  gfar.fillCircle(520, 280, 110);
-  gfar.fillCircle(780, 350, 85);
-  gfar.fillStyle(TEAL_GLOW);
-  gfar.setAlpha(0.06);
-  gfar.fillCircle(350, 200, 40);
-  gfar.fillCircle(700, 240, 35);
-  gfar.setAlpha(1);
   gfar.fillStyle(0x1a1408);
   gfar.setAlpha(0.35);
   gfar.fillRect(0, H - 120, W, 120);
@@ -1603,15 +1687,6 @@ function generateParallaxTextures(scene) {
   gfarf.fillStyle(0x081820);
   gfarf.fillEllipse(200, 400, 300, 120);
   gfarf.fillEllipse(650, 420, 280, 100);
-  gfarf.fillStyle(TEAL);
-  gfarf.setAlpha(0.2);
-  for (const [fx, fy, fr] of [[120, 360, 55], [340, 380, 70], [520, 400, 50], [720, 370, 60], [880, 390, 45]]) {
-    gfarf.fillCircle(fx, fy, fr);
-  }
-  gfarf.fillStyle(TEAL_GLOW);
-  gfarf.setAlpha(0.12);
-  gfarf.fillCircle(480, 200, 120);
-  gfarf.setAlpha(1);
   gfarf.fillStyle(0x102818);
   gfarf.setAlpha(0.4);
   gfarf.fillRect(0, H - 100, W, 100);
@@ -1640,15 +1715,6 @@ function generateParallaxTextures(scene) {
   gfarc.setAlpha(0.12);
   gfarc.fillTriangle(180, H, 240, 260, 300, H);
   gfarc.fillTriangle(600, H, 680, 240, 760, H);
-  gfarc.setAlpha(1);
-  gfarc.fillStyle(TEAL_GLOW);
-  gfarc.setAlpha(0.18);
-  for (let i = 0; i < 8; i++) {
-    gfarc.fillCircle(80 + i * 120, 180 + (i % 3) * 50, 35 + (i % 3) * 10);
-  }
-  gfarc.fillStyle(0xffccff);
-  gfarc.setAlpha(0.06);
-  gfarc.fillCircle(480, 160, 90);
   gfarc.setAlpha(1);
   fringeParallaxSilhouettes(gfarc, W, H, 63, 0x0a0818, 0.07);
   enrichParallaxSurface(gfarc, W, H, 303, { darkStr: 0.024, hiStr: 0.018 });
@@ -1692,12 +1758,6 @@ function generateParallaxTextures(scene) {
     gmidf.fillStyle(0x0a1808);
     gmidf.fillEllipse(x, H - 40, 18, h);
   }
-  gmidf.fillStyle(TEAL);
-  gmidf.setAlpha(0.06);
-  gmidf.fillCircle(150, 380, 28);
-  gmidf.fillCircle(400, 400, 32);
-  gmidf.fillCircle(700, 390, 26);
-  gmidf.setAlpha(1);
   enrichParallaxSurface(gmidf, W, H, 505, { darkStr: 0.03, hiStr: 0.013, hiCount: 400 });
   gmidf.generateTexture('bg_mid_fungal', W, H);
   gmidf.destroy();

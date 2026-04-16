@@ -94,6 +94,21 @@ export class GameScene extends Phaser.Scene {
         .setAlpha(0.68)
         .setBlendMode(Phaser.BlendModes.MULTIPLY);
     }
+
+    // Phaser 4: subtle full-viewport bloom via unified Filters (replaces v3 Bloom FX).
+    if (this.sys.game?.renderer?.type === Phaser.WEBGL && typeof Phaser.Actions?.AddEffectBloom === 'function') {
+      try {
+        Phaser.Actions.AddEffectBloom(this.cameras.main, {
+          threshold: 0.82,
+          blurRadius: 5,
+          blurSteps: 1,
+          blurQuality: 1,
+          blendAmount: 0.07,
+        });
+      } catch (e) {
+        console.warn('[GameScene] AddEffectBloom skipped', e);
+      }
+    }
   }
 
   setupInput() {

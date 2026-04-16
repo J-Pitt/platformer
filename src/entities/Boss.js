@@ -174,7 +174,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
 
   enterPhaseTwo() {
     this.phaseTwo = true;
-    this.setTintFill(0xff4444);
+    this.setTint(0xff4444).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(200, () => {
       if (this.active) {
         this.clearTint();
@@ -378,7 +378,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.isHit = true;
     this.hitCooldown = 200;
 
-    this.setTintFill(0xff4444);
+    this.setTint(0xff4444).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(80, () => {
       if (this.active && !this.isDead) {
         this.clearTint();

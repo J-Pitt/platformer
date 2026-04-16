@@ -9,7 +9,7 @@
     "validate-map": "node scripts/validate-map.mjs"
   },
   "dependencies": {
-    "phaser": "^3.87.0"
+    "phaser": "^4.0.0"
   },
   "devDependencies": {
     "vite": "^6.2.4"

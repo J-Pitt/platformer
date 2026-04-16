@@ -215,7 +215,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   die() {
     this.isDead = true;
-    this.setTintFill(0xffffff);
+    this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.body.velocity.set(0, 0);
     this.body.allowGravity = false;
 

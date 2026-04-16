@@ -226,10 +226,10 @@ export class InputManager {
 
     if (this.touch.active) {
       const t = this.touch.consume();
-      tLeft = !!(t.left && t.left.pressed);
-      tRight = !!(t.right && t.right.pressed);
-      tUp = !!(t.up && t.up.pressed);
-      tDown = !!(t.down && t.down.pressed);
+      tLeft = t._stickX < -0.01;
+      tRight = t._stickX > 0.01;
+      tUp = t._stickY < -0.01;
+      tDown = t._stickY > 0.01;
       tJumpPressed = !!(t.jump && t.jump.justPressed);
       tJumpHeld = !!(t.jump && t.jump.held);
       tDashPressed = !!(t.dash && t.dash.justPressed);

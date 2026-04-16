@@ -313,7 +313,7 @@ export class CombatSystem {
     this.isInvulnerable = true;
     this.invulnTimer = DAMAGE_INVULN_DURATION;
 
-    this.player.setTintFill(0xffffff);
+    this.player.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(100, () => {
       if (this.player.active) this.player.clearTint();
     });
