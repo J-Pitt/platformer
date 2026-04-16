@@ -5,6 +5,7 @@ import {
   interpretMenuRemoteKeydown,
   pollMenuGamepadEdges,
 } from '../utils/menuRemoteInput.js';
+import { createNameEntry, createConfirm } from '../ui/TitleModals.js';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -93,10 +94,13 @@ export class TitleScene extends Phaser.Scene {
     menuEntries.push({
       label: 'NEW GAME',
       onSelect: () => {
-        const nm = window.prompt('Player name', SaveGame.getStoredPlayerName() || 'Traveler');
-        if (nm === null) return;
-        SaveGame.setStoredPlayerName(nm.trim() || 'Traveler');
-        fadeToGame({ profileName: SaveGame.getStoredPlayerName() });
+        this.openNameEntry({
+          initial: SaveGame.getStoredPlayerName() || 'Traveler',
+          onConfirm: (name) => {
+            const stored = SaveGame.setStoredPlayerName(name);
+            fadeToGame({ profileName: stored });
+          },
+        });
       },
     });
 
@@ -104,10 +108,17 @@ export class TitleScene extends Phaser.Scene {
       menuEntries.push({
         label: 'ERASE SAVE',
         onSelect: () => {
-          if (window.confirm('Delete saved progress from this browser?')) {
-            SaveGame.clearSavedGame();
-            this.scene.restart();
-          }
+          this.openConfirm({
+            title: 'Erase Save',
+            message: 'Delete saved progress from this browser?\nThis cannot be undone.',
+            yesLabel: 'DELETE',
+            noLabel: 'CANCEL',
+            destructive: true,
+            onYes: () => {
+              SaveGame.clearSavedGame();
+              this.scene.restart();
+            },
+          });
         },
       });
     }
@@ -178,6 +189,11 @@ export class TitleScene extends Phaser.Scene {
     }
 
     this._titleKeyHandler = (e) => {
+      // Open modals steal input first.
+      if (this._modal && this._modal.isOpen) {
+        if (this._modal.handleKeyboard(e)) e.stopImmediatePropagation();
+        return;
+      }
       const { navUp: ku, navDown: kd, confirm } = interpretMenuRemoteKeydown(e);
       if (!ku && !kd && !confirm) return;
       e.preventDefault();
@@ -189,9 +205,13 @@ export class TitleScene extends Phaser.Scene {
 
     this._titleMenu = { nOpt, updateSelection, runSelection };
     this._menuGpHeld = { up: false, down: false, confirm: false };
+    this._modal = null;
+    this._modalGpHeld = {};
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('keydown', this._titleKeyHandler, true);
+      if (this._modal && this._modal.isOpen) this._modal.close();
+      this._modal = null;
       this._titleMenu = null;
     });
 
@@ -212,10 +232,18 @@ export class TitleScene extends Phaser.Scene {
   }
 
   update() {
+    const pad = getFirstConnectedGamepad();
+
+    // Modals take over all input while open.
+    if (this._modal && this._modal.isOpen) {
+      if (pad) this._modal.pollGamepad(pad, this._modalGpHeld);
+      // Keep menu gamepad state quiet so the modal doesn't double-trigger it.
+      this._menuGpHeld = { up: true, down: true, confirm: true };
+      return;
+    }
+
     const menu = this._titleMenu;
     if (!menu) return;
-
-    const pad = getFirstConnectedGamepad();
     if (!pad) {
       this._menuGpHeld = { up: false, down: false, confirm: false };
       return;
@@ -234,5 +262,49 @@ export class TitleScene extends Phaser.Scene {
     } else if (edges.confirmEdge) {
       runSelection();
     }
+  }
+
+  openNameEntry(opts) {
+    if (this._modal && this._modal.isOpen) return;
+    // Pre-seed held flags so a still-held confirm button doesn't instantly fire
+    // the first cell of the new modal.
+    this._modalGpHeld = {
+      up: true, down: true, left: true, right: true,
+      confirm: true, cancel: true, alt1: true, start: true, select: true,
+    };
+    this._modal = createNameEntry(this, {
+      initial: opts.initial,
+      onConfirm: (name) => {
+        this._modal = null;
+        if (opts.onConfirm) opts.onConfirm(name);
+      },
+      onCancel: () => {
+        this._modal = null;
+        if (opts.onCancel) opts.onCancel();
+      },
+    });
+  }
+
+  openConfirm(opts) {
+    if (this._modal && this._modal.isOpen) return;
+    this._modalGpHeld = {
+      up: true, down: true, left: true, right: true,
+      confirm: true, cancel: true, start: true,
+    };
+    this._modal = createConfirm(this, {
+      title: opts.title,
+      message: opts.message,
+      yesLabel: opts.yesLabel,
+      noLabel: opts.noLabel,
+      destructive: opts.destructive,
+      onYes: () => {
+        this._modal = null;
+        if (opts.onYes) opts.onYes();
+      },
+      onNo: () => {
+        this._modal = null;
+        if (opts.onNo) opts.onNo();
+      },
+    });
   }
 }
