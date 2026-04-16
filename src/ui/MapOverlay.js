@@ -1,6 +1,6 @@
 import { rooms, TILE_SIZE } from '../level/rooms.js';
 
-const ROOM_META = {
+export const ROOM_META = {
   room1:  { label: 'Broken Threshold',  col: 0,  row: 1 },
   room2:  { label: 'Vertical Shaft',    col: 1,  row: 1 },
   room3:  { label: 'Fungal Passage',    col: 2,  row: 2 },
@@ -38,7 +38,7 @@ const ROOM_META = {
   room29: { label: 'The Void King',     col: 16, row: 0 },
 };
 
-const CONNECTIONS = [
+export const CONNECTIONS = [
   ['room1', 'room2'],
   ['room2', 'room3'],
   ['room2', 'room4'],
@@ -78,10 +78,65 @@ const CONNECTIONS = [
   ['room16', 'room20'],
 ];
 
-const PIXEL_PER_TILE_BASE = 3;
-const GAP = 12;
-const ZOOM_LEVELS = [0.35, 0.5, 0.75, 1, 1.5, 2];
+export const PIXEL_PER_TILE_BASE = 3;
+export const GAP = 12;
+export const ZOOM_LEVELS = [0.35, 0.5, 0.75, 1, 1.5, 2];
 const PAN_SPEED = 6;
+
+/**
+ * Grid-lay out every known room given a `pixels-per-tile` scale. Shared
+ * by the main MapOverlay and by the Codex page preview so both renderers
+ * agree on room geometry.
+ */
+export function computeRoomPositions(ppt) {
+  const positions = {};
+  for (const [roomId, meta] of Object.entries(ROOM_META)) {
+    const room = rooms[roomId];
+    const w = room ? room.width * ppt : 20;
+    const h = room ? room.height * ppt : 16;
+    positions[roomId] = { w, h, col: meta.col, row: meta.row };
+  }
+
+  const colWidths = {};
+  const rowHeights = {};
+  for (const pos of Object.values(positions)) {
+    colWidths[pos.col] = Math.max(colWidths[pos.col] || 0, pos.w);
+    rowHeights[pos.row] = Math.max(rowHeights[pos.row] || 0, pos.h);
+  }
+
+  const colX = {};
+  let runX = 0;
+  for (const c of Object.keys(colWidths).map(Number).sort((a, b) => a - b)) {
+    colX[c] = runX;
+    runX += colWidths[c] + GAP;
+  }
+
+  const rowY = {};
+  let runY = 0;
+  for (const r of Object.keys(rowHeights).map(Number).sort((a, b) => a - b)) {
+    rowY[r] = runY;
+    runY += rowHeights[r] + GAP + 14;
+  }
+
+  for (const pos of Object.values(positions)) {
+    const cw = colWidths[pos.col];
+    const rh = rowHeights[pos.row];
+    pos.x = colX[pos.col] + (cw - pos.w) / 2;
+    pos.y = rowY[pos.row] + (rh - pos.h) / 2;
+  }
+  return positions;
+}
+
+export function getTotalBounds(positions) {
+  const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const rp of Object.values(positions)) {
+    b.minX = Math.min(b.minX, rp.x);
+    b.minY = Math.min(b.minY, rp.y);
+    b.maxX = Math.max(b.maxX, rp.x + rp.w);
+    b.maxY = Math.max(b.maxY, rp.y + rp.h + 20);
+  }
+  return { ...b, w: b.maxX - b.minX, h: b.maxY - b.minY };
+}
 
 export class MapOverlay {
   constructor(scene) {
@@ -163,14 +218,7 @@ export class MapOverlay {
   }
 
   getTotalBounds(positions) {
-    const b = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
-    for (const rp of Object.values(positions)) {
-      b.minX = Math.min(b.minX, rp.x);
-      b.minY = Math.min(b.minY, rp.y);
-      b.maxX = Math.max(b.maxX, rp.x + rp.w);
-      b.maxY = Math.max(b.maxY, rp.y + rp.h + 20);
-    }
-    return { ...b, w: b.maxX - b.minX, h: b.maxY - b.minY };
+    return getTotalBounds(positions);
   }
 
   build(restoreX, restoreY) {
@@ -421,49 +469,7 @@ export class MapOverlay {
   }
 
   computeRoomPositions(ppt) {
-    const positions = {};
-    const colGroups = {};
-
-    for (const [roomId, meta] of Object.entries(ROOM_META)) {
-      const room = rooms[roomId];
-      const w = room ? room.width * ppt : 20;
-      const h = room ? room.height * ppt : 16;
-      if (!colGroups[meta.col]) colGroups[meta.col] = {};
-      colGroups[meta.col][meta.row] = { roomId, w, h };
-      positions[roomId] = { w, h, col: meta.col, row: meta.row };
-    }
-
-    const colWidths = {};
-    const rowHeights = {};
-    for (const [, pos] of Object.entries(positions)) {
-      colWidths[pos.col] = Math.max(colWidths[pos.col] || 0, pos.w);
-      rowHeights[pos.row] = Math.max(rowHeights[pos.row] || 0, pos.h);
-    }
-
-    const colX = {};
-    let runX = 0;
-    const sortedCols = Object.keys(colWidths).map(Number).sort((a, b) => a - b);
-    for (const c of sortedCols) {
-      colX[c] = runX;
-      runX += colWidths[c] + GAP;
-    }
-
-    const rowY = {};
-    let runY = 0;
-    const sortedRows = Object.keys(rowHeights).map(Number).sort((a, b) => a - b);
-    for (const r of sortedRows) {
-      rowY[r] = runY;
-      runY += rowHeights[r] + GAP + 14;
-    }
-
-    for (const [, pos] of Object.entries(positions)) {
-      const cw = colWidths[pos.col];
-      const rh = rowHeights[pos.row];
-      pos.x = colX[pos.col] + (cw - pos.w) / 2;
-      pos.y = rowY[pos.row] + (rh - pos.h) / 2;
-    }
-
-    return positions;
+    return computeRoomPositions(ppt);
   }
 
   drawRoomTiles(rx, ry, room, ppt, isCurrent) {
