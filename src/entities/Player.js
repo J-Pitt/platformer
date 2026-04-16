@@ -1,7 +1,9 @@
 import * as Phaser from 'phaser';
 import { MovementSystem } from '../systems/Movement.js';
 import { CombatSystem } from '../systems/Combat.js';
+import { Inventory } from '../systems/Inventory.js';
 import { TILE_SIZE } from '../level/rooms.js';
+import { shakeScene } from '../systems/CameraRig.js';
 
 const MAX_HP = 5;
 
@@ -38,6 +40,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.movement = new MovementSystem(this);
     this.combat = new CombatSystem(this);
+    this.inventory = new Inventory(this);
 
     this.spawnX = x;
     this.spawnY = y;
@@ -53,6 +56,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     /** Land / jump squash–stretch (solo feel). */
     this._wasOnGround = false;
     this._juiceBusy = false;
+    this._idleTween = null;
+    this._lastVy = 0;
+    this._hurtFlashTimer = 0;
+    this._tiltTarget = 0;
 
     this.setupAnimations();
 
@@ -81,14 +88,51 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return this.scene.inputManager.state;
   }
 
-  playLandSquash() {
+  playLandSquash(impact = 1) {
     if (this._juiceBusy || this.movement.isDashing || this.isDead) return;
+    this.stopIdleTween();
+    this._juiceBusy = true;
+    const k = Phaser.Math.Clamp(impact, 0.4, 1.8);
+    const sx = 1 + 0.16 * k;
+    const sy = 1 - 0.18 * k;
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: sx,
+      scaleY: sy,
+      duration: 55 + 20 * k,
+      yoyo: true,
+      ease: 'Sine.easeOut',
+      onComplete: () => {
+        this.setScale(1, 1);
+        this._juiceBusy = false;
+      },
+    });
+
+    // Ring of dust on heavier landings
+    if (impact > 0.85 && this.scene.dustEmitter) {
+      const n = Math.round(6 + k * 6);
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * Math.PI * 2;
+        const r = 10 + k * 4;
+        this.scene.dustEmitter.emitParticleAt(
+          this.x + Math.cos(ang) * r,
+          this.y + 16,
+          1,
+        );
+      }
+    }
+    if (impact > 1.1) shakeScene(this.scene, 90, 0.003);
+  }
+
+  playJumpSquash() {
+    if (this._juiceBusy || this.movement.isDashing || this.isDead) return;
+    this.stopIdleTween();
     this._juiceBusy = true;
     this.scene.tweens.add({
       targets: this,
-      scaleX: 1.1,
-      scaleY: 0.9,
-      duration: 55,
+      scaleX: 0.88,
+      scaleY: 1.14,
+      duration: 60,
       yoyo: true,
       ease: 'Sine.easeOut',
       onComplete: () => {
@@ -98,21 +142,91 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  playJumpSquash() {
-    if (this._juiceBusy || this.movement.isDashing || this.isDead) return;
-    this._juiceBusy = true;
+  /** Quick burst tween when a slash starts — gives the swing some oomph. */
+  playSlashFlourish(dir) {
+    if (this.isDead) return;
+    const sx = dir === 'up' || dir === 'down' ? 0.9 : 1.18;
+    const sy = dir === 'up' || dir === 'down' ? 1.18 : 0.9;
+    this.stopIdleTween();
     this.scene.tweens.add({
       targets: this,
-      scaleX: 0.92,
-      scaleY: 1.08,
-      duration: 45,
+      scaleX: sx,
+      scaleY: sy,
+      duration: 50,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+      onComplete: () => this.setScale(1, 1),
+    });
+  }
+
+  /** Aerial flourish for double jump — ring of particles + quick spin. */
+  playDoubleJumpFlourish() {
+    if (this.isDead) return;
+    this.stopIdleTween();
+    this.scene.tweens.add({
+      targets: this,
+      angle: this.facing > 0 ? 360 : -360,
+      duration: 280,
+      ease: 'Cubic.easeOut',
+      onStart: () => { this.angle = 0; },
+      onComplete: () => { this.angle = 0; },
+    });
+    if (this.scene.jumpEmitter) {
+      const n = 10;
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * Math.PI * 2;
+        this.scene.jumpEmitter.emitParticleAt(
+          this.x + Math.cos(ang) * 12,
+          this.y + Math.sin(ang) * 12,
+          1,
+        );
+      }
+    }
+  }
+
+  /** Damage reaction: hurt flash, recoil tilt, shake. */
+  playHurtReaction(fromX) {
+    if (this.isDead) return;
+    this.stopIdleTween();
+    this._hurtFlashTimer = 120;
+    const dir = fromX !== undefined ? (this.x < fromX ? -1 : 1) : 0;
+    shakeScene(this.scene, 120, 0.006);
+    this.scene.tweens.add({
+      targets: this,
+      angle: dir * 12,
+      duration: 90,
       yoyo: true,
       ease: 'Sine.easeOut',
-      onComplete: () => {
-        this.setScale(1, 1);
-        this._juiceBusy = false;
-      },
+      onComplete: () => { this.angle = 0; },
     });
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.8, scaleY: 1.2,
+      duration: 70, yoyo: true, ease: 'Quad.easeOut',
+      onComplete: () => this.setScale(1, 1),
+    });
+  }
+
+  startIdleTween() {
+    if (this._idleTween || this._juiceBusy || this.isDead) return;
+    this.setScale(1, 1);
+    this._idleTween = this.scene.tweens.add({
+      targets: this,
+      scaleY: { from: 1, to: 1.05 },
+      scaleX: { from: 1, to: 0.97 },
+      duration: 1200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+  }
+
+  stopIdleTween() {
+    if (this._idleTween) {
+      this._idleTween.stop();
+      this._idleTween = null;
+      this.setScale(1, 1);
+    }
   }
 
   update(dt) {
@@ -122,22 +236,59 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.movement.update(dt, input);
     this.combat.update(dt, input);
+    this.inventory.update(dt);
 
     const onGround = this.body.blocked.down || this.body.touching.down;
     if (!this._wasOnGround && onGround && !this.movement.isDashing) {
-      this.playLandSquash();
+      // Scale impact by how hard we were falling just before landing
+      const impact = Phaser.Math.Clamp(Math.abs(this._lastVy) / 240, 0.5, 1.6);
+      this.playLandSquash(impact);
     } else if (this._wasOnGround && !onGround && this.body.velocity.y < -80) {
       this.playJumpSquash();
     }
     this._wasOnGround = onGround;
+    this._lastVy = this.body.velocity.y;
+
+    // Gentle lean when running at speed; reset when still / airborne
+    const vx = this.body.velocity.x;
+    const movingFast = onGround && Math.abs(vx) > 120 && !this.combat.isSlashing && !this.combat.isKicking;
+    if (movingFast && !this._juiceBusy && this._hurtFlashTimer <= 0) {
+      this._tiltTarget = Phaser.Math.Clamp(vx / 20, -10, 10);
+    } else {
+      this._tiltTarget = 0;
+    }
+    // Exponential smooth-toward
+    const blend = Math.min(1, dt / 80);
+    this.angle = this.angle * (1 - blend) + this._tiltTarget * blend;
+
+    // Hurt flash: alternate bright-white tint briefly
+    if (this._hurtFlashTimer > 0) {
+      this._hurtFlashTimer -= dt;
+      const on = Math.floor(this._hurtFlashTimer / 40) % 2 === 0;
+      if (on) this.setTintFill(0xffffff); else this.clearTint();
+      if (this._hurtFlashTimer <= 0) this.clearTint();
+    }
 
     this.updateAnimation();
 
+    // Idle breathing — only when genuinely still + on ground + no busy state
+    const trulyIdle = onGround && Math.abs(vx) < 5 &&
+      !this.combat.isSlashing && !this.combat.isKicking &&
+      !this.movement.isDashing && !this._juiceBusy && this._hurtFlashTimer <= 0;
+    if (trulyIdle) this.startIdleTween();
+    else this.stopIdleTween();
+
     // Running particles
-    if (onGround && Math.abs(this.body.velocity.x) > 80 && Math.random() < 0.3) {
+    if (onGround && Math.abs(vx) > 80 && Math.random() < 0.3) {
       if (this.scene.dustEmitter) {
         this.scene.dustEmitter.emitParticleAt(this.x, this.y + 16, 1);
       }
+    }
+
+    // Wall slide sparks
+    if (this.movement.isWallSliding && this.scene.dustEmitter && Math.random() < 0.45) {
+      const wd = this.movement.wallDir || (this.body.blocked.left ? -1 : 1);
+      this.scene.dustEmitter.emitParticleAt(this.x + wd * 8, this.y + 6, 1);
     }
   }
 
@@ -206,16 +357,21 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   takeDamage(amount, fromX) {
     const hit = this.combat.takeDamage(amount);
-    if (hit && fromX !== undefined) {
-      const dir = this.x < fromX ? -1 : 1;
-      this.body.velocity.x = dir * 180;
-      this.body.velocity.y = -120;
+    if (hit) {
+      if (fromX !== undefined) {
+        const dir = this.x < fromX ? -1 : 1;
+        this.body.velocity.x = dir * 180;
+        this.body.velocity.y = -120;
+      }
+      this.playHurtReaction(fromX);
     }
     return hit;
   }
 
   die() {
     this.isDead = true;
+    this.stopIdleTween();
+    this.angle = 0;
     this.setTint(0xffffff).setTintMode(Phaser.TintModes.FILL);
     this.body.velocity.set(0, 0);
     this.body.allowGravity = false;
@@ -234,7 +390,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.allowGravity = true;
     this.setAlpha(1);
     this.setScale(1);
+    this.angle = 0;
+    this._hurtFlashTimer = 0;
+    this._tiltTarget = 0;
     this.clearTint();
+    this.stopIdleTween();
     this.setPosition(this.spawnX, this.spawnY);
     this.body.velocity.set(0, 0);
     this.combat.isInvulnerable = false;
@@ -326,5 +486,6 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.checkpointY = s.checkpointTileY * TILE_SIZE + TILE_SIZE / 2;
       this._checkpointRoom = s.checkpointRoom;
     }
+    if (s.inventory) this.inventory.fromJSON(s.inventory);
   }
 }

@@ -82,10 +82,12 @@ export class MovementSystem {
         p.setFlipX(false);
         p.facing = 1;
       } else {
+        // Ice patches multiply deceleration (effectively slide) when onIce flag is set by LevelManager
+        const decel = p.onIce ? DECELERATION * 0.08 : DECELERATION;
         if (body.velocity.x > 0) {
-          body.velocity.x = Math.max(0, body.velocity.x - DECELERATION * (dt / 1000));
+          body.velocity.x = Math.max(0, body.velocity.x - decel * (dt / 1000));
         } else if (body.velocity.x < 0) {
-          body.velocity.x = Math.min(0, body.velocity.x + DECELERATION * (dt / 1000));
+          body.velocity.x = Math.min(0, body.velocity.x + decel * (dt / 1000));
         }
       }
     }
@@ -122,6 +124,7 @@ export class MovementSystem {
         this.jumpBufferTimer = 0;
         this.airJumpsUsed++;
         this.emitJumpParticles();
+        if (p.playDoubleJumpFlourish) p.playDoubleJumpFlourish();
       }
     }
 

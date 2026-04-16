@@ -25,6 +25,16 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
       this.refreshBody();
       this.setDepth(6);
     }
+    if (npcType === 'traveler') {
+      this.setScale(1.06);
+      this.refreshBody();
+      this.setDepth(6);
+      // Slow hood sway
+      scene.tweens.add({
+        targets: this, angle: { from: -1.4, to: 1.4 },
+        duration: 2400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+    }
 
     this.npcType = npcType;
     this.dialogue = dialogue || [];
@@ -34,7 +44,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     this.playerNearby = false;
 
     this.createPrompt();
-    if (npcType !== 'hermit' && npcType !== 'merchant') this.addIdleAnimation();
+    if (npcType !== 'hermit' && npcType !== 'merchant' && npcType !== 'traveler') this.addIdleAnimation();
   }
 
   createPrompt() {
@@ -122,12 +132,14 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
       knight: '#aabbcc',
       spirit: '#aa88ff',
       merchant: '#ffcc66',
+      traveler: '#ffc86a',
     };
     const nameLabels = {
       hermit: 'Old Hermit',
       knight: 'Fallen Knight',
       spirit: 'Wandering Spirit',
       merchant: 'Bone Merchant',
+      traveler: 'The Wandering Traveler',
     };
 
     const nameText = this.scene.add.text(
@@ -163,8 +175,8 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
     const hasMore = this.dialogueIndex < this.dialogue.length - 1;
     const promptStr = hasMore
-      ? (isMobile ? '[ TAP FOR MORE ▶ ]' : '[ SPACE OR E ▶ ]')
-      : (isMobile ? '[ TAP TO CLOSE ]' : '[ SPACE OR E TO CLOSE ]');
+      ? (isMobile ? '[ TAP FOR MORE ▶ ]' : '[ SPACE / E / A ▶ ]')
+      : (isMobile ? '[ TAP TO CLOSE ]' : '[ SPACE / E / A TO CLOSE ]');
     const prompt = this.scene.add.text(
       cx + panelW / 2 - 14, panelY + panelH / 2 - 12, promptStr, {
         fontSize: '9px', fontFamily: 'monospace', color: '#6a5838',
@@ -191,6 +203,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
       this.scene.input.keyboard.off('keydown-SPACE', advance);
       this.scene.input.keyboard.off('keydown-E', advance);
       this.scene.input.off('pointerdown', advance);
+      if (this.scene._dialogueTick === padTick) this.scene._dialogueTick = null;
 
       for (const el of elements) {
         if (el.destroy) el.destroy();
@@ -209,10 +222,20 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
       }
     };
 
+    // Gamepad advance: poll the scene's edge-detected inputs every frame
+    const padTick = (input) => {
+      if (!input) return;
+      if (input.confirmPressed || input.interactPressed || input.cancelPressed) {
+        advance();
+      }
+    };
+    let padArmed = false;
     this.scene.time.delayedCall(200, () => {
       this.scene.input.keyboard.on('keydown-SPACE', advance);
       this.scene.input.keyboard.on('keydown-E', advance);
       this.scene.input.on('pointerdown', advance);
+      padArmed = true;
+      this.scene._dialogueTick = (input) => { if (padArmed) padTick(input); };
     });
   }
 

@@ -59,6 +59,29 @@ export class HUD {
       stroke: '#000', strokeThickness: 3,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(100);
 
+    // Active weapon badge (bottom-left)
+    this.weaponBadgeBg = this.scene.add.rectangle(26, cam.height - 60, 40, 40, 0x0c0814, 0.9)
+      .setScrollFactor(0).setDepth(100);
+    this.weaponBadgeBorder = this.scene.add.rectangle(26, cam.height - 60, 42, 42, 0x8866cc, 0.55)
+      .setScrollFactor(0).setDepth(99);
+    this.weaponBadgeIcon = this.scene.add.image(26, cam.height - 60, 'weapon_rusted_blade')
+      .setScrollFactor(0).setDepth(101);
+    this.weaponBadgeText = this.scene.add.text(50, cam.height - 60, 'Rusted Blade', {
+      fontSize: '11px', fontFamily: 'monospace', color: '#d0c8e0',
+      stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(101);
+    this.daggerAmmoText = this.scene.add.text(50, cam.height - 48, '', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#d4c8a8',
+      stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(101);
+    const menuHint = this.scene.add.text(26, cam.height - 38,
+      '[I / START] Menu', {
+        fontSize: '9px', fontFamily: 'monospace', color: '#6a5a80',
+        stroke: '#000', strokeThickness: 2,
+      }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(101);
+    this.menuHint = menuHint;
+    this.refreshWeaponBadge();
+
     /** Playtest: show `rooms.js` id + human name for room-by-room notes. */
     this._roomLabelKey = '';
     this.roomDebugLabel = this.scene.add.text(8, 92, '', {
@@ -148,5 +171,39 @@ export class HUD {
 
   refresh() {
     this.update();
+    this.refreshWeaponBadge();
+  }
+
+  refreshWeaponBadge() {
+    const p = this.scene.player;
+    if (!p || !p.inventory) return;
+    const w = p.inventory.activeWeapon();
+    if (this.weaponBadgeIcon && w && this.scene.textures.exists(w.icon)) {
+      this.weaponBadgeIcon.setTexture(w.icon);
+    }
+    if (this.weaponBadgeText) this.weaponBadgeText.setText(w?.name || 'Unarmed');
+    if (this.daggerAmmoText) {
+      if (p.inventory.hasThrowingDaggers) {
+        this.daggerAmmoText.setText(`[G] Daggers ${p.inventory.daggerAmmo}/${p.inventory.daggerAmmoMax}`);
+      } else {
+        this.daggerAmmoText.setText('');
+      }
+    }
+  }
+
+  rebuildHealthOrbs() {
+    const player = this.scene.player;
+    for (const o of this.healthOrbs) {
+      if (o.full?.destroy) o.full.destroy();
+      if (o.empty?.destroy) o.empty.destroy();
+    }
+    this.healthOrbs = [];
+    for (let i = 0; i < player.maxHp; i++) {
+      const full = this.scene.add.image(30 + i * 28, 30, 'health_orb')
+        .setScrollFactor(0).setDepth(100);
+      const empty = this.scene.add.image(30 + i * 28, 30, 'health_orb_empty')
+        .setScrollFactor(0).setDepth(99);
+      this.healthOrbs.push({ full, empty });
+    }
   }
 }

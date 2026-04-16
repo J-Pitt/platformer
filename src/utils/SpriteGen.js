@@ -40,11 +40,13 @@ export function generateAllTextures(scene) {
   generateDoorTexture(scene);
   generateHazardTextures(scene);
   generateNewHazardTextures(scene);
+  generateProLevelTextures(scene);
   generateDepthLayersTextures(scene);
   generateNPCTextures(scene);
   generateCoinTextures(scene);
   generateTeleportTexture(scene);
   generateKickTextures(scene);
+  generateWeaponAndItemTextures(scene);
 }
 
 /** Royal greatsword + gold guard + pommel (hx,hy = hand / crossguard center) */
@@ -2474,6 +2476,572 @@ function generateNewHazardTextures(scene) {
 }
 
 /**
+ * Textures for new enemies, bosses, progression objects, ice hazards, secrets.
+ * Called from generateAllTextures().
+ */
+function generateProLevelTextures(scene) {
+  // -------- Armored Flyer 44x44 (tougher skull-bat with iron plate) ---------
+  const af = scene.make.graphics({ add: false });
+  af.fillStyle(0x0a0810);
+  af.fillEllipse(22, 22, 22, 26);
+  af.fillStyle(0x1a1825);
+  af.fillEllipse(22, 23, 18, 20);
+  // Iron plate over front
+  af.fillStyle(0x484858);
+  af.fillEllipse(22, 22, 14, 14);
+  af.fillStyle(0x5a5a6a);
+  af.fillEllipse(22, 20, 10, 8);
+  // Rivet dots
+  af.fillStyle(0x2a2a30);
+  af.fillCircle(18, 18, 1);
+  af.fillCircle(26, 18, 1);
+  af.fillCircle(18, 26, 1);
+  af.fillCircle(26, 26, 1);
+  // Wings
+  af.fillStyle(0x14081e);
+  af.fillEllipse(4, 16, 16, 11);
+  af.fillEllipse(40, 16, 16, 11);
+  af.fillStyle(0x302040);
+  af.setAlpha(0.6);
+  af.fillEllipse(4, 16, 12, 7);
+  af.fillEllipse(40, 16, 12, 7);
+  af.setAlpha(1);
+  // Single glowing eye slit
+  af.fillStyle(0xff2244);
+  af.fillRect(18, 21, 8, 1.5);
+  af.fillStyle(0xff8888);
+  af.fillRect(20, 21, 4, 1);
+  // Top spike ridge
+  af.fillStyle(0x707080);
+  af.fillTriangle(19, 12, 22, 6, 25, 12);
+  af.generateTexture('armored_flyer', 44, 44);
+  af.destroy();
+
+  // -------- Charger Brute 64x56 (red-tinted brute with horns & eye glow) ---------
+  const ch = scene.make.graphics({ add: false });
+  const cW = 64, cH = 56, cx = cW / 2;
+  ch.fillStyle(0x2a0a0a);
+  ch.fillRoundedRect(cx - 22, 16, 44, 28, 4);
+  ch.fillStyle(0x4a1418);
+  ch.fillRoundedRect(cx - 20, 18, 40, 24, 3);
+  // Torso slab
+  ch.fillStyle(0x601a20);
+  ch.fillRect(cx - 14, 20, 28, 16);
+  // Shoulder pauldrons
+  ch.fillStyle(0x30282c);
+  ch.fillEllipse(cx - 20, 22, 14, 12);
+  ch.fillEllipse(cx + 20, 22, 14, 12);
+  ch.fillStyle(0x505058);
+  ch.fillEllipse(cx - 20, 21, 10, 8);
+  ch.fillEllipse(cx + 20, 21, 10, 8);
+  // Head (dark with glowing eyes)
+  ch.fillStyle(0x1a0608);
+  ch.fillCircle(cx, 12, 10);
+  ch.fillStyle(0x2a0a0e);
+  ch.fillCircle(cx, 12, 7);
+  // Horns
+  ch.fillStyle(0x888888);
+  ch.fillTriangle(cx - 10, 6, cx - 6, -2, cx - 4, 6);
+  ch.fillTriangle(cx + 10, 6, cx + 6, -2, cx + 4, 6);
+  // Red eyes
+  ch.fillStyle(0xff3322);
+  ch.fillCircle(cx - 3, 12, 1.8);
+  ch.fillCircle(cx + 3, 12, 1.8);
+  ch.fillStyle(0xffaa44);
+  ch.fillCircle(cx - 3, 12, 0.8);
+  ch.fillCircle(cx + 3, 12, 0.8);
+  // Tusks
+  ch.fillStyle(0xd0c8b0);
+  ch.fillTriangle(cx - 4, 16, cx - 3, 20, cx - 2, 16);
+  ch.fillTriangle(cx + 4, 16, cx + 3, 20, cx + 2, 16);
+  // Armored arms (clenched fists)
+  ch.fillStyle(0x2a1818);
+  ch.fillRect(cx - 26, 28, 10, 16);
+  ch.fillRect(cx + 16, 28, 10, 16);
+  ch.fillStyle(0x444444);
+  ch.fillRect(cx - 27, 40, 12, 8);
+  ch.fillRect(cx + 15, 40, 12, 8);
+  // Legs
+  ch.fillStyle(0x2a0e0e);
+  ch.fillRect(cx - 10, 44, 8, 10);
+  ch.fillRect(cx + 2, 44, 8, 10);
+  ch.generateTexture('charger', 64, 56);
+  ch.destroy();
+
+  // -------- Spitter 32x32 (tripod fungal mouth creature) ---------
+  const sp = scene.make.graphics({ add: false });
+  sp.fillStyle(0x1a2810);
+  sp.fillEllipse(16, 22, 26, 16);
+  sp.fillStyle(0x284020);
+  sp.fillEllipse(16, 22, 22, 12);
+  // Tripod legs
+  sp.lineStyle(2.5, 0x100c08);
+  sp.lineBetween(6, 28, 2, 32);
+  sp.lineBetween(16, 28, 16, 32);
+  sp.lineBetween(26, 28, 30, 32);
+  // Bulb/mouth on top
+  sp.fillStyle(0x0a1608);
+  sp.fillEllipse(16, 12, 18, 12);
+  sp.fillStyle(0x20e0a8);
+  sp.setAlpha(0.7);
+  sp.fillEllipse(16, 14, 12, 6);
+  sp.setAlpha(1);
+  // Inner glow
+  sp.fillStyle(0x80ffe0);
+  sp.fillEllipse(16, 14, 6, 3);
+  // Tooth ring
+  sp.fillStyle(0xd4d4c0);
+  for (let i = 0; i < 6; i++) {
+    const ang = (i / 6) * Math.PI * 2;
+    const tx = 16 + Math.cos(ang) * 6;
+    const ty = 14 + Math.sin(ang) * 3;
+    sp.fillCircle(tx, ty, 0.9);
+  }
+  // Eye pair on body
+  sp.fillStyle(0xffdd44);
+  sp.fillCircle(11, 22, 1.6);
+  sp.fillCircle(21, 22, 1.6);
+  sp.generateTexture('spitter', 32, 32);
+  sp.destroy();
+
+  // -------- Spitter orb projectile 14x14 ---------
+  const so = scene.make.graphics({ add: false });
+  so.fillStyle(0x0a1a14);
+  so.fillCircle(7, 7, 7);
+  so.fillStyle(0x20e0a8);
+  so.setAlpha(0.85);
+  so.fillCircle(7, 7, 5);
+  so.fillStyle(0x80ffe0);
+  so.setAlpha(0.7);
+  so.fillCircle(7, 7, 3);
+  so.fillStyle(0xffffff);
+  so.setAlpha(0.5);
+  so.fillCircle(6, 6, 1.2);
+  so.setAlpha(1);
+  so.generateTexture('spitter_orb', 14, 14);
+  so.destroy();
+
+  // -------- Checkpoint Shrine 48x64 (stone obelisk w/ teal flame) ---------
+  const sh = scene.make.graphics({ add: false });
+  // Base
+  sh.fillStyle(0x14181c);
+  sh.fillRect(6, 52, 36, 12);
+  sh.fillStyle(0x1e2430);
+  sh.fillRect(8, 50, 32, 2);
+  // Obelisk
+  sh.fillStyle(0x2a323c);
+  sh.fillRect(14, 14, 20, 38);
+  sh.fillStyle(0x384050);
+  sh.fillRect(16, 16, 16, 34);
+  // Runes
+  sh.fillStyle(0x40ffd8);
+  sh.fillRect(19, 22, 10, 1);
+  sh.fillRect(21, 26, 6, 1);
+  sh.fillRect(19, 32, 10, 1);
+  sh.fillRect(19, 38, 10, 1);
+  sh.fillRect(21, 42, 6, 1);
+  // Brazier bowl on top
+  sh.fillStyle(0x1a1a22);
+  sh.fillEllipse(24, 14, 22, 6);
+  sh.fillStyle(0x2a2a32);
+  sh.fillEllipse(24, 13, 18, 4);
+  // Flame
+  sh.fillStyle(0x40ffd8);
+  sh.setAlpha(0.9);
+  sh.fillTriangle(18, 12, 30, 12, 24, -2);
+  sh.fillStyle(0x80ffe8);
+  sh.setAlpha(0.7);
+  sh.fillTriangle(20, 12, 28, 12, 24, 2);
+  sh.fillStyle(0xffffff);
+  sh.setAlpha(0.5);
+  sh.fillTriangle(22, 12, 26, 12, 24, 6);
+  sh.setAlpha(1);
+  sh.generateTexture('checkpoint_shrine', 48, 64);
+  sh.destroy();
+
+  // -------- Checkpoint Shrine (activated: white-hot flame) ---------
+  const sh2 = scene.make.graphics({ add: false });
+  sh2.fillStyle(0x14181c); sh2.fillRect(6, 52, 36, 12);
+  sh2.fillStyle(0x1e2430); sh2.fillRect(8, 50, 32, 2);
+  sh2.fillStyle(0x2a323c); sh2.fillRect(14, 14, 20, 38);
+  sh2.fillStyle(0x384050); sh2.fillRect(16, 16, 16, 34);
+  // Glowing runes
+  sh2.fillStyle(0xffffff);
+  sh2.fillRect(19, 22, 10, 1);
+  sh2.fillRect(21, 26, 6, 1);
+  sh2.fillRect(19, 32, 10, 1);
+  sh2.fillRect(19, 38, 10, 1);
+  sh2.fillRect(21, 42, 6, 1);
+  sh2.fillStyle(0x1a1a22); sh2.fillEllipse(24, 14, 22, 6);
+  sh2.fillStyle(0x2a2a32); sh2.fillEllipse(24, 13, 18, 4);
+  sh2.fillStyle(0x80ffe8);
+  sh2.setAlpha(0.95);
+  sh2.fillTriangle(16, 12, 32, 12, 24, -8);
+  sh2.fillStyle(0xffffff);
+  sh2.setAlpha(0.8);
+  sh2.fillTriangle(19, 12, 29, 12, 24, -2);
+  sh2.fillStyle(0xffffff);
+  sh2.setAlpha(0.6);
+  sh2.fillTriangle(21, 12, 27, 12, 24, 4);
+  sh2.setAlpha(1);
+  sh2.generateTexture('checkpoint_shrine_lit', 48, 64);
+  sh2.destroy();
+
+  // -------- Lore Fragment 24x24 (tattered scroll/tablet) ---------
+  const lf = scene.make.graphics({ add: false });
+  lf.fillStyle(0x3a2a1a);
+  lf.fillRoundedRect(3, 4, 18, 16, 2);
+  lf.fillStyle(0x584028);
+  lf.fillRoundedRect(4, 5, 16, 14, 2);
+  lf.fillStyle(0xa48868);
+  lf.fillRoundedRect(5, 6, 14, 12, 1);
+  // Text lines
+  lf.lineStyle(1, 0x3a2818);
+  lf.lineBetween(7, 9, 17, 9);
+  lf.lineBetween(7, 12, 15, 12);
+  lf.lineBetween(7, 15, 17, 15);
+  // Teal rune mark
+  lf.fillStyle(0x40ffd8);
+  lf.setAlpha(0.7);
+  lf.fillCircle(12, 12, 1.5);
+  lf.setAlpha(1);
+  lf.generateTexture('lore_fragment', 24, 24);
+  lf.destroy();
+
+  // -------- Secret Wall hint 32x32 (dashed crack on cavern wall) ---------
+  const sw = scene.make.graphics({ add: false });
+  sw.fillStyle(0x241c1a);
+  sw.fillRect(0, 0, 32, 32);
+  sw.fillStyle(0x3a2e2a);
+  for (let y = 0; y < 32; y += 8) {
+    sw.fillRect(0, y, 32, 6);
+  }
+  sw.lineStyle(1.5, 0x101010, 0.6);
+  for (let y = 0; y < 32; y += 8) sw.lineBetween(0, y, 32, y);
+  // Crack outline (crescent)
+  sw.lineStyle(1.5, 0x6a4438, 0.85);
+  sw.beginPath();
+  sw.moveTo(6, 6);
+  sw.lineTo(12, 14);
+  sw.lineTo(8, 20);
+  sw.lineTo(14, 26);
+  sw.strokePath();
+  sw.lineStyle(1.5, 0x8a5040, 0.7);
+  sw.beginPath();
+  sw.moveTo(22, 8);
+  sw.lineTo(18, 16);
+  sw.lineTo(24, 22);
+  sw.strokePath();
+  sw.generateTexture('secret_wall', 32, 32);
+  sw.destroy();
+
+  // -------- Ice Patch 32x12 (bottom of floor, slippery) ---------
+  const ip = scene.make.graphics({ add: false });
+  ip.fillStyle(0x5098d0);
+  ip.setAlpha(0.35);
+  ip.fillRect(0, 2, 32, 10);
+  ip.setAlpha(1);
+  ip.fillStyle(0xaae0ff);
+  ip.setAlpha(0.7);
+  ip.fillRect(0, 2, 32, 2);
+  ip.setAlpha(1);
+  ip.fillStyle(0xffffff);
+  for (let i = 0; i < 6; i++) {
+    ip.setAlpha(0.5 + Math.random() * 0.3);
+    ip.fillRect(2 + i * 5, 4 + (i % 2) * 3, 2, 1);
+  }
+  ip.setAlpha(1);
+  ip.generateTexture('ice_patch', 32, 12);
+  ip.destroy();
+
+  // -------- Icicle Drop (hanging) 16x28 ---------
+  const icd = scene.make.graphics({ add: false });
+  icd.fillStyle(0x98c8e8);
+  icd.fillTriangle(2, 0, 14, 0, 8, 28);
+  icd.fillStyle(0xcae8ff);
+  icd.setAlpha(0.75);
+  icd.fillTriangle(4, 0, 12, 0, 8, 22);
+  icd.fillStyle(0xffffff);
+  icd.setAlpha(0.5);
+  icd.fillTriangle(6, 0, 10, 0, 8, 14);
+  icd.setAlpha(1);
+  icd.lineStyle(1, 0x506878, 0.6);
+  icd.lineBetween(2, 0, 14, 0);
+  icd.generateTexture('icicle_drop', 16, 28);
+  icd.destroy();
+
+  // -------- Icicle Shard (falling projectile, slightly smaller) 12x22 ---------
+  const ics = scene.make.graphics({ add: false });
+  ics.fillStyle(0x98c8e8);
+  ics.fillTriangle(1, 0, 11, 0, 6, 22);
+  ics.fillStyle(0xcae8ff);
+  ics.setAlpha(0.8);
+  ics.fillTriangle(3, 0, 9, 0, 6, 18);
+  ics.setAlpha(1);
+  ics.generateTexture('icicle_shard', 12, 22);
+  ics.destroy();
+
+  // -------- Void Puddle 32x14 (dark violet with pulsing core) ---------
+  const vp = scene.make.graphics({ add: false });
+  vp.fillStyle(0x0a0418);
+  vp.fillEllipse(16, 7, 30, 10);
+  vp.fillStyle(0x200a40);
+  vp.setAlpha(0.85);
+  vp.fillEllipse(16, 7, 24, 7);
+  vp.fillStyle(0x8040ff);
+  vp.setAlpha(0.6);
+  vp.fillEllipse(16, 7, 14, 4);
+  vp.fillStyle(0xcc88ff);
+  vp.setAlpha(0.45);
+  vp.fillEllipse(16, 7, 7, 2);
+  vp.setAlpha(1);
+  vp.generateTexture('void_puddle', 32, 14);
+  vp.destroy();
+
+  // -------- Void Orb projectile 20x20 ---------
+  const vo = scene.make.graphics({ add: false });
+  vo.fillStyle(0x100420);
+  vo.fillCircle(10, 10, 10);
+  vo.fillStyle(0x4a0a88);
+  vo.setAlpha(0.85);
+  vo.fillCircle(10, 10, 7);
+  vo.fillStyle(0x9040ff);
+  vo.setAlpha(0.7);
+  vo.fillCircle(10, 10, 4);
+  vo.fillStyle(0xe8c8ff);
+  vo.setAlpha(0.6);
+  vo.fillCircle(10, 10, 2);
+  vo.setAlpha(1);
+  vo.generateTexture('void_orb', 20, 20);
+  vo.destroy();
+
+  // -------- Ice Crystal Cluster (biome deco) 40x40 ---------
+  const icc = scene.make.graphics({ add: false });
+  icc.fillStyle(0x3a80b8);
+  icc.fillTriangle(10, 40, 20, 8, 24, 40);
+  icc.fillStyle(0x60a8d0);
+  icc.fillTriangle(12, 40, 20, 12, 22, 40);
+  icc.fillStyle(0xa0d0e8);
+  icc.setAlpha(0.9);
+  icc.fillTriangle(14, 40, 20, 16, 20, 40);
+  icc.setAlpha(1);
+  // Side crystals
+  icc.fillStyle(0x4890c0);
+  icc.fillTriangle(2, 40, 10, 18, 14, 40);
+  icc.fillTriangle(26, 40, 32, 14, 36, 40);
+  icc.fillStyle(0x80c0e0);
+  icc.setAlpha(0.8);
+  icc.fillTriangle(4, 40, 10, 24, 12, 40);
+  icc.fillTriangle(28, 40, 32, 20, 34, 40);
+  icc.setAlpha(1);
+  icc.generateTexture('ice_crystal_cluster', 40, 40);
+  icc.destroy();
+
+  // -------- Frozen Banner (hanging icy pennant) 28x52 ---------
+  const fb = scene.make.graphics({ add: false });
+  fb.lineStyle(2, 0x606068);
+  fb.lineBetween(4, 2, 24, 2);
+  fb.fillStyle(0x204060);
+  fb.fillRect(4, 2, 20, 36);
+  fb.fillStyle(0x2a5080);
+  fb.fillRect(5, 3, 18, 34);
+  fb.fillStyle(0xa0d0e8);
+  fb.setAlpha(0.9);
+  fb.fillRect(10, 10, 8, 12);
+  fb.setAlpha(1);
+  // Icicle fringe at bottom
+  fb.fillStyle(0x98c8e8);
+  for (let i = 0; i < 5; i++) {
+    const tx = 5 + i * 4;
+    fb.fillTriangle(tx, 38, tx + 3, 38, tx + 1.5, 38 + 6 + (i % 2) * 4);
+  }
+  fb.generateTexture('frozen_banner', 28, 52);
+  fb.destroy();
+
+  // -------- Fungal Bloom Large 48x40 (big glowing mushroom cluster) ---------
+  const flb = scene.make.graphics({ add: false });
+  flb.fillStyle(0x1a2a18);
+  flb.fillRect(18, 26, 12, 14);
+  flb.fillStyle(0x0a1a0a);
+  flb.fillEllipse(24, 20, 28, 18);
+  flb.fillStyle(0x14340c);
+  flb.fillEllipse(24, 20, 24, 14);
+  flb.fillStyle(0x28d080);
+  flb.setAlpha(0.85);
+  flb.fillEllipse(24, 18, 18, 9);
+  flb.fillStyle(0x80ffb0);
+  flb.setAlpha(0.6);
+  flb.fillEllipse(24, 18, 10, 4);
+  flb.setAlpha(1);
+  // Side bulbs
+  flb.fillStyle(0x0a1a0a);
+  flb.fillEllipse(6, 28, 10, 8);
+  flb.fillEllipse(42, 30, 10, 8);
+  flb.fillStyle(0x28d080);
+  flb.setAlpha(0.7);
+  flb.fillEllipse(6, 27, 6, 4);
+  flb.fillEllipse(42, 29, 6, 4);
+  flb.setAlpha(1);
+  // Spore dots
+  flb.fillStyle(0xa0ffc8);
+  for (let i = 0; i < 6; i++) {
+    flb.fillCircle(10 + i * 5, 10 + (i % 2) * 3, 0.9);
+  }
+  flb.generateTexture('fungal_bloom_large', 48, 40);
+  flb.destroy();
+
+  // -------- Void Rift 40x56 (vertical void tear) ---------
+  const vr = scene.make.graphics({ add: false });
+  vr.fillStyle(0x000000);
+  vr.fillEllipse(20, 28, 10, 54);
+  vr.fillStyle(0x200a40);
+  vr.setAlpha(0.9);
+  vr.fillEllipse(20, 28, 7, 50);
+  vr.fillStyle(0x4a0a88);
+  vr.setAlpha(0.7);
+  vr.fillEllipse(20, 28, 4, 44);
+  vr.fillStyle(0xcc88ff);
+  vr.setAlpha(0.6);
+  vr.fillEllipse(20, 28, 2, 34);
+  vr.setAlpha(1);
+  // Jagged streaks
+  vr.lineStyle(1, 0x8040ff, 0.5);
+  vr.lineBetween(20, 4, 17, 20);
+  vr.lineBetween(20, 4, 23, 24);
+  vr.lineBetween(20, 52, 16, 40);
+  vr.lineBetween(20, 52, 24, 38);
+  vr.generateTexture('void_rift', 40, 56);
+  vr.destroy();
+
+  // -------- Frost Warden Boss 72x72 (ice-crowned wraith) ---------
+  const fw = scene.make.graphics({ add: false });
+  const fwx = 36;
+  // Cape (frost)
+  fw.fillStyle(0x1a2a48);
+  fw.fillTriangle(fwx - 22, 20, fwx + 22, 20, fwx - 28, 68);
+  fw.fillTriangle(fwx + 22, 20, fwx + 28, 68, fwx - 28, 68);
+  fw.fillStyle(0x2a4880);
+  fw.fillTriangle(fwx - 14, 26, fwx + 14, 26, fwx - 18, 64);
+  fw.fillTriangle(fwx + 14, 26, fwx + 18, 64, fwx - 18, 64);
+  // Torso (icy armor)
+  fw.fillStyle(0x203850);
+  fw.fillRect(fwx - 16, 24, 32, 22);
+  fw.fillStyle(0x4878a8);
+  fw.fillRect(fwx - 14, 26, 28, 18);
+  // Icy scales pattern
+  fw.fillStyle(0xa0d0e8);
+  fw.setAlpha(0.4);
+  for (let i = 0; i < 4; i++) {
+    fw.fillEllipse(fwx - 10 + i * 7, 30 + (i % 2) * 4, 5, 3);
+  }
+  fw.setAlpha(1);
+  // Shoulder spikes (ice shards)
+  fw.fillStyle(0xcae8ff);
+  fw.fillTriangle(fwx - 22, 22, fwx - 18, 6, fwx - 14, 22);
+  fw.fillTriangle(fwx + 22, 22, fwx + 18, 6, fwx + 14, 22);
+  // Head (skull in ice)
+  fw.fillStyle(0xe8f0f8);
+  fw.fillEllipse(fwx, 14, 24, 20);
+  fw.fillStyle(0xc8d8ec);
+  fw.fillEllipse(fwx, 16, 20, 14);
+  // Eye sockets (cold blue)
+  fw.fillStyle(0x080818);
+  fw.fillEllipse(fwx - 6, 12, 7, 6);
+  fw.fillEllipse(fwx + 6, 12, 7, 6);
+  fw.fillStyle(0x80d0ff);
+  fw.fillCircle(fwx - 6, 12, 2.5);
+  fw.fillCircle(fwx + 6, 12, 2.5);
+  fw.fillStyle(0xffffff);
+  fw.fillCircle(fwx - 6, 11.5, 1);
+  fw.fillCircle(fwx + 6, 11.5, 1);
+  // Ice crown
+  fw.fillStyle(0xa0d0e8);
+  fw.fillTriangle(fwx - 14, 4, fwx - 10, -6, fwx - 6, 4);
+  fw.fillTriangle(fwx - 4, 4, fwx, -10, fwx + 4, 4);
+  fw.fillTriangle(fwx + 6, 4, fwx + 10, -6, fwx + 14, 4);
+  // Legs (armor)
+  fw.fillStyle(0x203850);
+  fw.fillRect(fwx - 10, 46, 8, 20);
+  fw.fillRect(fwx + 2, 46, 8, 20);
+  fw.fillStyle(0x486890);
+  fw.fillRect(fwx - 9, 48, 6, 16);
+  fw.fillRect(fwx + 3, 48, 6, 16);
+  fw.generateTexture('frost_warden', 72, 72);
+  fw.destroy();
+
+  // -------- Void King 72x72 (tall obsidian wraith w/ void crown) ---------
+  const vk = scene.make.graphics({ add: false });
+  const vkx = 36;
+  // Outer void cape
+  vk.fillStyle(0x080010);
+  vk.fillTriangle(vkx - 26, 22, vkx + 26, 22, vkx - 32, 70);
+  vk.fillTriangle(vkx + 26, 22, vkx + 32, 70, vkx - 32, 70);
+  vk.fillStyle(0x18082a);
+  vk.fillTriangle(vkx - 16, 26, vkx + 16, 26, vkx - 20, 66);
+  vk.fillTriangle(vkx + 16, 26, vkx + 20, 66, vkx - 20, 66);
+  // Torso
+  vk.fillStyle(0x100018);
+  vk.fillRect(vkx - 18, 24, 36, 24);
+  vk.fillStyle(0x241034);
+  vk.fillRect(vkx - 16, 26, 32, 20);
+  // Purple gem at chest
+  vk.fillStyle(0x200840);
+  vk.fillEllipse(vkx, 36, 10, 10);
+  vk.fillStyle(0x9040ff);
+  vk.fillEllipse(vkx, 36, 6, 6);
+  vk.fillStyle(0xcc88ff);
+  vk.setAlpha(0.7);
+  vk.fillEllipse(vkx, 36, 2.5, 2.5);
+  vk.setAlpha(1);
+  // Spiked shoulders
+  vk.fillStyle(0x30103e);
+  vk.fillEllipse(vkx - 22, 24, 14, 12);
+  vk.fillEllipse(vkx + 22, 24, 14, 12);
+  vk.fillStyle(0x4a2068);
+  vk.fillEllipse(vkx - 22, 23, 10, 8);
+  vk.fillEllipse(vkx + 22, 23, 10, 8);
+  vk.fillStyle(0xaa88ff);
+  vk.fillTriangle(vkx - 28, 22, vkx - 24, 6, vkx - 20, 22);
+  vk.fillTriangle(vkx + 28, 22, vkx + 24, 6, vkx + 20, 22);
+  // Head (obsidian skull)
+  vk.fillStyle(0x1a0420);
+  vk.fillEllipse(vkx, 14, 24, 20);
+  vk.fillStyle(0x2a0a34);
+  vk.fillEllipse(vkx, 16, 20, 14);
+  // Eye sockets (void purple)
+  vk.fillStyle(0x000000);
+  vk.fillEllipse(vkx - 6, 12, 7, 6);
+  vk.fillEllipse(vkx + 6, 12, 7, 6);
+  vk.fillStyle(0xaa40ff);
+  vk.fillCircle(vkx - 6, 12, 2.7);
+  vk.fillCircle(vkx + 6, 12, 2.7);
+  vk.fillStyle(0xe8c8ff);
+  vk.fillCircle(vkx - 6, 11.5, 1.2);
+  vk.fillCircle(vkx + 6, 11.5, 1.2);
+  // Void crown (large jagged)
+  vk.fillStyle(0x30103e);
+  vk.fillRect(vkx - 14, 4, 28, 6);
+  vk.fillStyle(0x401858);
+  vk.fillTriangle(vkx - 14, 4, vkx - 10, -8, vkx - 6, 4);
+  vk.fillTriangle(vkx - 4, 4, vkx, -12, vkx + 4, 4);
+  vk.fillTriangle(vkx + 6, 4, vkx + 10, -8, vkx + 14, 4);
+  // Crown gems
+  vk.fillStyle(0xcc44ff);
+  vk.fillCircle(vkx - 10, -1, 1.8);
+  vk.fillCircle(vkx, -4, 2.2);
+  vk.fillCircle(vkx + 10, -1, 1.8);
+  // Legs
+  vk.fillStyle(0x100018);
+  vk.fillRect(vkx - 11, 46, 8, 22);
+  vk.fillRect(vkx + 3, 46, 8, 22);
+  vk.fillStyle(0x2a1038);
+  vk.fillRect(vkx - 10, 48, 6, 18);
+  vk.fillRect(vkx + 4, 48, 6, 18);
+  vk.generateTexture('void_king', 72, 72);
+  vk.destroy();
+}
+
+/**
  * Sandro Maglione–style depth: close background (no outline, scrolls with stage),
  * foreground margin décor, subtle hero light.
  * @see https://www.sandromaglione.com/articles/pixel-art-platformer-level-design-full-guide
@@ -3052,4 +3620,213 @@ function generateKickTextures(scene) {
   ], -1);
   gk.generateTexture('player_kick', PW, PH);
   gk.destroy();
+}
+
+/** Weapons, weapon pickups, consumables, merchant icons, menu UI chrome. */
+function generateWeaponAndItemTextures(scene) {
+  // --- Weapon icons (32x32, used by HUD + inventory menu) -----------------
+  function makeWeaponIcon(key, drawBlade) {
+    const g = scene.make.graphics({ add: false });
+    // Subtle background disc
+    g.fillStyle(0x14181e, 0.9);
+    g.fillRoundedRect(0, 0, 32, 32, 4);
+    g.lineStyle(1, 0x3a4454, 1);
+    g.strokeRoundedRect(0.5, 0.5, 31, 31, 4);
+    drawBlade(g);
+    g.generateTexture(key, 32, 32);
+    g.destroy();
+  }
+
+  makeWeaponIcon('weapon_rusted_blade', (g) => {
+    g.lineStyle(3, 0x8a8478, 1);
+    g.lineBetween(9, 24, 24, 8);
+    g.lineStyle(1.4, 0xc8c0a8, 0.8);
+    g.lineBetween(11, 22, 24, 9);
+    g.fillStyle(0x5a3a20);
+    g.fillRect(6, 21, 6, 3);
+    g.fillStyle(0xb07030);
+    g.fillCircle(9, 26, 2);
+  });
+
+  makeWeaponIcon('weapon_phantom_edge', (g) => {
+    g.lineStyle(3, 0x88ccff, 1);
+    g.lineBetween(9, 25, 25, 7);
+    g.lineStyle(1.5, 0xffffff, 0.9);
+    g.lineBetween(10, 24, 24, 8);
+    g.fillStyle(0x304060);
+    g.fillRect(6, 22, 6, 3);
+    g.fillStyle(0x88ccff);
+    g.setAlpha(0.5);
+    g.fillCircle(17, 16, 6);
+    g.setAlpha(1);
+    g.fillStyle(0xffffff);
+    g.fillCircle(9, 27, 2);
+  });
+
+  makeWeaponIcon('weapon_warden_greatsword', (g) => {
+    g.lineStyle(5, 0xa0a8b0, 1);
+    g.lineBetween(8, 25, 25, 7);
+    g.lineStyle(2, 0xe0e8f0, 0.8);
+    g.lineBetween(10, 23, 25, 8);
+    g.fillStyle(0xffc05a);
+    g.fillRect(4, 21, 9, 3);
+    g.fillStyle(0xffdd88);
+    g.fillCircle(6, 26, 3);
+  });
+
+  makeWeaponIcon('weapon_throwing_daggers', (g) => {
+    for (let i = 0; i < 3; i++) {
+      const x = 7 + i * 6;
+      g.lineStyle(2, 0xc8c0a8, 1);
+      g.lineBetween(x, 22, x + 4, 8);
+      g.fillStyle(0x704028);
+      g.fillRect(x - 1, 22, 3, 3);
+    }
+    g.fillStyle(0xffffff);
+    g.setAlpha(0.3);
+    g.fillCircle(16, 16, 10);
+    g.setAlpha(1);
+  });
+
+  // --- Weapon pickup 24x24 (floating, glowing) ----------------------------
+  function makeWeaponPickup(key, tint, silhouette) {
+    const g = scene.make.graphics({ add: false });
+    g.fillStyle(tint, 0.18);
+    g.fillCircle(12, 12, 11);
+    g.fillStyle(tint, 0.35);
+    g.fillCircle(12, 12, 7);
+    silhouette(g);
+    g.lineStyle(1, tint, 0.9);
+    g.strokeCircle(12, 12, 10);
+    g.generateTexture(key, 24, 24);
+    g.destroy();
+  }
+
+  makeWeaponPickup('pickup_phantom_edge', 0x88ccff, (g) => {
+    g.lineStyle(2.5, 0xe8f4ff, 1);
+    g.lineBetween(6, 18, 18, 6);
+    g.lineStyle(1, 0xffffff, 0.8);
+    g.lineBetween(7, 17, 18, 7);
+    g.fillStyle(0x304060, 1);
+    g.fillRect(4, 16, 4, 2);
+  });
+
+  makeWeaponPickup('pickup_warden_greatsword', 0xffc05a, (g) => {
+    g.lineStyle(4, 0xa0a8b0, 1);
+    g.lineBetween(5, 19, 19, 5);
+    g.lineStyle(1.5, 0xe0e8f0, 0.9);
+    g.lineBetween(6, 18, 19, 6);
+    g.fillStyle(0xffc05a, 1);
+    g.fillRect(3, 16, 6, 2);
+  });
+
+  makeWeaponPickup('pickup_throwing_daggers', 0xd4c8a8, (g) => {
+    for (let i = 0; i < 2; i++) {
+      const x = 8 + i * 4;
+      g.lineStyle(1.8, 0xe8e0c8, 1);
+      g.lineBetween(x, 17, x + 3, 6);
+      g.fillStyle(0x704028, 1);
+      g.fillRect(x - 1, 17, 2, 2);
+    }
+  });
+
+  // --- Consumable items 20x20 ---------------------------------------------
+  const ev = scene.make.graphics({ add: false });
+  ev.fillStyle(0x2a1830, 1);
+  ev.fillRect(6, 5, 8, 13);
+  ev.fillStyle(0x60ffa8, 0.9);
+  ev.fillRect(7, 7, 6, 10);
+  ev.fillStyle(0xa0ffd0, 0.7);
+  ev.fillRect(7, 7, 6, 3);
+  ev.fillStyle(0x6a4020, 1);
+  ev.fillRect(7, 4, 6, 2);
+  ev.fillStyle(0xffffff, 0.6);
+  ev.fillRect(8, 9, 1, 5);
+  ev.generateTexture('item_ether_vial', 20, 20);
+  ev.destroy();
+
+  const sc = scene.make.graphics({ add: false });
+  sc.fillStyle(0xff4466, 0.4);
+  sc.fillCircle(10, 10, 9);
+  sc.fillStyle(0xff2244, 0.85);
+  sc.fillTriangle(10, 2, 16, 10, 10, 18);
+  sc.fillTriangle(10, 2, 4, 10, 10, 18);
+  sc.fillStyle(0xff88aa, 1);
+  sc.fillTriangle(10, 4, 13, 10, 10, 16);
+  sc.fillStyle(0xffffff, 0.7);
+  sc.fillCircle(10, 10, 2);
+  sc.generateTexture('item_soul_crystal', 20, 20);
+  sc.destroy();
+
+  // Generic pickup glow base used behind item sprites
+  const gl = scene.make.graphics({ add: false });
+  gl.fillStyle(0xffffff, 0.08);
+  gl.fillCircle(12, 12, 11);
+  gl.fillStyle(0xffffff, 0.16);
+  gl.fillCircle(12, 12, 7);
+  gl.generateTexture('pickup_glow', 24, 24);
+  gl.destroy();
+
+  // --- Dagger projectile (used by Combat.tryThrowDagger) ------------------
+  const dp = scene.make.graphics({ add: false });
+  dp.fillStyle(0xe8e0c8, 1);
+  dp.fillTriangle(0, 4, 14, 0, 14, 8);
+  dp.fillStyle(0xc8b880, 1);
+  dp.fillRect(14, 2, 6, 4);
+  dp.fillStyle(0x704028, 1);
+  dp.fillRect(18, 2, 4, 4);
+  dp.generateTexture('dagger_projectile', 22, 8);
+  dp.destroy();
+
+  // --- Merchant traveler (bigger, hooded, with pack) ----------------------
+  const mt = scene.make.graphics({ add: false });
+  // Shadow
+  mt.fillStyle(0x000000, 0.35);
+  mt.fillEllipse(20, 40, 18, 4);
+  // Cloak back
+  mt.fillStyle(0x442238, 1);
+  mt.fillRoundedRect(8, 20, 24, 20, 3);
+  // Cloak mid
+  mt.fillStyle(0x5a2a46, 1);
+  mt.fillRoundedRect(10, 18, 20, 20, 3);
+  // Shoulders
+  mt.fillStyle(0x6a3454, 1);
+  mt.fillRoundedRect(9, 16, 22, 6, 3);
+  // Hood
+  mt.fillStyle(0x32182a, 1);
+  mt.fillRoundedRect(12, 8, 16, 14, 4);
+  // Hood shadow (face)
+  mt.fillStyle(0x080408, 1);
+  mt.fillRoundedRect(14, 12, 12, 8, 2);
+  // Glowing eyes
+  mt.fillStyle(0xffcc66, 1);
+  mt.fillRect(16, 15, 2, 1);
+  mt.fillRect(22, 15, 2, 1);
+  // Pack strap
+  mt.lineStyle(1.5, 0x3a1a2a, 1);
+  mt.lineBetween(12, 22, 28, 26);
+  // Satchel
+  mt.fillStyle(0x5a3a20, 1);
+  mt.fillRoundedRect(28, 22, 8, 10, 2);
+  mt.fillStyle(0xffcc66, 1);
+  mt.fillCircle(32, 26, 1);
+  // Staff
+  mt.fillStyle(0x3a2814, 1);
+  mt.fillRect(6, 8, 1.5, 30);
+  mt.fillStyle(0xffcc66, 0.9);
+  mt.fillCircle(6.75, 7, 2.2);
+  mt.fillStyle(0xffffff, 0.6);
+  mt.fillCircle(6.75, 7, 1);
+  mt.generateTexture('npc_traveler', 40, 44);
+  mt.destroy();
+
+  // --- Menu frame corners / background scrim -----------------------------
+  const mf = scene.make.graphics({ add: false });
+  mf.fillStyle(0x060408, 0.92);
+  mf.fillRect(0, 0, 16, 16);
+  mf.fillStyle(0x8866cc, 0.6);
+  mf.fillRect(0, 0, 16, 2);
+  mf.fillRect(0, 0, 2, 16);
+  mf.generateTexture('menu_corner', 16, 16);
+  mf.destroy();
 }

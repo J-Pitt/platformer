@@ -117,6 +117,7 @@ export function buildSaveState(scene) {
     checkpointRoom: p._checkpointRoom || lm.currentRoomId,
     checkpointTileX: Math.floor(p.checkpointX / TILE_SIZE),
     checkpointTileY: Math.floor(p.checkpointY / TILE_SIZE),
+    inventory: p.inventory ? p.inventory.toJSON() : null,
     world,
     savedAt: new Date().toISOString(),
   };

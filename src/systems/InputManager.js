@@ -7,12 +7,17 @@ const GP_WEST = 2;
 const GP_NORTH = 3;
 const GP_L1 = 4;
 const GP_R1 = 5;
+const GP_L2 = 6;
+const GP_R2 = 7;
+const GP_SELECT = 8;
+const GP_START = 9;
 const GP_DPAD_UP = 12;
 const GP_DPAD_DOWN = 13;
 const GP_DPAD_LEFT = 14;
 const GP_DPAD_RIGHT = 15;
 
 const STICK_DEADZONE = 0.25;
+const NAV_DEADZONE = 0.55;
 const MAX_GAMEPAD_SLOTS = 16;
 
 export class InputManager {
@@ -37,7 +42,20 @@ export class InputManager {
       slashPressed: false,
       interactPressed: false,
       kickPressed: false,
+      throwPressed: false,
+      menuPressed: false,
+      pausePressed: false,
+      // Generic menu-navigation edges (edge-detected, consumable by UI overlays)
+      confirmPressed: false,
+      cancelPressed: false,
+      navLeftPressed: false,
+      navRightPressed: false,
+      navUpPressed: false,
+      navDownPressed: false,
     };
+
+    // Previous-state snapshots for stick/dpad edge-detection on menus
+    this._navPrev = { up: false, down: false, left: false, right: false };
 
     const onConnected = (e) => {
       console.log('Gamepad connected:', e.gamepad.id, 'index:', e.gamepad.index);
@@ -189,11 +207,39 @@ export class InputManager {
 
     const gpInteractPressed = this.btnDown(pad, GP_NORTH) && !prevButtons[GP_NORTH];
 
+    // New action edges
+    const gpThrowPressed = this.btnDown(pad, GP_L2) && !prevButtons[GP_L2];
+    const gpKickPressed = this.btnDown(pad, GP_R2) && !prevButtons[GP_R2];
+    const gpMenuPressed = this.btnDown(pad, GP_START) && !prevButtons[GP_START];
+    const gpPausePressed = this.btnDown(pad, GP_SELECT) && !prevButtons[GP_SELECT];
+
+    // Menu-nav edges: A=confirm, B=cancel, dpad/stick with deadzone
+    const gpConfirmPressed = this.btnDown(pad, GP_SOUTH) && !prevButtons[GP_SOUTH];
+    const gpCancelPressed = this.btnDown(pad, GP_EAST) && !prevButtons[GP_EAST];
+
+    let navL = this.btnDown(pad, GP_DPAD_LEFT);
+    let navR = this.btnDown(pad, GP_DPAD_RIGHT);
+    let navU = this.btnDown(pad, GP_DPAD_UP);
+    let navD = this.btnDown(pad, GP_DPAD_DOWN);
+    if (axes && axes.length >= 2) {
+      if (axes[0] < -NAV_DEADZONE) navL = true;
+      if (axes[0] > NAV_DEADZONE) navR = true;
+      if (axes[1] < -NAV_DEADZONE) navU = true;
+      if (axes[1] > NAV_DEADZONE) navD = true;
+    }
+
     return {
       left: gpLeft, right: gpRight, up: gpUp, down: gpDown,
       jumpPressed: gpJumpPressed, jumpHeld: gpJumpHeld,
       dashPressed: gpDashPressed, slashPressed: gpSlashPressed,
       interactPressed: gpInteractPressed,
+      kickPressed: gpKickPressed,
+      throwPressed: gpThrowPressed,
+      menuPressed: gpMenuPressed,
+      pausePressed: gpPausePressed,
+      confirmPressed: gpConfirmPressed,
+      cancelPressed: gpCancelPressed,
+      navL, navR, navU, navD,
     };
   }
 
@@ -220,6 +266,25 @@ export class InputManager {
     const kbInteractPressed = keys.e && Phaser.Input.Keyboard.JustDown(keys.e);
     const kbKickPressed = (keys.f && Phaser.Input.Keyboard.JustDown(keys.f))
       || (keys.k && Phaser.Input.Keyboard.JustDown(keys.k));
+    const kbThrowPressed = keys.g && Phaser.Input.Keyboard.JustDown(keys.g);
+    const kbMenuPressed = (keys.i && Phaser.Input.Keyboard.JustDown(keys.i))
+      || (keys.tab && Phaser.Input.Keyboard.JustDown(keys.tab));
+    const kbPausePressed = (keys.p && Phaser.Input.Keyboard.JustDown(keys.p));
+    const kbConfirmPressed = Phaser.Input.Keyboard.JustDown(keys.space)
+      || (keys.enter && Phaser.Input.Keyboard.JustDown(keys.enter));
+    const kbCancelPressed = keys.esc && Phaser.Input.Keyboard.JustDown(keys.esc);
+
+    // Menu-nav edges from keyboard (edge-detected via prev-state)
+    const rawNav = {
+      up: cursors.up.isDown || keys.w.isDown,
+      down: cursors.down.isDown || keys.s.isDown,
+      left: cursors.left.isDown || keys.a.isDown,
+      right: cursors.right.isDown || keys.d.isDown,
+    };
+    const kbNavUp = rawNav.up && !this._navPrev.up;
+    const kbNavDown = rawNav.down && !this._navPrev.down;
+    const kbNavLeft = rawNav.left && !this._navPrev.left;
+    const kbNavRight = rawNav.right && !this._navPrev.right;
 
     let tLeft = false, tRight = false, tUp = false, tDown = false;
     let tJumpPressed = false, tJumpHeld = false;
@@ -256,7 +321,32 @@ export class InputManager {
     this.state.slashPressed = kbSlashPressed || tSlashPressed || (gpState && gpState.slashPressed);
     this.state.interactPressed = kbInteractPressed
       || (gpState && gpState.interactPressed);
-    this.state.kickPressed = kbKickPressed;
+    this.state.kickPressed = kbKickPressed || (gpState && gpState.kickPressed);
+    this.state.throwPressed = kbThrowPressed || (gpState && gpState.throwPressed);
+    this.state.menuPressed = kbMenuPressed || (gpState && gpState.menuPressed);
+    this.state.pausePressed = kbPausePressed || (gpState && gpState.pausePressed);
+
+    // Generic UI nav edges
+    this.state.confirmPressed = kbConfirmPressed || (gpState && gpState.confirmPressed);
+    this.state.cancelPressed = kbCancelPressed || (gpState && gpState.cancelPressed);
+    this.state.navLeftPressed = kbNavLeft || (gpState && gpState.navL && !this._gpNavPrevL);
+    this.state.navRightPressed = kbNavRight || (gpState && gpState.navR && !this._gpNavPrevR);
+    this.state.navUpPressed = kbNavUp || (gpState && gpState.navU && !this._gpNavPrevU);
+    this.state.navDownPressed = kbNavDown || (gpState && gpState.navD && !this._gpNavPrevD);
+
+    // Snapshot nav state for next frame edge detection
+    this._navPrev.up = rawNav.up;
+    this._navPrev.down = rawNav.down;
+    this._navPrev.left = rawNav.left;
+    this._navPrev.right = rawNav.right;
+    if (gpState) {
+      this._gpNavPrevL = gpState.navL;
+      this._gpNavPrevR = gpState.navR;
+      this._gpNavPrevU = gpState.navU;
+      this._gpNavPrevD = gpState.navD;
+    } else {
+      this._gpNavPrevL = this._gpNavPrevR = this._gpNavPrevU = this._gpNavPrevD = false;
+    }
 
     return this.state;
   }

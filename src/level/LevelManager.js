@@ -7,6 +7,12 @@ import { Flyer } from '../entities/Flyer.js';
 import { Boss } from '../entities/Boss.js';
 import { Brute } from '../entities/Brute.js';
 import { NPC } from '../entities/NPC.js';
+import { ArmoredFlyer } from '../entities/ArmoredFlyer.js';
+import { ChargerBrute } from '../entities/ChargerBrute.js';
+import { Spitter } from '../entities/Spitter.js';
+import { FrostWarden } from '../entities/FrostWarden.js';
+import { VoidKing } from '../entities/VoidKing.js';
+import { shakeScene } from '../systems/CameraRig.js';
 
 /**
  * Center + size (px) of the contiguous air gap at a wall/floor so door portals match the opening.
@@ -123,9 +129,20 @@ export class LevelManager {
     this.floorSpikes = [];
     this.sawBlades = [];
     this.flameJets = [];
+    this.icePatches = [];
+    this.icicleDrops = [];
+    this.activeIcicles = [];
     this.npcs = [];
     this.coins = [];
     this.teleports = [];
+    this.checkpointShrines = [];
+    this.loreFragments = [];
+    this.secretWalls = [];
+    this.sealDoorsUntilCleared = false;
+    this.waves = null;
+    this.waveIndex = 0;
+    this.waveDelayTimer = 0;
+    this.waveQueue = [];
     this.roomLockVisuals = [];
     this.roomLockTweens = [];
     /** Fixed-screen notice when entering enemy-locked rooms */
@@ -163,6 +180,13 @@ export class LevelManager {
     this.currentRoomId = roomId;
     this.currentRoom = room;
     this.roomLocked = room.locked || false;
+
+    // Wave / sealed-arena config
+    this.waves = Array.isArray(room.waves) ? room.waves.map(w => ({ ...w })) : null;
+    this.waveIndex = 0;
+    this.waveDelayTimer = 0;
+    this.sealDoorsUntilCleared = !!room.sealDoorsUntilCleared;
+    if (this.sealDoorsUntilCleared) this.roomLocked = true;
 
     this.createParallaxBackground(room);
     this.buildTiles(room);
@@ -779,8 +803,11 @@ export class LevelManager {
         case 'bench': this.createBench(px, py); break;
         case 'crawler': this.createCrawler(px, py); break;
         case 'flyer': this.createFlyer(px, py); break;
-        case 'boss': this.createBoss(px, py); break;
+        case 'boss': this.createBoss(px, py, obj); break;
         case 'brute': this.createBrute(px, py); break;
+        case 'armored_flyer': this.createArmoredFlyer(px, py); break;
+        case 'charger': this.createChargerBrute(px, py); break;
+        case 'spitter': this.createSpitter(px, py); break;
         case 'npc': this.createNPC(px, py, obj); break;
         case 'health_pickup': this.createHealthPickup(px, py); break;
         case 'coin': this.createCoin(px, py); break;
@@ -795,6 +822,18 @@ export class LevelManager {
         case 'floor_spikes': this.createFloorSpikes(px, py, obj); break;
         case 'saw_blade': this.createSawBlade(px, py, obj); break;
         case 'flame_jet': this.createFlameJet(px, py, obj); break;
+        case 'ice_patch': this.createIcePatch(px, py, obj); break;
+        case 'icicle_drop': this.createIcicleDrop(px, py, obj); break;
+        case 'checkpoint_shrine': this.createCheckpointShrine(px, py, obj); break;
+        case 'lore_fragment': this.createLoreFragment(px, py, obj); break;
+        case 'secret_wall': this.createSecretWall(px, py, obj); break;
+        case 'weapon_pickup': this.createWeaponPickup(px, py, obj); break;
+        case 'item_pickup': this.createItemPickup(px, py, obj); break;
+        case 'ice_crystal_cluster':
+        case 'frozen_banner':
+        case 'fungal_bloom_large':
+        case 'void_rift':
+          this.createDecoration(px, py, obj.type); break;
         case 'stalactite':
         case 'stalactite_sm':
         case 'stalagmite':
@@ -1194,14 +1233,36 @@ export class LevelManager {
     this.scene.enemies.add(flyer);
   }
 
-  createBoss(x, y) {
-    const boss = new Boss(this.scene, x, y);
+  createBoss(x, y, obj = {}) {
+    const bossType = obj.bossType || 'bone_tyrant';
+    let boss;
+    switch (bossType) {
+      case 'void_king':    boss = new VoidKing(this.scene, x, y); break;
+      case 'frost_warden': boss = new FrostWarden(this.scene, x, y); break;
+      case 'bone_tyrant':
+      default:             boss = new Boss(this.scene, x, y); break;
+    }
     this.scene.enemies.add(boss);
   }
 
   createBrute(x, y) {
     const brute = new Brute(this.scene, x, y);
     this.scene.enemies.add(brute);
+  }
+
+  createArmoredFlyer(x, y) {
+    const af = new ArmoredFlyer(this.scene, x, y);
+    this.scene.enemies.add(af);
+  }
+
+  createChargerBrute(x, y) {
+    const cb = new ChargerBrute(this.scene, x, y);
+    this.scene.enemies.add(cb);
+  }
+
+  createSpitter(x, y) {
+    const sp = new Spitter(this.scene, x, y);
+    this.scene.enemies.add(sp);
   }
 
   createNPC(x, y, obj) {
@@ -1365,14 +1426,23 @@ export class LevelManager {
   }
 
   createMerchantShop(x, y, obj) {
-    const npcObj = { npcType: 'merchant', dialogue: obj.dialogue || [
-      'Welcome, traveler. I have wares if you have coin.',
-    ]};
+    const npcType = obj.npcType || 'merchant';
+    const npcObj = {
+      npcType,
+      dialogue: obj.dialogue || [
+        'Welcome, traveler. I have wares if you have coin.',
+      ],
+    };
     this.createNPC(x, y, npcObj);
 
     const items = obj.items || [
+      { name: 'Ether Vial', cost: 6, type: 'consumable', id: 'ether_vial' },
+      { name: 'Phantom Edge', cost: 18, type: 'weapon', id: 'phantom_edge' },
+      { name: "Warden's Greatsword", cost: 32, type: 'weapon', id: 'warden_greatsword' },
+      { name: 'Throwing Daggers', cost: 14, type: 'daggers' },
+      { name: 'Dagger Refill (+3)', cost: 4, type: 'daggers_refill' },
+      { name: 'Soul Crystal (+1 Max HP)', cost: 24, type: 'maxhp' },
       { name: 'Health Refill', cost: 5, type: 'heal' },
-      { name: 'Max HP +1', cost: 15, type: 'maxhp' },
     ];
 
     const zone = this.scene.physics.add.image(x, y, 'particle_dust');
@@ -1444,6 +1514,7 @@ export class LevelManager {
     this.scene.tweens.add({ targets: coinText, alpha: 1, duration: 250 });
 
     const itemButtons = [];
+    const purchaseActions = [];
     items.forEach((item, i) => {
       const iy = cy - panelH / 2 + 50 + i * 44;
 
@@ -1465,34 +1536,94 @@ export class LevelManager {
         }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(204);
       modalElements.push(costT);
 
-      bg.on('pointerdown', () => {
-        if (player.coins < item.cost) return;
-        player.coins -= item.cost;
-        coinText.setText(`Coins: ${player.coins}`);
+      // Show "OWNED" label for weapons already in the arsenal
+      const inv = player.inventory;
+      let ownedLabel = null;
+      const isOwnedWeapon = item.type === 'weapon' && inv && inv.ownsWeapon(item.id);
+      const isOwnedDaggers = item.type === 'daggers' && inv && inv.hasThrowingDaggers;
+      if (isOwnedWeapon || isOwnedDaggers) {
+        ownedLabel = this.scene.add.text(cx, iy, 'OWNED', {
+          fontSize: '11px', fontFamily: 'monospace', color: '#8aa0b0',
+          stroke: '#000', strokeThickness: 2,
+        }).setOrigin(0.5, 0.5).setScrollFactor(0).setDepth(205);
+        modalElements.push(ownedLabel);
+        costT.setText('—');
+      }
 
+      const attemptPurchase = () => {
+        if (player.coins < item.cost) return;
+        // Don't re-sell owned weapons
+        if ((item.type === 'weapon' && inv?.ownsWeapon(item.id)) ||
+            (item.type === 'daggers' && inv?.hasThrowingDaggers)) {
+          return;
+        }
+
+        let purchased = false;
         if (item.type === 'heal') {
-          player.hp = player.maxHp;
+          if (player.hp < player.maxHp) {
+            player.hp = player.maxHp;
+            purchased = true;
+          }
         } else if (item.type === 'maxhp') {
           player.maxHp += 1;
           player.hp = player.maxHp;
+          if (this.scene.hud?.rebuildHealthOrbs) this.scene.hud.rebuildHealthOrbs();
+          purchased = true;
+        } else if (item.type === 'consumable' && inv) {
+          inv.addConsumable(item.id, 1);
+          purchased = true;
+        } else if (item.type === 'weapon' && inv) {
+          if (inv.acquireWeapon(item.id)) {
+            inv.setActiveWeapon(item.id);
+            purchased = true;
+            if (ownedLabel) ownedLabel.setText('OWNED');
+          }
+        } else if (item.type === 'daggers' && inv) {
+          if (!inv.hasThrowingDaggers) {
+            inv.grantThrowingDaggers(inv.daggerAmmoMax);
+            purchased = true;
+          }
+        } else if (item.type === 'daggers_refill' && inv) {
+          if (inv.hasThrowingDaggers && inv.daggerAmmo < inv.daggerAmmoMax) {
+            inv.refillDaggers(3);
+            purchased = true;
+          }
         }
 
-        if (this.scene.hud) this.scene.hud.refresh();
-        costT.setColor(player.coins >= item.cost ? '#ffc840' : '#664420');
+        if (!purchased) return;
+        player.coins -= item.cost;
+        coinText.setText(`Coins: ${player.coins}`);
 
+        if (this.scene.hud) this.scene.hud.refresh();
+        if (this.scene.hud?.refreshWeaponBadge) this.scene.hud.refreshWeaponBadge();
+        costT.setColor(player.coins >= item.cost ? '#ffc840' : '#664420');
         this.scene.cameras.main.flash(150, 64, 192, 32);
-      });
+      };
+      bg.on('pointerdown', attemptPurchase);
       itemButtons.push(bg);
+      purchaseActions.push(attemptPurchase);
     });
 
-    const closeT = this.scene.add.text(cx, cy + panelH / 2 - 14, '[ CLOSE ]', {
-      fontSize: '11px', fontFamily: 'monospace', color: '#6a5838',
-      stroke: '#000', strokeThickness: 2,
-    }).setOrigin(0.5).setScrollFactor(0).setDepth(204)
+    const closeT = this.scene.add.text(cx, cy + panelH / 2 - 14,
+      '[ CLOSE · ESC / B / START ]', {
+        fontSize: '10px', fontFamily: 'monospace', color: '#6a5838',
+        stroke: '#000', strokeThickness: 2,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(204)
       .setInteractive({ useHandCursor: true });
     modalElements.push(closeT);
 
+    // Gamepad/keyboard cursor highlight
+    let cursor = 0;
+    const applyHighlight = () => {
+      itemButtons.forEach((btn, idx) => {
+        if (idx === cursor) btn.setFillStyle(0x5a3a1a, 0.95);
+        else btn.setFillStyle(0x2a1c10, 0.8);
+      });
+    };
+    applyHighlight();
+
     const dismiss = () => {
+      if (this.scene._dialogueTick === shopTick) this.scene._dialogueTick = null;
       this.scene.tweens.add({
         targets: modalElements, alpha: 0, duration: 200,
         onComplete: () => {
@@ -1509,8 +1640,26 @@ export class LevelManager {
         dismiss();
       }
     };
+
+    // Gamepad/keyboard polling tick (piggybacks on dialogue tick slot,
+    // since showShopModal sets dialogueActive=true and GameScene runs _dialogueTick).
+    const total = items.length;
+    let armed = false;
+    const shopTick = (input) => {
+      if (!armed || !input) return;
+      if (input.cancelPressed || input.menuPressed) { dismiss(); return; }
+      if (input.navUpPressed) { cursor = (cursor - 1 + total) % total; applyHighlight(); return; }
+      if (input.navDownPressed) { cursor = (cursor + 1) % total; applyHighlight(); return; }
+      if (input.confirmPressed) {
+        const act = purchaseActions[cursor];
+        if (act) act();
+      }
+    };
+    this.scene._dialogueTick = shopTick;
+
     this.scene.time.delayedCall(200, () => {
       this.scene.input.keyboard.on('keydown', keyDismiss);
+      armed = true;
     });
   }
 
@@ -1852,6 +2001,515 @@ export class LevelManager {
     });
   }
 
+  createIcePatch(x, y, obj) {
+    const width = Math.max(1, obj?.width || 2);
+    const sprite = this.scene.add.image(x, y, 'ice_patch');
+    sprite.setDepth(2);
+    sprite.setDisplaySize(width * TILE_SIZE, TILE_SIZE * 0.55);
+    sprite.setAlpha(0.85);
+
+    const zone = this.scene.physics.add.image(x, y - 4, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(width * TILE_SIZE, TILE_SIZE * 0.7);
+
+    const entry = { type: 'ice_patch', sprite, zone, width };
+    this.icePatches.push(entry);
+    this.decorations.push(sprite);
+
+    // Subtle shimmer
+    this.scene.tweens.add({
+      targets: sprite, alpha: 0.7,
+      duration: 1600 + Math.random() * 900,
+      yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        const body = player.body;
+        if (body && body.blocked.down) player.onIce = true;
+      });
+    }
+  }
+
+  /** Ceiling-mounted icicle: drops when player walks under. */
+  createIcicleDrop(x, y, obj) {
+    const sprite = this.scene.add.image(x, y, 'icicle_drop').setDepth(4);
+    sprite.setOrigin(0.5, 0);
+
+    const entry = {
+      type: 'icicle_drop',
+      sprite,
+      originX: x,
+      originY: y,
+      state: 'idle', // idle | wobble | falling | respawning
+      triggerTimer: 0,
+      respawnTimer: 0,
+      respawnDelay: obj?.respawnDelay || 4500,
+      triggerRange: obj?.triggerRange || 60,
+      fallBody: null,
+    };
+    this.icicleDrops.push(entry);
+    this.decorations.push(sprite);
+  }
+
+  /** Dynamically drops an active hitbox that damages player & despawns on wall hit. */
+  _dropIcicle(entry) {
+    entry.state = 'falling';
+    const body = this.scene.physics.add.image(entry.sprite.x, entry.sprite.y, 'icicle_drop');
+    body.setOrigin(0.5, 0).setDepth(5);
+    body.body.allowGravity = false;
+    body.body.setSize(10, 20);
+    body.body.velocity.y = 360;
+    entry.sprite.setVisible(false);
+    entry.fallBody = body;
+
+    const overlaps = [];
+    for (const player of this.allPlayers) {
+      overlaps.push(this.scene.physics.add.overlap(player, body, () => {
+        if (!body.active) return;
+        this.applyHazardDamage(player, body.x);
+        this._destroyIcicleProjectile(entry, overlaps);
+      }));
+    }
+    const wc = this.scene.physics.add.collider(body, this.wallLayer, () => {
+      if (!body.active) return;
+      const shatter = this.scene.add.image(body.x, body.y + 6, 'particle_white');
+      shatter.setBlendMode(Phaser.BlendModes.ADD);
+      shatter.setScale(1.4);
+      this.scene.tweens.add({
+        targets: shatter, alpha: 0, scaleX: 2.6, scaleY: 2.6, duration: 260,
+        onComplete: () => shatter.destroy(),
+      });
+      this._destroyIcicleProjectile(entry, overlaps, wc);
+    });
+    entry.fallBodyOverlaps = overlaps;
+    entry.fallBodyWallCollider = wc;
+    this.activeIcicles.push(entry);
+  }
+
+  _destroyIcicleProjectile(entry, overlaps, wc) {
+    if (entry.fallBody && entry.fallBody.active) entry.fallBody.destroy();
+    for (const ov of overlaps || []) this.scene.physics.world.removeCollider(ov);
+    if (wc) this.scene.physics.world.removeCollider(wc);
+    entry.fallBody = null;
+    entry.state = 'respawning';
+    entry.respawnTimer = entry.respawnDelay;
+  }
+
+  /** Temporary ice patch created at runtime by Frost Warden breath. */
+  createTemporaryIceStrip(xTileA, xTileB, yTile, durationMs) {
+    const xA = Math.min(xTileA, xTileB);
+    const xB = Math.max(xTileA, xTileB);
+    const width = Math.max(1, xB - xA + 1);
+    const cx = (xA + width / 2) * TILE_SIZE;
+    const cy = yTile * TILE_SIZE - 6;
+    const sprite = this.scene.add.image(cx, cy, 'ice_patch');
+    sprite.setDepth(2);
+    sprite.setDisplaySize(width * TILE_SIZE, TILE_SIZE * 0.55);
+    sprite.setAlpha(0.92);
+
+    const zone = this.scene.physics.add.image(cx, cy - 4, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(width * TILE_SIZE, TILE_SIZE * 0.7);
+
+    const entry = { type: 'ice_patch', sprite, zone, width, _temporary: true };
+    this.icePatches.push(entry);
+    this.decorations.push(sprite);
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        const body = player.body;
+        if (body && body.blocked.down) player.onIce = true;
+      });
+    }
+
+    this.scene.time.delayedCall(durationMs || 6000, () => {
+      this.scene.tweens.add({
+        targets: sprite, alpha: 0, duration: 650,
+        onComplete: () => {
+          if (sprite.active) sprite.destroy();
+          if (zone.active) zone.destroy();
+          const i = this.icePatches.indexOf(entry);
+          if (i >= 0) this.icePatches.splice(i, 1);
+        },
+      });
+    });
+  }
+
+  createCheckpointShrine(x, y, obj) {
+    const base = this.scene.add.image(x, y, 'checkpoint_shrine');
+    base.setDepth(3);
+    base.setOrigin(0.5, 0.5);
+
+    const lit = this.scene.add.image(x, y, 'checkpoint_shrine_lit');
+    lit.setDepth(4);
+    lit.setOrigin(0.5, 0.5);
+    lit.setBlendMode(Phaser.BlendModes.ADD);
+    lit.setAlpha(0);
+
+    const glow = this.scene.add.image(x, y - 8, 'particle_teal');
+    glow.setBlendMode(Phaser.BlendModes.ADD);
+    glow.setAlpha(0.2);
+    glow.setScale(4);
+    glow.setDepth(2);
+    this.scene.tweens.add({
+      targets: glow, alpha: 0.06, scaleX: 6, scaleY: 6,
+      duration: 1400, yoyo: true, repeat: -1,
+    });
+
+    const zone = this.scene.physics.add.image(x, y, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(TILE_SIZE, TILE_SIZE * 2);
+
+    const state = { base, lit, glow, zone, activated: false };
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => this.activateCheckpointShrine(state, x, y));
+    }
+    this.checkpointShrines.push(state);
+    this.decorations.push(base);
+    this.decorations.push(lit);
+    this.decorations.push(glow);
+  }
+
+  activateCheckpointShrine(state, x, y) {
+    if (state.activated) return;
+    state.activated = true;
+
+    for (const p of this.allPlayers) {
+      p.setCheckpoint(x, y - 8);
+      p.fullHeal();
+      if (p.inventory?.hasThrowingDaggers) p.inventory.refillDaggers(3);
+    }
+    if (this.scene.hud) this.scene.hud.refresh();
+
+    this.scene.tweens.add({ targets: state.lit, alpha: 1, duration: 420 });
+    this.scene.cameras.main.flash(220, 64, 232, 192);
+
+    // Save the game here — shrine is now a persistent save point
+    if (this.scene.saveGameIfEligible) {
+      this.scene.saveGameIfEligible(false);
+    }
+
+    const msg = this.scene.add.text(x, y - 48, 'SAVE POINT', {
+      fontSize: '14px', fontFamily: 'monospace', color: '#40ffd8',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(20);
+    const sub = this.scene.add.text(x, y - 34, 'Restored · Saved', {
+      fontSize: '10px', fontFamily: 'monospace', color: '#a0f0c8',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(20);
+    this.scene.tweens.add({
+      targets: [msg, sub], alpha: 0, y: '-=24', duration: 1800, delay: 900,
+      onComplete: () => { msg.destroy(); sub.destroy(); },
+    });
+  }
+
+  createWeaponPickup(x, y, obj) {
+    const weaponId = obj?.weaponId || 'phantom_edge';
+    const texKey = this._weaponPickupTexture(weaponId);
+    const glow = this.scene.add.image(x, y, 'pickup_glow');
+    glow.setBlendMode(Phaser.BlendModes.ADD);
+    glow.setDepth(3);
+    glow.setScale(2);
+    this.scene.tweens.add({
+      targets: glow, alpha: 0.5, scale: 2.5,
+      duration: 1100, yoyo: true, repeat: -1,
+    });
+
+    const sprite = this.scene.physics.add.image(x, y, texKey);
+    sprite.body.allowGravity = false;
+    sprite.body.setImmovable(true);
+    sprite.setDepth(5);
+    this.scene.tweens.add({
+      targets: sprite, y: y - 4,
+      duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    this.scene.tweens.add({
+      targets: sprite, angle: 6,
+      duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, sprite, () => {
+        if (!sprite.active) return;
+        this._collectWeapon(player, weaponId, sprite, glow, obj);
+      });
+    }
+    if (!this.weaponPickups) this.weaponPickups = [];
+    this.weaponPickups.push(sprite, glow);
+  }
+
+  _weaponPickupTexture(weaponId) {
+    switch (weaponId) {
+      case 'warden_greatsword': return 'pickup_warden_greatsword';
+      case 'throwing_daggers': return 'pickup_throwing_daggers';
+      case 'phantom_edge':
+      default:
+        return 'pickup_phantom_edge';
+    }
+  }
+
+  _collectWeapon(player, weaponId, sprite, glow, obj) {
+    const inv = player.inventory;
+    if (!inv) return;
+
+    let displayName = obj?.displayName;
+    let gained = false;
+
+    if (weaponId === 'throwing_daggers') {
+      if (!inv.hasThrowingDaggers) {
+        inv.grantThrowingDaggers(inv.daggerAmmoMax);
+        displayName = displayName || 'Throwing Daggers';
+        gained = true;
+      } else {
+        inv.refillDaggers(3);
+        displayName = 'Dagger Refill';
+        gained = true;
+      }
+    } else {
+      if (inv.acquireWeapon(weaponId)) {
+        inv.setActiveWeapon(weaponId);
+        displayName = displayName || this._weaponLabelOf(weaponId);
+        gained = true;
+      } else {
+        // Already owned — convert to a small gift: daggers if have them, else heal 1
+        if (inv.hasThrowingDaggers) {
+          inv.refillDaggers(3);
+          displayName = 'Dagger Refill';
+        } else {
+          player.hp = Math.min(player.maxHp, player.hp + 1);
+          displayName = 'Soul Flicker';
+        }
+        gained = true;
+      }
+    }
+
+    if (!gained) return;
+
+    this._spawnPickupPop(sprite.x, sprite.y, displayName, 0xffcc88);
+    this.scene.cameras.main.flash(160, 255, 220, 160);
+    if (this.scene.hud?.refreshWeaponBadge) this.scene.hud.refreshWeaponBadge();
+    sprite.destroy();
+    glow.destroy();
+  }
+
+  _weaponLabelOf(weaponId) {
+    switch (weaponId) {
+      case 'phantom_edge': return 'Phantom Edge';
+      case 'warden_greatsword': return "Warden's Greatsword";
+      default: return 'New Weapon';
+    }
+  }
+
+  createItemPickup(x, y, obj) {
+    const itemId = obj?.itemId || 'ether_vial';
+    const tex = itemId === 'soul_crystal' ? 'item_soul_crystal' : 'item_ether_vial';
+    const glow = this.scene.add.image(x, y, 'pickup_glow');
+    glow.setBlendMode(Phaser.BlendModes.ADD);
+    glow.setDepth(3);
+    glow.setScale(1.6);
+    this.scene.tweens.add({
+      targets: glow, alpha: 0.4, scale: 2,
+      duration: 1000, yoyo: true, repeat: -1,
+    });
+
+    const sprite = this.scene.physics.add.image(x, y, tex);
+    sprite.body.allowGravity = false;
+    sprite.body.setImmovable(true);
+    sprite.setDepth(5);
+    this.scene.tweens.add({
+      targets: sprite, y: y - 3,
+      duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, sprite, () => {
+        if (!sprite.active) return;
+        const inv = player.inventory;
+        if (!inv) return;
+        if (itemId === 'soul_crystal') {
+          player.maxHp += 1;
+          player.hp = player.maxHp;
+          if (this.scene.hud?.rebuildHealthOrbs) this.scene.hud.rebuildHealthOrbs();
+          if (this.scene.hud) this.scene.hud.refresh();
+          this._spawnPickupPop(sprite.x, sprite.y, 'Soul Crystal · Max HP +1', 0xff88aa);
+        } else {
+          inv.addConsumable(itemId, obj?.amount || 1);
+          const label = itemId === 'ether_vial' ? 'Ether Vial' : itemId;
+          this._spawnPickupPop(sprite.x, sprite.y, `${label} (x${inv.consumableCount(itemId)})`, 0x66ffa0);
+        }
+        this.scene.cameras.main.flash(120, 120, 255, 160);
+        sprite.destroy();
+        glow.destroy();
+      });
+    }
+    if (!this.itemPickups) this.itemPickups = [];
+    this.itemPickups.push(sprite, glow);
+  }
+
+  _spawnPickupPop(x, y, text, color = 0xffffff) {
+    const cam = this.scene.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height - 80;
+    const panel = this.scene.add.rectangle(cx, cy, 300, 32, 0x0a0812, 0.85)
+      .setScrollFactor(0).setDepth(210).setAlpha(0);
+    const border = this.scene.add.rectangle(cx, cy, 302, 34, color, 0.55)
+      .setScrollFactor(0).setDepth(209).setAlpha(0);
+    const hex = '#' + color.toString(16).padStart(6, '0');
+    const label = this.scene.add.text(cx, cy, `ACQUIRED · ${text}`, {
+      fontSize: '12px', fontFamily: 'monospace', color: hex,
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(211).setAlpha(0);
+
+    this.scene.tweens.add({ targets: [panel, border, label], alpha: 1, duration: 200 });
+    this.scene.time.delayedCall(1400, () => {
+      this.scene.tweens.add({
+        targets: [panel, border, label], alpha: 0, duration: 320,
+        onComplete: () => { panel.destroy(); border.destroy(); label.destroy(); },
+      });
+    });
+
+    // world-space sparkle
+    const burst = this.scene.add.image(x, y, 'particle_white')
+      .setBlendMode(Phaser.BlendModes.ADD).setScale(2).setDepth(12);
+    this.scene.tweens.add({
+      targets: burst, alpha: 0, scale: 5, duration: 520,
+      onComplete: () => burst.destroy(),
+    });
+  }
+
+  createLoreFragment(x, y, obj) {
+    const sprite = this.scene.physics.add.image(x, y, 'lore_fragment');
+    sprite.body.allowGravity = false;
+    sprite.body.setImmovable(true);
+    sprite.setDepth(5);
+    sprite.setBlendMode(Phaser.BlendModes.ADD);
+
+    this.scene.tweens.add({
+      targets: sprite, y: y - 6, duration: 1400, yoyo: true, repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    this.scene.tweens.add({
+      targets: sprite, alpha: 0.6, duration: 900, yoyo: true, repeat: -1,
+    });
+
+    const text = obj?.text || 'An ancient memory lingers here.';
+
+    const loreId = obj?.id || `${this.currentRoomId || 'room'}:${Math.round(x)},${Math.round(y)}`;
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, sprite, () => {
+        if (!sprite.active) return;
+        if (player.inventory) player.inventory.addLore(loreId, text);
+        this.showLoreToast(sprite.x, sprite.y, text);
+        const burst = this.scene.add.image(sprite.x, sprite.y, 'particle_teal');
+        burst.setBlendMode(Phaser.BlendModes.ADD);
+        burst.setScale(2);
+        this.scene.tweens.add({
+          targets: burst, alpha: 0, scaleX: 4, scaleY: 4, duration: 520,
+          onComplete: () => burst.destroy(),
+        });
+        sprite.destroy();
+      });
+    }
+    this.loreFragments.push(sprite);
+  }
+
+  showLoreToast(wx, wy, text) {
+    const cam = this.scene.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height * 0.8;
+    const panel = this.scene.add.rectangle(cx, cy, Math.min(cam.width - 80, 520), 72, 0x0a0612, 0.88)
+      .setScrollFactor(0).setDepth(200).setAlpha(0);
+    const border = this.scene.add.rectangle(cx, cy, Math.min(cam.width - 76, 524), 76, 0x8866cc, 0.6)
+      .setScrollFactor(0).setDepth(199).setAlpha(0);
+    const t = this.scene.add.text(cx, cy, text, {
+      fontSize: '14px', fontFamily: 'monospace', color: '#d0b8ff',
+      stroke: '#000', strokeThickness: 3, wordWrap: { width: 480 }, align: 'center',
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(201).setAlpha(0);
+    this.scene.tweens.add({ targets: [panel, border, t], alpha: 1, duration: 240 });
+    this.scene.time.delayedCall(3400, () => {
+      this.scene.tweens.add({
+        targets: [panel, border, t], alpha: 0, duration: 320,
+        onComplete: () => { panel.destroy(); border.destroy(); t.destroy(); },
+      });
+    });
+  }
+
+  createSecretWall(x, y, obj) {
+    if (!this.secretWallGroup) {
+      this.secretWallGroup = this.scene.physics.add.staticGroup();
+    }
+    const sprite = this.secretWallGroup.create(x, y, 'secret_wall');
+    sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
+    sprite.setDepth(3);
+    sprite.refreshBody();
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.collider(player, sprite);
+    }
+
+    const state = {
+      sprite,
+      revealed: false,
+      targetRoom: obj?.targetRoom || null,
+      spawnX: obj?.spawnX,
+      spawnY: obj?.spawnY,
+      hitsToBreak: obj?.hitsToBreak || 1,
+      hits: 0,
+    };
+    sprite._secretWall = state;
+    this.secretWalls.push(state);
+  }
+
+  /** Called by Combat system when the player's slash overlaps a secret_wall. */
+  onSecretWallHit(state) {
+    if (!state || state.revealed || !state.sprite?.active) return;
+    state.hits++;
+    state.sprite.setTint(0xffdd99).setTintMode(Phaser.TintModes.FILL);
+    this.scene.time.delayedCall(80, () => {
+      if (state.sprite?.active) state.sprite.clearTint();
+    });
+    if (state.hits < state.hitsToBreak) return;
+
+    state.revealed = true;
+    this.scene.cameras.main.flash(260, 220, 200, 120);
+    this.scene.tweens.add({
+      targets: state.sprite, alpha: 0, duration: 420,
+      onComplete: () => {
+        if (state.sprite?.active) {
+          state.sprite.body.enable = false;
+          state.sprite.setVisible(false);
+        }
+      },
+    });
+
+    // If this secret wall reveals a portal, spawn a door in its place
+    if (state.targetRoom) {
+      const door = this.scene.physics.add.image(state.sprite.x, state.sprite.y, 'door');
+      door.body.allowGravity = false;
+      door.body.setImmovable(true);
+      door.setDisplaySize(TILE_SIZE, TILE_SIZE * 2);
+      door.setDepth(5);
+      door.targetRoom = state.targetRoom;
+      door.spawnX = state.spawnX;
+      door.spawnY = state.spawnY;
+      door.requiresAbilities = [];
+      door.setAlpha(0.96);
+      for (const player of this.allPlayers) {
+        this.scene.physics.add.overlap(player, door, () => {
+          if (this.roomLocked) return;
+          this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
+        });
+      }
+      this.doorZones.push({ door, portalGlow: null, glowTween: null, pulseTween: null });
+    }
+  }
+
   createCrumblePlatform(x, y, obj) {
     const sprite = this.scene.physics.add.image(x, y, 'crumble_platform');
     sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
@@ -1938,9 +2596,72 @@ export class LevelManager {
 
   update(dt) {
     this.hazardDamageCooldown = Math.max(0, this.hazardDamageCooldown - dt);
+    if (this._sealBumpCooldown > 0) this._sealBumpCooldown -= dt;
+
+    // Reset slippery flag each frame — ice overlap sets it back on if still touching
+    for (const p of this.allPlayers) { if (p) p.onIce = false; }
 
     const t = this.scene.time.now / 1000;
     const dtSec = dt / 1000;
+
+    // Icicle drop triggers
+    for (const ic of this.icicleDrops) {
+      if (ic.state === 'idle') {
+        const px = this.scene.player?.x;
+        const py = this.scene.player?.y;
+        if (px != null) {
+          const dx = Math.abs(px - ic.originX);
+          const below = py > ic.originY;
+          if (dx < ic.triggerRange && below) {
+            ic.state = 'wobble';
+            ic.triggerTimer = 380;
+            this.scene.tweens.add({
+              targets: ic.sprite, x: ic.originX + 1.5, duration: 60, yoyo: true, repeat: 5, ease: 'Sine.easeInOut',
+              onComplete: () => { if (ic.sprite?.active) ic.sprite.x = ic.originX; },
+            });
+          }
+        }
+      } else if (ic.state === 'wobble') {
+        ic.triggerTimer -= dt;
+        if (ic.triggerTimer <= 0) this._dropIcicle(ic);
+      } else if (ic.state === 'respawning') {
+        ic.respawnTimer -= dt;
+        if (ic.respawnTimer <= 0) {
+          ic.state = 'idle';
+          if (ic.sprite?.active) {
+            ic.sprite.setVisible(true);
+            ic.sprite.setAlpha(0);
+            ic.sprite.x = ic.originX;
+            ic.sprite.y = ic.originY;
+            this.scene.tweens.add({ targets: ic.sprite, alpha: 1, duration: 420 });
+          }
+        }
+      }
+    }
+    // Cleanup finished icicle projectiles
+    for (let i = this.activeIcicles.length - 1; i >= 0; i--) {
+      const ic = this.activeIcicles[i];
+      if (!ic.fallBody) { this.activeIcicles.splice(i, 1); continue; }
+      if (!ic.fallBody.active) { this.activeIcicles.splice(i, 1); continue; }
+    }
+
+    // Wave / sealed arena progression
+    if (this.waves && this.sealDoorsUntilCleared) {
+      const alive = this.scene.enemies?.getChildren()?.filter(e => !e.isDead).length || 0;
+      if (this.waveIndex < this.waves.length) {
+        if (alive === 0) {
+          if (this.waveDelayTimer <= 0) {
+            const w = this.waves[this.waveIndex];
+            this.spawnWave(w);
+            this.waveIndex++;
+            this.waveDelayTimer = (w.nextDelay || 600);
+            this.announceWave(this.waveIndex, this.waves.length);
+          } else {
+            this.waveDelayTimer -= dt;
+          }
+        }
+      }
+    }
 
     for (const plat of this.movingPlatforms) {
       if (!plat.sprite || !plat.sprite.active) continue;
@@ -2135,6 +2856,7 @@ export class LevelManager {
         d.portalGlow.setAlpha(0.32);
       }
     }
+    this.createDoorBarriers();
     this.showRoomLockBarrier();
     this.showRoomLockEnemyNotice();
   }
@@ -2142,6 +2864,7 @@ export class LevelManager {
   unlockDoors() {
     this.clearRoomLockNotice();
     this.destroyRoomLockVisuals();
+    this.destroyDoorBarriers();
     this.roomLocked = false;
     for (const d of this.doorZones) {
       d.door.clearTint();
@@ -2154,6 +2877,69 @@ export class LevelManager {
       if (d.glowTween) d.glowTween.resume();
     }
     this.scene.cameras.main.flash(300, 64, 232, 192);
+  }
+
+  /** Solid physics blockers at each door while the room is locked so the
+   *  player can't walk into the doorway (and fall out / respawn). */
+  createDoorBarriers() {
+    this.destroyDoorBarriers();
+    if (!this.doorBarrierGroup) {
+      this.doorBarrierGroup = this.scene.physics.add.staticGroup();
+    }
+    this.doorBarriers = this.doorBarriers || [];
+
+    for (const d of this.doorZones) {
+      const door = d.door;
+      if (!door || !door.active) continue;
+      const w = Math.max(12, door.displayWidth || TILE_SIZE);
+      const h = Math.max(TILE_SIZE, door.displayHeight || TILE_SIZE * 2);
+      const bar = this.doorBarrierGroup.create(door.x, door.y, 'particle_white');
+      bar.setVisible(false);
+      bar.setDisplaySize(w, h);
+      bar.body.setSize(w, h);
+      bar.refreshBody();
+      this.doorBarriers.push(bar);
+
+      // Shimmering red warding visual so the player can see it's sealed
+      const shield = this.scene.add.rectangle(door.x, door.y, w, h, 0xff3344, 0.12)
+        .setDepth(6).setScrollFactor(1).setBlendMode(Phaser.BlendModes.ADD);
+      const shieldEdge = this.scene.add.rectangle(door.x, door.y, w, h, 0xff3344, 0)
+        .setStrokeStyle(2, 0xff4466, 0.7).setDepth(7).setScrollFactor(1);
+      this.roomLockVisuals.push(shield, shieldEdge);
+      const tw = this.scene.tweens.add({
+        targets: shield, fillAlpha: { from: 0.1, to: 0.28 },
+        duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      this.roomLockTweens.push(tw);
+    }
+
+    // Collide the player(s) with the barriers (hard-stop them)
+    for (const p of this.allPlayers) {
+      const c = this.scene.physics.add.collider(p, this.doorBarrierGroup, () => {
+        // Small visual thump when player bumps a sealed door
+        if (!this._sealBumpCooldown || this._sealBumpCooldown <= 0) {
+          this._sealBumpCooldown = 250;
+          shakeScene(this.scene, 60, 0.002);
+        }
+      });
+      this.doorBarrierColliders = this.doorBarrierColliders || [];
+      this.doorBarrierColliders.push(c);
+    }
+  }
+
+  destroyDoorBarriers() {
+    if (Array.isArray(this.doorBarrierColliders)) {
+      for (const c of this.doorBarrierColliders) {
+        if (c) this.scene.physics.world.removeCollider(c);
+      }
+    }
+    this.doorBarrierColliders = [];
+    if (this.doorBarrierGroup) {
+      this.doorBarrierGroup.clear(true, true);
+      this.doorBarrierGroup.destroy(true);
+      this.doorBarrierGroup = null;
+    }
+    this.doorBarriers = [];
   }
 
   destroyRoomLockVisuals() {
@@ -2269,8 +3055,40 @@ export class LevelManager {
     });
   }
 
+  spawnWave(wave) {
+    if (!wave || !Array.isArray(wave.enemies)) return;
+    for (const e of wave.enemies) {
+      const px = e.x * TILE_SIZE + TILE_SIZE / 2;
+      const py = e.y * TILE_SIZE + TILE_SIZE / 2;
+      switch (e.type) {
+        case 'crawler':       this.createCrawler(px, py); break;
+        case 'flyer':         this.createFlyer(px, py); break;
+        case 'brute':         this.createBrute(px, py); break;
+        case 'armored_flyer': this.createArmoredFlyer(px, py); break;
+        case 'charger':       this.createChargerBrute(px, py); break;
+        case 'spitter':       this.createSpitter(px, py); break;
+      }
+    }
+    this.setupCollisions();
+  }
+
+  announceWave(idx, total) {
+    const cam = this.scene.cameras.main;
+    const label = idx >= total ? 'FINAL WAVE' : `WAVE ${idx} / ${total}`;
+    const t = this.scene.add.text(cam.width / 2, 120, label, {
+      fontSize: '22px', fontFamily: 'monospace', color: '#ff6644',
+      stroke: '#000', strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(50).setScrollFactor(0).setAlpha(0);
+    this.scene.tweens.add({
+      targets: t, alpha: 1, duration: 260, yoyo: true, hold: 900,
+      onComplete: () => t.destroy(),
+    });
+  }
+
   checkRoomCleared() {
     if (!this.roomLocked) return;
+    // Sealed arena with remaining waves: do not unlock yet
+    if (this.waves && this.waveIndex < this.waves.length) return;
     const alive = this.scene.enemies.getChildren().filter(e => !e.isDead);
     if (alive.length === 0) {
       this.unlockDoors();
@@ -2400,6 +3218,53 @@ export class LevelManager {
     }
     this.flameJets = [];
 
+    for (const ip of this.icePatches) {
+      if (ip.sprite && ip.sprite.active) ip.sprite.destroy();
+      if (ip.zone && ip.zone.active) ip.zone.destroy();
+    }
+    this.icePatches = [];
+
+    for (const ic of this.icicleDrops) {
+      if (ic.sprite && ic.sprite.active) ic.sprite.destroy();
+      if (ic.fallBody && ic.fallBody.active) ic.fallBody.destroy();
+    }
+    this.icicleDrops = [];
+    for (const ic of this.activeIcicles) {
+      if (ic.fallBody && ic.fallBody.active) ic.fallBody.destroy();
+    }
+    this.activeIcicles = [];
+
+    for (const s of this.checkpointShrines) {
+      if (s.base && s.base.active) s.base.destroy();
+      if (s.lit && s.lit.active) s.lit.destroy();
+      if (s.glow && s.glow.active) s.glow.destroy();
+      if (s.zone && s.zone.active) s.zone.destroy();
+    }
+    this.checkpointShrines = [];
+
+    for (const l of this.loreFragments) { if (l && l.active) l.destroy(); }
+    this.loreFragments = [];
+
+    if (this.weaponPickups) {
+      for (const p of this.weaponPickups) { if (p && p.active) p.destroy(); }
+      this.weaponPickups = [];
+    }
+    if (this.itemPickups) {
+      for (const p of this.itemPickups) { if (p && p.active) p.destroy(); }
+      this.itemPickups = [];
+    }
+
+    for (const sw of this.secretWalls) {
+      if (sw.sprite && sw.sprite.active) sw.sprite.destroy();
+    }
+    this.secretWalls = [];
+    if (this.secretWallGroup) { this.secretWallGroup.clear(true, true); this.secretWallGroup = null; }
+
+    this.waves = null;
+    this.waveIndex = 0;
+    this.waveDelayTimer = 0;
+    this.sealDoorsUntilCleared = false;
+
     for (const n of this.npcs) {
       if (n.npc && n.npc.active) n.npc.destroy();
       if (n.zone && n.zone.active) n.zone.destroy();
@@ -2414,6 +3279,7 @@ export class LevelManager {
     this.dripEmitters = [];
 
     this.destroyRoomLockVisuals();
+    this.destroyDoorBarriers();
 
     for (const l of this.parallaxLayers) { if (l && l.active) l.destroy(); }
     this.parallaxLayers = [];

@@ -7,6 +7,7 @@ import { TILE_SIZE, rooms } from '../level/rooms.js';
 import * as SaveGame from '../persistence/SaveGame.js';
 import { GameState } from '../state/GameState.js';
 import { CameraRig } from '../systems/CameraRig.js';
+import { InventoryMenu } from '../ui/InventoryMenu.js';
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
@@ -66,6 +67,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.hud = new HUD(this);
+    this.inventoryMenu = new InventoryMenu(this);
 
     if (this.textures.exists('player_rim_light')) {
       this.playerRimLight = this.add.image(0, 0, 'player_rim_light');
@@ -75,7 +77,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.input.keyboard.on('keydown-P', () => this.togglePause());
-    this.input.keyboard.on('keydown-ESC', () => this.togglePause());
+    this.input.keyboard.on('keydown-ESC', () => {
+      if (this.inventoryMenu?.visible) { this.inventoryMenu.close(); this.physics.resume(); return; }
+      this.togglePause();
+    });
+    this.input.keyboard.on('keydown-I', () => this.toggleInventoryMenu());
+    this.input.keyboard.on('keydown-TAB', () => this.toggleInventoryMenu());
 
     this._secretWarpSeq = [];
     this._secretWarpPattern = ['up', 'down', 'up', 'down', 'left', 'right', 'left', 'right'];
@@ -128,9 +135,20 @@ export class GameScene extends Phaser.Scene {
       shift: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT),
       e: this.input.keyboard.addKey('E'),
       f: this.input.keyboard.addKey('F'),
+      g: this.input.keyboard.addKey('G'),
+      i: this.input.keyboard.addKey('I'),
       k: this.input.keyboard.addKey('K'),
+      tab: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.TAB),
       saveGame: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.B),
+      p: this.input.keyboard.addKey('P'),
+      enter: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
+      esc: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC),
     };
+
+    // Prevent Tab from moving browser focus away from the canvas
+    this.input.keyboard.addCapture([
+      Phaser.Input.Keyboard.KeyCodes.TAB,
+    ]);
   }
 
   setupParticleEmitters() {
@@ -178,12 +196,17 @@ export class GameScene extends Phaser.Scene {
     return this.player;
   }
 
+  _gpPadActive() {
+    return !!(this.inputManager && this.inputManager.getGamepad && this.inputManager.getGamepad());
+  }
+
   update(time, delta) {
     if (this.transitioning) return;
 
     const dt = Math.min(delta, 33.33);
 
     this.inputManager.update();
+    const input = this.inputManager.state;
     this.pollSecretWarpDirectionalEdges();
 
     if (this.inputManager.touch.active) {
@@ -194,16 +217,32 @@ export class GameScene extends Phaser.Scene {
       this._pauseTouchPrev = !!t.pause;
     }
 
+    // Gamepad-driven global toggles: START opens/closes inventory, SELECT pauses
+    if (input.menuPressed) this.toggleInventoryMenu();
+    else if (input.pausePressed) {
+      if (this.inventoryMenu?.visible) { this.inventoryMenu.close(); this.physics.resume(); }
+      else this.togglePause();
+    }
+
     if (this.paused) {
-      if (Phaser.Input.Keyboard.JustDown(this.keys.saveGame)) {
+      if (Phaser.Input.Keyboard.JustDown(this.keys.saveGame)
+        || (input.confirmPressed && this._gpPadActive())) {
         this.saveGameIfEligible(true);
       }
       return;
     }
 
-    if (this.dialogueActive) return;
+    if (this.inventoryMenu && this.inventoryMenu.visible) {
+      if (typeof this.inventoryMenu.tick === 'function') this.inventoryMenu.tick(input);
+      return;
+    }
+    if (this.dialogueActive) {
+      if (typeof this._dialogueTick === 'function') this._dialogueTick(input);
+      return;
+    }
 
     if (this.hud && this.hud.mapOverlay && this.hud.mapOverlay.visible) {
+      if (input.cancelPressed || input.menuPressed) this.hud.mapOverlay.hide();
       return;
     }
 
@@ -495,9 +534,26 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  toggleInventoryMenu() {
+    if (this.transitioning) return;
+    if (this.dialogueActive) return;
+    if (this.paused) return;
+    if (this.hud?.mapOverlay?.visible) this.hud.mapOverlay.hide();
+    if (!this.inventoryMenu) return;
+    if (!this.inventoryMenu.visible) {
+      this.physics.pause();
+      this.saveGameIfEligible(false);
+      this.inventoryMenu.open();
+    } else {
+      this.inventoryMenu.close();
+      this.physics.resume();
+    }
+  }
+
   togglePause() {
     if (this.transitioning) return;
     if (this.hud && this.hud.mapOverlay && this.hud.mapOverlay.visible) return;
+    if (this.inventoryMenu?.visible) return;
 
     this.paused = !this.paused;
     if (this.paused) {
@@ -534,9 +590,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
-    let resumeHint = isMobile ? '[ TAP PAUSE TO RESUME ]' : '[ P OR ESC TO RESUME ]';
+    let resumeHint = isMobile
+      ? '[ TAP PAUSE TO RESUME ]'
+      : '[ P / ESC / SELECT TO RESUME ]';
     if (!isMobile) {
-      resumeHint += '  ·  B SAVE';
+      resumeHint += '  ·  B / A (pad) SAVE';
     }
     const hint = this.add.text(cx, cy + 30, resumeHint, {
       fontSize: '12px', fontFamily: 'monospace', color: '#6a5838',

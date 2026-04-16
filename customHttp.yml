@@ -1,0 +1,83 @@
+customHeaders:
+  - pattern: '**/*'
+    headers:
+      # Lock the page down to its own origin.
+      #
+      # The game is fully offline (connect-src 'none') and has no backend, so the
+      # main risk CSP protects against here is any future regression that would
+      # try to load remote scripts, exfiltrate data, or embed trackers.
+      #
+      # 'unsafe-inline' is present because index.html contains 3 small inline
+      # bootstrap scripts + one <style> block. If those ever need to change,
+      # either keep 'unsafe-inline' or migrate to SHA-256 hashes / nonces.
+      - key: 'Content-Security-Policy'
+        value: >-
+          default-src 'self';
+          script-src 'self' 'unsafe-inline';
+          style-src 'self' 'unsafe-inline';
+          img-src 'self' data: blob:;
+          media-src 'self' blob: data:;
+          font-src 'self' data:;
+          connect-src 'none';
+          worker-src 'self';
+          manifest-src 'self';
+          object-src 'none';
+          base-uri 'self';
+          frame-ancestors 'none';
+          form-action 'none';
+          upgrade-insecure-requests
+
+      # Defense-in-depth: even if a browser somehow ignores CSP frame-ancestors,
+      # this blocks the page from being iframed (clickjacking protection).
+      - key: 'X-Frame-Options'
+        value: 'DENY'
+
+      # Force browsers to honor declared MIME types (blocks MIME-sniffing XSS).
+      - key: 'X-Content-Type-Options'
+        value: 'nosniff'
+
+      # Don't leak full URLs / query strings to third parties.
+      - key: 'Referrer-Policy'
+        value: 'strict-origin-when-cross-origin'
+
+      # Disable browser APIs the game doesn't use — denies them even if
+      # a malicious script somehow got injected.
+      - key: 'Permissions-Policy'
+        value: >-
+          accelerometer=(),
+          ambient-light-sensor=(),
+          autoplay=(self),
+          battery=(),
+          camera=(),
+          clipboard-read=(),
+          clipboard-write=(),
+          display-capture=(),
+          encrypted-media=(),
+          fullscreen=(self),
+          gamepad=(self),
+          geolocation=(),
+          gyroscope=(),
+          hid=(),
+          idle-detection=(),
+          magnetometer=(),
+          microphone=(),
+          midi=(),
+          payment=(),
+          picture-in-picture=(),
+          publickey-credentials-get=(),
+          screen-wake-lock=(),
+          serial=(),
+          usb=(),
+          xr-spatial-tracking=()
+
+      # Force HTTPS on any subdomain for two years. Amplify serves HTTPS by
+      # default; this makes downgrade attacks impossible once a client has
+      # visited once.
+      - key: 'Strict-Transport-Security'
+        value: 'max-age=63072000; includeSubDomains; preload'
+
+      # Cross-origin isolation defaults. The game doesn't share resources.
+      - key: 'Cross-Origin-Opener-Policy'
+        value: 'same-origin'
+      - key: 'Cross-Origin-Resource-Policy'
+        value: 'same-origin'
