@@ -190,14 +190,14 @@ function buildRoom2() {
   fillRow(tiles, 10, 10, 12, 2);    // step 9: center (straight up through gap)
   fillRow(tiles, 8, 10, 12, 2);     // step 10: center
   fillRow(tiles, 6, 10, 12, 2);     // step 11: center (orb is at row 5 above)
-  fillRow(tiles, 4, 1, 6, 2);       // top-left landing (room3 door)
-  fillRow(tiles, 4, 16, 20, 2);     // top-right landing (room4 door)
+  fillRow(tiles, 6, 1, 6, 2);       // top-left landing (room3 door) — lowered for better approach / headroom
+  fillRow(tiles, 6, 16, 20, 2);     // top-right landing (room4 door) — lowered for better approach / headroom
 
   // Mine-shaft roof — mostly closed stone with a narrow light well
   fillRect(tiles, 1, 1, 3, W - 2, 1);
   clearRect(tiles, 1, 9, 3, 12);
-  clearRect(tiles, 3, 1, 3, 6);   // headroom above top-left landing
-  clearRect(tiles, 3, 16, 3, 20); // headroom above top-right landing
+  clearRect(tiles, 3, 1, 5, 6);   // headroom above top-left landing (3 tiles of air)
+  clearRect(tiles, 3, 16, 5, 20); // headroom above top-right landing
 
   // Bottom floor with gaps
   fillRect(tiles, H - 2, 1, H - 1, 7, 1);
@@ -206,11 +206,11 @@ function buildRoom2() {
 
   // Door openings
   clearRect(tiles, H - 4, 0, H - 2, 0);  // bottom-left back to room1
-  clearRect(tiles, 3, 0, 5, 0);           // top-left to room3
-  clearRect(tiles, 3, W - 1, 5, W - 1);   // top-right to room4
+  clearRect(tiles, 5, 0, 7, 0);           // top-left to room3 (lowered to match new landing row)
+  clearRect(tiles, 5, W - 1, 7, W - 1);   // top-right to room4 (lowered to match new landing row)
   // Lips where wall openings left column 0 / W-1 air on platform rows (no floor when stepping into doorway)
-  setTile(tiles, 4, 0, 1);
-  setTile(tiles, 4, W - 1, 1);
+  setTile(tiles, 6, 0, 1);
+  setTile(tiles, 6, W - 1, 1);
   setTile(tiles, H - 2, 0, 1);
 
   return {
@@ -222,8 +222,8 @@ function buildRoom2() {
     objects: [
       { type: 'ability_orb', ability: 'wallJump', x: 11, y: 14, hint: 'Wall slide then jump!' },
       { type: 'door', targetRoom: 'room1', x: 1, y: H - 2, spawnX: 52, spawnY: 21 },
-      { type: 'door', targetRoom: 'room3', x: 1, y: 4, spawnX: 38, spawnY: 9 },
-      { type: 'door', targetRoom: 'room4', x: W - 2, y: 4, spawnX: 2, spawnY: 19 },
+      { type: 'door', targetRoom: 'room3', x: 1, y: 6, spawnX: 38, spawnY: 9 },
+      { type: 'door', targetRoom: 'room4', x: W - 2, y: 6, spawnX: 2, spawnY: 19 },
       { type: 'bench', x: 11, y: 20 },
       { type: 'npc', npcType: 'knight', x: 14, y: 20, dialogue: [
         'Do not... be alarmed. I am no threat. Not anymore.',
@@ -334,7 +334,7 @@ function buildRoom3() {
     tiles,
     playerSpawn: { x: 40, y: 9 },
     objects: [
-      { type: 'door', targetRoom: 'room2', x: W - 2, y: 10, spawnX: 2, spawnY: 3 },
+      { type: 'door', targetRoom: 'room2', x: W - 2, y: 10, spawnX: 2, spawnY: 5 },
       { type: 'door', targetRoom: 'room6', x: 1, y: 19, spawnX: 3, spawnY: 19 },
       { type: 'ability_orb', ability: 'map', x: 3, y: 3, hint: 'Press M or tap the map icon' },
       { type: 'moving_platform', x: 30, y: 12, axis: 'x', range: 44, speed: 1.2, phase: 0.4, spin: 0.6 },
@@ -477,7 +477,7 @@ function buildRoom4() {
     playerSpawn: { x: 3, y: 19 },
     objects: [
       { type: 'ability_orb', ability: 'dash', x: 45, y: 7, hint: 'Press X or Shift to dash' },
-      { type: 'door', targetRoom: 'room2', x: 1, y: 19, spawnX: 19, spawnY: 4 },
+      { type: 'door', targetRoom: 'room2', x: 1, y: 19, spawnX: 19, spawnY: 5 },
       { type: 'door', targetRoom: 'room5', x: W - 2, y: 19, spawnX: 3, spawnY: 21 },
       { type: 'weapon_pickup', weaponId: 'phantom_edge', x: 10, y: 18 },
       { type: 'item_pickup', itemId: 'ether_vial', amount: 1, x: 22, y: 18 },
