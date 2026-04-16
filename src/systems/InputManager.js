@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { TouchControls } from './TouchControls.js';
 
 const GP_SOUTH = 0;

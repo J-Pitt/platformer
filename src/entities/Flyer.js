@@ -1,3 +1,5 @@
+import * as Phaser from 'phaser';
+
 const HOVER_SPEED = 30;
 const SWOOP_SPEED = 160;
 const DETECT_RANGE = 220;

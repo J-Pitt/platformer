@@ -1,3 +1,5 @@
+import * as Phaser from 'phaser';
+
 export class NPC extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, npcType, dialogue) {
     const texture = `npc_${npcType}`;

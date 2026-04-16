@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { rooms, TILE_SIZE } from './rooms.js';
 import { meetsAbilityRequirements } from './abilityGates.js';
 import { organicDecorRng } from './organicCaveGen.js';
@@ -117,6 +118,11 @@ export class LevelManager {
     this.hazardZones = [];
     this.crumblePlatforms = [];
     this.hazardDamageCooldown = 0;
+    this.fireballShooters = [];
+    this.activeFireballs = [];
+    this.floorSpikes = [];
+    this.sawBlades = [];
+    this.flameJets = [];
     this.npcs = [];
     this.coins = [];
     this.teleports = [];
@@ -785,6 +791,10 @@ export class LevelManager {
         case 'spike_wall': this.createSpikeWall(px, py, obj); break;
         case 'crumble_platform': this.createCrumblePlatform(px, py, obj); break;
         case 'magma_pool': this.createMagmaPool(px, py, obj); break;
+        case 'fireball_shooter': this.createFireballShooter(px, py, obj); break;
+        case 'floor_spikes': this.createFloorSpikes(px, py, obj); break;
+        case 'saw_blade': this.createSawBlade(px, py, obj); break;
+        case 'flame_jet': this.createFlameJet(px, py, obj); break;
         case 'stalactite':
         case 'stalactite_sm':
         case 'stalagmite':
@@ -897,14 +907,12 @@ export class LevelManager {
     door.body.allowGravity = false;
     door.body.setImmovable(true);
     door.setDisplaySize(ow, oh);
-    door.body.setSize(ow, oh);
     door.setDepth(5);
     door.targetRoom = obj.targetRoom;
     door.spawnX = obj.spawnX;
     door.spawnY = obj.spawnY;
     door.requiresAbilities = Array.isArray(obj.requiresAbilities) ? obj.requiresAbilities : [];
     door.setAlpha(0.96);
-    door.refreshBody();
 
     const pulseTween = this.scene.tweens.add({
       targets: door,
@@ -1679,6 +1687,171 @@ export class LevelManager {
     this.hazardZones.push({ type: 'spike', sprite: spikes, zone });
   }
 
+  createFireballShooter(x, y, obj) {
+    const shooter = this.scene.add.image(x, y, 'fireball_shooter').setDepth(4);
+    const dir = obj.dir || 'left';
+    if (dir === 'right') shooter.setFlipX(true);
+    if (dir === 'down') shooter.setRotation(Math.PI / 2);
+    if (dir === 'up') shooter.setRotation(-Math.PI / 2);
+
+    const entry = {
+      type: 'fireball_shooter',
+      sprite: shooter,
+      dir,
+      interval: obj.interval || 2500,
+      timer: obj.phase || 0,
+      originX: x,
+      originY: y,
+    };
+    this.fireballShooters.push(entry);
+  }
+
+  spawnFireball(shooter) {
+    const speed = 180;
+    let vx = 0, vy = 0;
+    switch (shooter.dir) {
+      case 'left':  vx = -speed; break;
+      case 'right': vx = speed;  break;
+      case 'up':    vy = -speed; break;
+      case 'down':  vy = speed;  break;
+    }
+
+    const fb = this.scene.physics.add.image(shooter.originX, shooter.originY, 'fireball');
+    fb.body.allowGravity = false;
+    fb.body.setSize(12, 12);
+    fb.setDepth(6);
+    fb.body.velocity.x = vx;
+    fb.body.velocity.y = vy;
+    fb.setBlendMode(Phaser.BlendModes.ADD);
+
+    const overlaps = [];
+    for (const player of this.allPlayers) {
+      overlaps.push(this.scene.physics.add.overlap(player, fb, () => {
+        this.applyHazardDamage(player, fb.x);
+      }));
+    }
+    const wallCollider = this.scene.physics.add.collider(fb, this.wallLayer, () => {
+      this.destroyFireball(fb);
+    });
+
+    fb._overlaps = overlaps;
+    fb._wallCollider = wallCollider;
+    fb._life = 3000;
+    this.activeFireballs.push(fb);
+  }
+
+  destroyFireball(fb) {
+    if (!fb.active) return;
+    if (fb._overlaps) {
+      for (const ov of fb._overlaps) this.scene.physics.world.removeCollider(ov);
+    }
+    if (fb._wallCollider) this.scene.physics.world.removeCollider(fb._wallCollider);
+    fb.destroy();
+  }
+
+  createFloorSpikes(x, y, obj) {
+    const sprite = this.scene.add.image(x, y, 'floor_spikes_down').setDepth(4);
+    sprite.setOrigin(0.5, 1);
+
+    const zone = this.scene.physics.add.image(x, y - 8, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(28, 14);
+    zone.body.enable = false;
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
+
+    this.floorSpikes.push({
+      type: 'floor_spikes',
+      sprite,
+      zone,
+      extended: false,
+      onTime: obj.onTime || 1500,
+      offTime: obj.offTime || 2000,
+      timer: obj.phase || 0,
+    });
+  }
+
+  createSawBlade(x, y, obj) {
+    const sprite = this.scene.add.image(x, y, 'saw_blade').setDepth(5);
+    const zone = this.scene.physics.add.image(x, y, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(22, 22);
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
+
+    this.sawBlades.push({
+      type: 'saw_blade',
+      sprite,
+      zone,
+      baseX: x,
+      baseY: y,
+      axis: obj.axis || 'x',
+      range: obj.range || 96,
+      speed: obj.speed || 1.2,
+      phase: obj.phase || 0,
+    });
+  }
+
+  createFlameJet(x, y, obj) {
+    const dir = obj.dir || 'up';
+    const base = this.scene.add.image(x, y, 'flame_jet_base').setDepth(4);
+    let flameX = x, flameY = y;
+    let rotation = 0;
+    switch (dir) {
+      case 'up':    flameY = y - 28; break;
+      case 'down':  flameY = y + 28; rotation = Math.PI; break;
+      case 'left':  flameX = x - 28; rotation = Math.PI / 2; break;
+      case 'right': flameX = x + 28; rotation = -Math.PI / 2; break;
+    }
+    if (dir === 'down') base.setRotation(Math.PI);
+    if (dir === 'left') base.setRotation(Math.PI / 2);
+    if (dir === 'right') base.setRotation(-Math.PI / 2);
+
+    const flame = this.scene.add.image(flameX, flameY, 'flame_jet_flame').setDepth(5);
+    flame.setRotation(rotation);
+    flame.setBlendMode(Phaser.BlendModes.ADD);
+    flame.setAlpha(0.85);
+    flame.setVisible(false);
+
+    const zw = dir === 'up' || dir === 'down' ? 14 : 36;
+    const zh = dir === 'up' || dir === 'down' ? 36 : 14;
+    const zone = this.scene.physics.add.image(flameX, flameY, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(zw, zh);
+    zone.body.enable = false;
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
+
+    this.flameJets.push({
+      type: 'flame_jet',
+      base,
+      flame,
+      zone,
+      active: false,
+      onTime: obj.onTime || 1200,
+      offTime: obj.offTime || 1800,
+      timer: obj.phase || 0,
+    });
+  }
+
   createCrumblePlatform(x, y, obj) {
     const sprite = this.scene.physics.add.image(x, y, 'crumble_platform');
     sprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
@@ -1775,15 +1948,21 @@ export class LevelManager {
       const b = s.body;
       if (!b) continue;
 
+      const angle = t * plat.speed + plat.phase;
+      const sinA = Math.sin(angle);
+      const cosA = Math.cos(angle);
+
       if (plat.axis === 'y') {
-        const targetY = plat.baseY + Math.sin(t * plat.speed + plat.phase) * plat.range;
+        s.y = plat.baseY + sinA * plat.range;
         b.velocity.x = 0;
-        b.velocity.y = (targetY - s.y) / dtSec;
+        b.velocity.y = cosA * plat.range * plat.speed;
       } else {
-        const targetX = plat.baseX + Math.sin(t * plat.speed + plat.phase) * plat.range;
-        b.velocity.x = (targetX - s.x) / dtSec;
+        s.x = plat.baseX + sinA * plat.range;
+        b.velocity.x = cosA * plat.range * plat.speed;
         b.velocity.y = 0;
       }
+      b.updateFromGameObject();
+
       if (plat.spin) {
         s.rotation += plat.spin * dtSec;
       }
@@ -1800,6 +1979,89 @@ export class LevelManager {
       hz.zone.setPosition(bx, by);
       hz.zone.body.updateFromGameObject();
 
+    }
+
+    // Fireball shooters: count down timer, spawn fireballs
+    for (const fs of this.fireballShooters) {
+      fs.timer += dt;
+      if (fs.timer >= fs.interval) {
+        fs.timer -= fs.interval;
+        this.spawnFireball(fs);
+      }
+    }
+
+    // Active fireballs: decrement life, destroy expired
+    for (let i = this.activeFireballs.length - 1; i >= 0; i--) {
+      const fb = this.activeFireballs[i];
+      if (!fb.active) { this.activeFireballs.splice(i, 1); continue; }
+      fb._life -= dt;
+      if (fb._life <= 0) {
+        this.destroyFireball(fb);
+        this.activeFireballs.splice(i, 1);
+      }
+    }
+
+    // Floor spikes: cycle between extended and retracted
+    for (const fs of this.floorSpikes) {
+      fs.timer += dt;
+      if (fs.extended) {
+        if (fs.timer >= fs.onTime) {
+          fs.timer = 0;
+          fs.extended = false;
+          fs.sprite.setTexture('floor_spikes_down');
+          fs.zone.body.enable = false;
+        }
+      } else {
+        if (fs.timer >= fs.offTime) {
+          fs.timer = 0;
+          fs.extended = true;
+          fs.sprite.setTexture('floor_spikes_up');
+          fs.zone.body.enable = true;
+        } else if (fs.timer >= fs.offTime - 400) {
+          fs.sprite.setAlpha(0.5 + Math.sin(t * 20) * 0.3);
+        } else {
+          fs.sprite.setAlpha(1);
+        }
+      }
+    }
+
+    // Saw blades: sine-wave motion + rotation
+    for (const sb of this.sawBlades) {
+      const angle = t * sb.speed + sb.phase;
+      const sinA = Math.sin(angle);
+      let bx, by;
+      if (sb.axis === 'y') {
+        bx = sb.baseX;
+        by = sb.baseY + sinA * sb.range;
+      } else {
+        bx = sb.baseX + sinA * sb.range;
+        by = sb.baseY;
+      }
+      sb.sprite.setPosition(bx, by);
+      sb.sprite.rotation += 0.08;
+      sb.zone.setPosition(bx, by);
+      sb.zone.body.updateFromGameObject();
+    }
+
+    // Flame jets: cycle on/off
+    for (const fj of this.flameJets) {
+      fj.timer += dt;
+      if (fj.active) {
+        fj.flame.setAlpha(0.7 + Math.sin(t * 12) * 0.15);
+        if (fj.timer >= fj.onTime) {
+          fj.timer = 0;
+          fj.active = false;
+          fj.flame.setVisible(false);
+          fj.zone.body.enable = false;
+        }
+      } else {
+        if (fj.timer >= fj.offTime) {
+          fj.timer = 0;
+          fj.active = true;
+          fj.flame.setVisible(true);
+          fj.zone.body.enable = true;
+        }
+      }
     }
   }
 
@@ -2108,6 +2370,35 @@ export class LevelManager {
       if (hz.zone && hz.zone.active) hz.zone.destroy();
     }
     this.hazardZones = [];
+
+    for (const fs of this.fireballShooters) {
+      if (fs.sprite && fs.sprite.active) fs.sprite.destroy();
+    }
+    this.fireballShooters = [];
+
+    for (const fb of this.activeFireballs) {
+      this.destroyFireball(fb);
+    }
+    this.activeFireballs = [];
+
+    for (const fs of this.floorSpikes) {
+      if (fs.sprite && fs.sprite.active) fs.sprite.destroy();
+      if (fs.zone && fs.zone.active) fs.zone.destroy();
+    }
+    this.floorSpikes = [];
+
+    for (const sb of this.sawBlades) {
+      if (sb.sprite && sb.sprite.active) sb.sprite.destroy();
+      if (sb.zone && sb.zone.active) sb.zone.destroy();
+    }
+    this.sawBlades = [];
+
+    for (const fj of this.flameJets) {
+      if (fj.base && fj.base.active) fj.base.destroy();
+      if (fj.flame && fj.flame.active) fj.flame.destroy();
+      if (fj.zone && fj.zone.active) fj.zone.destroy();
+    }
+    this.flameJets = [];
 
     for (const n of this.npcs) {
       if (n.npc && n.npc.active) n.npc.destroy();

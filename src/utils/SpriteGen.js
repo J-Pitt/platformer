@@ -1,3 +1,5 @@
+import * as Phaser from 'phaser';
+
 const TEAL = 0x00e8c0;
 const TEAL_DARK = 0x008870;
 const TEAL_GLOW = 0x40ffd8;
@@ -13,7 +15,7 @@ const BONE_DARK = 0x4a3820;
 const CROWN_GOLD = 0x6a3010;
 const CROWN_BRIGHT = 0x983818;
 const CROWN_DARK = 0x380808;
-const EYE_GREEN = 0xff2020;
+const EYE_GREEN = 0x40ffd8;
 
 const PW = 48;
 const PH = 48;
@@ -37,6 +39,7 @@ export function generateAllTextures(scene) {
   generateParticleTexture(scene);
   generateDoorTexture(scene);
   generateHazardTextures(scene);
+  generateNewHazardTextures(scene);
   generateDepthLayersTextures(scene);
   generateNPCTextures(scene);
   generateCoinTextures(scene);
@@ -209,7 +212,7 @@ function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
   g.fillRoundedRect(cx - 9, 15, 18, 16, 3);
   g.fillStyle(BONE_DARK);
   g.fillRoundedRect(cx - 8, 16, 16, 14, 2);
-  // Inner cavity glow (red, sinister)
+  // Inner cavity glow (spectral)
   g.fillStyle(EYE_GREEN);
   g.setAlpha(0.08);
   g.fillCircle(cx, 23, 5);
@@ -286,36 +289,34 @@ function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
   g.lineBetween(cx - 3, 4, cx - 5, 8);
   g.lineBetween(cx - 5, 8, cx - 7, 10);
 
-  // --- Eye sockets (deep, red hellfire glow) ---
+  // --- Eye sockets (deep voids with spectral teal glow) ---
   // Deep black sockets
   g.fillStyle(0x000000);
   g.fillCircle(cx - 4, 8, 3.2);
   g.fillCircle(cx + 4, 8, 3.2);
-  // Inner dark ring
-  g.fillStyle(0x100000);
+  // Inner void
+  g.fillStyle(0x020808);
   g.fillCircle(cx - 4, 8, 2.5);
   g.fillCircle(cx + 4, 8, 2.5);
-  // Red eye glow — hot center
-  g.fillStyle(0xff4020);
-  g.fillCircle(cx - 4, 8, 1.6);
-  g.fillCircle(cx + 4, 8, 1.6);
-  g.fillStyle(0xff8040);
-  g.fillCircle(cx - 4, 7.8, 0.8);
-  g.fillCircle(cx + 4, 7.8, 0.8);
+  // Teal eye glow — small bright pupils
+  g.fillStyle(0x20ddb8);
+  g.fillCircle(cx - 4, 8, 1.4);
+  g.fillCircle(cx + 4, 8, 1.4);
+  g.fillStyle(0x60ffe0);
+  g.fillCircle(cx - 4, 7.8, 0.7);
+  g.fillCircle(cx + 4, 7.8, 0.7);
   // Specular
-  g.fillStyle(0xffcc80);
-  g.fillCircle(cx - 4.3, 7.3, 0.4);
-  g.fillCircle(cx + 3.7, 7.3, 0.4);
-  // Wide hellfire glow bleeding out of sockets
+  g.fillStyle(0xccffee);
+  g.fillCircle(cx - 4.3, 7.3, 0.35);
+  g.fillCircle(cx + 3.7, 7.3, 0.35);
+  // Subtle spectral glow around sockets
   g.fillStyle(EYE_GREEN);
-  g.setAlpha(0.12);
-  g.fillCircle(cx - 4, 8, 6);
-  g.fillCircle(cx + 4, 8, 6);
-  g.setAlpha(0.06);
-  g.fillCircle(cx, 8, 10);
+  g.setAlpha(0.07);
+  g.fillCircle(cx - 4, 8, 5);
+  g.fillCircle(cx + 4, 8, 5);
   g.setAlpha(1);
 
-  // --- Crown (blackened iron, broken prongs, blood-crusted) ---
+  // --- Crown (blackened iron, broken prongs, corroded) ---
   // Base band — dark corroded iron
   g.fillStyle(CROWN_GOLD);
   g.fillRect(cx - 9, 1, 18, 5);
@@ -334,20 +335,20 @@ function drawPlayerBody(g, legOffsets, cloakSway, opts = {}) {
   // Broken prong stub on the right
   g.fillStyle(CROWN_DARK);
   g.fillRect(cx + 6, 0, 3, 3);
-  // Blood-crusted edges
-  g.fillStyle(0x400808);
+  // Tarnished / oxidized edges
+  g.fillStyle(0x1a1408);
   g.setAlpha(0.45);
   g.fillRect(cx - 8, 4, 16, 2);
   g.setAlpha(1);
-  // Crown jewels (dark red, like coagulated blood)
-  g.fillStyle(0x880808);
+  // Crown jewels (dim, tarnished)
+  g.fillStyle(0x206848);
   g.fillCircle(cx - 7, -3, 1.2);
   g.fillCircle(cx, -5, 1.5);
   // Empty socket where a jewel was ripped out
   g.fillStyle(0x000000);
   g.fillCircle(cx + 7, -2, 1.0);
   // Edge shadow
-  g.lineStyle(1, 0x200404, 0.6);
+  g.lineStyle(1, 0x0a0804, 0.6);
   g.lineBetween(cx - 9, 5, cx + 9, 5);
 
   if (armed && attack && !swordBehind) {
@@ -2324,6 +2325,152 @@ function generateHazardTextures(scene) {
   beam.setAlpha(1);
   beam.generateTexture('tomb_light_beam', 72, 160);
   beam.destroy();
+}
+
+function generateNewHazardTextures(scene) {
+  // --- Fireball Shooter (stone gargoyle head) 32x32 ---
+  const fs = scene.make.graphics({ add: false });
+  for (let y = 0; y < 32; y++) {
+    fs.fillStyle(lerpRgb(0x3a3028, 0x1a1410, y / 31));
+    fs.fillRect(4, y, 24, 1);
+  }
+  fs.fillStyle(0x2a2018);
+  fs.fillRoundedRect(2, 2, 28, 28, 4);
+  fs.fillStyle(0x0a0604);
+  fs.fillRoundedRect(8, 14, 16, 12, 3);
+  fs.fillStyle(0xff6600);
+  fs.setAlpha(0.7);
+  fs.fillEllipse(16, 20, 10, 6);
+  fs.setAlpha(0.4);
+  fs.fillEllipse(16, 19, 6, 3);
+  fs.setAlpha(1);
+  fs.fillStyle(0xcc3300);
+  fs.fillCircle(10, 9, 3);
+  fs.fillCircle(22, 9, 3);
+  fs.fillStyle(0xff4400);
+  fs.setAlpha(0.8);
+  fs.fillCircle(10, 9, 1.5);
+  fs.fillCircle(22, 9, 1.5);
+  fs.setAlpha(1);
+  fs.lineStyle(1, 0x000000, 0.9);
+  fs.strokeRoundedRect(2, 2, 28, 28, 4);
+  fs.generateTexture('fireball_shooter', 32, 32);
+  fs.destroy();
+
+  // --- Fireball projectile 16x16 ---
+  const fb = scene.make.graphics({ add: false });
+  fb.fillStyle(0xff4400);
+  fb.fillCircle(8, 8, 7);
+  fb.fillStyle(0xff8800);
+  fb.setAlpha(0.7);
+  fb.fillCircle(8, 8, 5);
+  fb.fillStyle(0xffcc44);
+  fb.setAlpha(0.5);
+  fb.fillCircle(8, 8, 3);
+  fb.fillStyle(0xffeeaa);
+  fb.setAlpha(0.4);
+  fb.fillCircle(8, 8, 1.5);
+  fb.setAlpha(1);
+  fb.lineStyle(1, 0xcc2200, 0.5);
+  fb.strokeCircle(8, 8, 7);
+  fb.generateTexture('fireball', 16, 16);
+  fb.destroy();
+
+  // --- Floor Spikes (extended) 32x16 ---
+  const sUp = scene.make.graphics({ add: false });
+  sUp.fillStyle(0x1a1a22);
+  sUp.fillRect(0, 10, 32, 6);
+  for (let i = 0; i < 4; i++) {
+    const cx = 4 + i * 8;
+    sUp.fillStyle(0x606878);
+    sUp.fillTriangle(cx - 3, 16, cx + 3, 16, cx, 0);
+    sUp.fillStyle(0x9098a8);
+    sUp.setAlpha(0.4);
+    sUp.fillTriangle(cx - 1, 16, cx + 1, 16, cx, 2);
+    sUp.setAlpha(1);
+  }
+  sUp.lineStyle(1, 0x000000, 0.7);
+  sUp.lineBetween(0, 15, 32, 15);
+  sUp.generateTexture('floor_spikes_up', 32, 16);
+  sUp.destroy();
+
+  // --- Floor Spikes (retracted nubs) 32x16 ---
+  const sDn = scene.make.graphics({ add: false });
+  sDn.fillStyle(0x1a1a22);
+  sDn.fillRect(0, 10, 32, 6);
+  for (let i = 0; i < 4; i++) {
+    const cx = 4 + i * 8;
+    sDn.fillStyle(0x606878);
+    sDn.fillTriangle(cx - 2, 16, cx + 2, 16, cx, 11);
+  }
+  sDn.lineStyle(1, 0x000000, 0.7);
+  sDn.lineBetween(0, 15, 32, 15);
+  sDn.generateTexture('floor_spikes_down', 32, 16);
+  sDn.destroy();
+
+  // --- Saw Blade 28x28 ---
+  const sb = scene.make.graphics({ add: false });
+  const sawCx = 14, sawCy = 14, sawR = 13;
+  sb.fillStyle(0x505868);
+  sb.fillCircle(sawCx, sawCy, sawR);
+  sb.fillStyle(0x707a8c);
+  sb.setAlpha(0.6);
+  sb.fillCircle(sawCx, sawCy, sawR - 3);
+  sb.setAlpha(1);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const a2 = a + 0.25;
+    const a3 = a + 0.45;
+    const ox = sawCx + Math.cos(a) * sawR;
+    const oy = sawCy + Math.sin(a) * sawR;
+    const mx = sawCx + Math.cos(a2) * (sawR + 4);
+    const my = sawCy + Math.sin(a2) * (sawR + 4);
+    const ex = sawCx + Math.cos(a3) * sawR;
+    const ey = sawCy + Math.sin(a3) * sawR;
+    sb.fillStyle(0x3a404e);
+    sb.fillTriangle(ox, oy, mx, my, ex, ey);
+  }
+  sb.fillStyle(0x2a2e38);
+  sb.fillCircle(sawCx, sawCy, 4);
+  sb.fillStyle(0x1a1e24);
+  sb.fillCircle(sawCx, sawCy, 2);
+  sb.lineStyle(1, 0x000000, 0.7);
+  sb.strokeCircle(sawCx, sawCy, sawR);
+  sb.generateTexture('saw_blade', 28, 28);
+  sb.destroy();
+
+  // --- Flame Jet Base (metal vent/nozzle) 24x16 ---
+  const fj = scene.make.graphics({ add: false });
+  for (let y = 0; y < 16; y++) {
+    fj.fillStyle(lerpRgb(0x3a3840, 0x1a181e, y / 15));
+    fj.fillRect(2, y, 20, 1);
+  }
+  fj.fillStyle(0x0a0a10);
+  fj.fillRect(6, 0, 12, 4);
+  fj.fillStyle(0x4a4850);
+  fj.setAlpha(0.3);
+  fj.fillRect(3, 6, 18, 2);
+  fj.fillRect(3, 12, 18, 2);
+  fj.setAlpha(1);
+  fj.lineStyle(1, 0x000000, 0.8);
+  fj.strokeRect(2, 0, 20, 16);
+  fj.generateTexture('flame_jet_base', 24, 16);
+  fj.destroy();
+
+  // --- Flame Jet Flame 16x40 ---
+  const ff = scene.make.graphics({ add: false });
+  ff.fillStyle(0xff4400);
+  ff.setAlpha(0.7);
+  ff.fillTriangle(2, 40, 14, 40, 8, 0);
+  ff.fillStyle(0xff8800);
+  ff.setAlpha(0.6);
+  ff.fillTriangle(4, 40, 12, 40, 8, 6);
+  ff.fillStyle(0xffcc44);
+  ff.setAlpha(0.4);
+  ff.fillTriangle(5, 40, 11, 40, 8, 12);
+  ff.setAlpha(1);
+  ff.generateTexture('flame_jet_flame', 16, 40);
+  ff.destroy();
 }
 
 /**

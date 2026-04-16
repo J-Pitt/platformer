@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { Player, isJpProfileName } from '../entities/Player.js';
 import { LevelManager } from '../level/LevelManager.js';
 import { HUD } from '../ui/HUD.js';

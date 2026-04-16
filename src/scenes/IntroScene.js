@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { getFirstConnectedGamepad, pollAnyGamepadActionEdge } from '../utils/menuRemoteInput.js';
 
 export class IntroScene extends Phaser.Scene {

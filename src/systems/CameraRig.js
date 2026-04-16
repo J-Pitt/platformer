@@ -1,3 +1,5 @@
+import * as Phaser from 'phaser';
+
 const DEFAULT = {
   deadzoneWidth: 60,
   deadzoneHeight: 40,

@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { shakeScene } from './CameraRig.js';
 
 const SLASH_DURATION = 320;

@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { MovementSystem } from '../systems/Movement.js';
 import { CombatSystem } from '../systems/Combat.js';
 import { TILE_SIZE } from '../level/rooms.js';

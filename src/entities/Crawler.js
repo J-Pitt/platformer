@@ -1,3 +1,5 @@
+import * as Phaser from 'phaser';
+
 const PATROL_SPEED = 50;
 const CHASE_SPEED = 100;
 const DETECT_RANGE = 200;

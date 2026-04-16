@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { shakeScene } from '../systems/CameraRig.js';
 
 const PATROL_SPEED = 35;

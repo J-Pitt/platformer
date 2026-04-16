@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import * as SaveGame from '../persistence/SaveGame.js';
 import {
   getFirstConnectedGamepad,

@@ -1,3 +1,4 @@
+import * as Phaser from 'phaser';
 import { generateAllTextures } from '../utils/SpriteGen.js';
 
 export class BootScene extends Phaser.Scene {
