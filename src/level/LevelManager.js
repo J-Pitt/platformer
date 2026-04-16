@@ -885,14 +885,30 @@ export class LevelManager {
       break;
     }
 
-    this.scene.player.setPosition(sx, sy);
-    this.scene.player.body.velocity.set(0, 0);
-    this.scene.player.spawnX = sx;
-    this.scene.player.spawnY = sy;
-    this.scene.player.checkpointX = room.playerSpawn.x * TILE_SIZE + TILE_SIZE / 2;
-    this.scene.player.checkpointY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
-    this.scene.player._checkpointRoom = this.currentRoomId;
-    this.scene.player.visitedRooms.add(this.currentRoomId);
+    const p = this.scene.player;
+
+    // Kill any in-flight tweens on the player (e.g. the door-entry
+    // shrink/dim) so we don't fight their final values.
+    if (this.scene.tweens) this.scene.tweens.killTweensOf(p);
+
+    p.setPosition(sx, sy);
+    p.setScale(1);
+    p.setAlpha(1);
+    p.setAngle(0);
+    p.setRotation(0);
+    if (p.body) {
+      p.body.enable = true;
+      p.body.allowGravity = true;
+      p.body.velocity.set(0, 0);
+    }
+    delete p._enteringDoor;
+
+    p.spawnX = sx;
+    p.spawnY = sy;
+    p.checkpointX = room.playerSpawn.x * TILE_SIZE + TILE_SIZE / 2;
+    p.checkpointY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
+    p._checkpointRoom = this.currentRoomId;
+    p.visitedRooms.add(this.currentRoomId);
   }
 
   createDoor(px, py, obj) {
@@ -967,7 +983,16 @@ export class LevelManager {
     });
 
     const onDoor = (player) => {
+      // Hard guards: don't re-enter this handler while the player is
+      // already walking through a door OR while the scene is mid-fade.
+      // Without these guards, physics overlap can fire multiple ticks in
+      // a row (player is tween-parked on top of the door), which used to
+      // (a) apply the portal-burst scale tween repeatedly — causing the
+      // portal to visibly grow to screen-size — and (b) re-shrink the
+      // player to scale 0.25 / alpha 0.2 right before loadRoom moved it
+      // to the new spawn, leaving the player invisible in the new room.
       if (player._enteringDoor) return;
+      if (this.scene.transitioning) return;
       if (!meetsAbilityRequirements(player, door.requiresAbilities)) return;
 
       player._enteringDoor = true;
@@ -998,7 +1023,9 @@ export class LevelManager {
 
       // Portal burst: halo + core pulse open, then collapse as the fade
       // takes over.
-      this.scene.tweens.killTweensOf([portalHalo, portalGlow, door]);
+      this.scene.tweens.killTweensOf(portalHalo);
+      this.scene.tweens.killTweensOf(portalGlow);
+      this.scene.tweens.killTweensOf(door);
       portalHalo.setAlpha(0.6);
       portalGlow.setAlpha(0.95);
       this.scene.tweens.add({
@@ -1033,16 +1060,10 @@ export class LevelManager {
         onComplete: () => spark.destroy(),
       });
 
+      // Kick off the scene fade/load. The player stays shrunk, dimmed,
+      // and physics-disabled until positionPlayer runs in the new room,
+      // which clears _enteringDoor and resets scale/alpha/angle.
       this.scene.time.delayedCall(210, () => {
-        player.setScale(1);
-        player.setAlpha(1);
-        player.setAngle(0);
-        delete player._enteringDoor;
-        if (player.body) {
-          player.body.enable = true;
-          player.body.allowGravity = true;
-          player.body.setVelocity(0, 0);
-        }
         this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
       });
     };
