@@ -3,9 +3,11 @@ import { WEAPONS, CONSUMABLES } from '../systems/Inventory.js';
 import { rooms } from '../level/rooms.js';
 
 /**
- * Full-screen tabbed inventory / menu overlay.
- * Tabs: Arsenal · Items · Map · Lore · Stats
- * Opened / closed by GameScene when the menu input fires.
+ * Codex / tome overlay. Each tab is a "page"; flipping pages is driven by
+ * left/right (d-pad / WASD / arrows) or the shoulder buttons L1/R1 on a
+ * gamepad (and [ / ] on the keyboard).
+ *
+ * Pages: Arsenal · Items · Map · Lore · Stats
  */
 export class InventoryMenu {
   constructor(scene) {
@@ -17,6 +19,10 @@ export class InventoryMenu {
     this.bodyElements = [];
     this._keyHandlers = [];
     this._cursor = 0;
+
+    // Consume the same edge that opened us so tick() on the opening frame
+    // doesn't immediately close the menu.
+    this._inputGracePeriodMs = 0;
   }
 
   open() {
@@ -24,6 +30,9 @@ export class InventoryMenu {
     this.visible = true;
     this.activeTab = 0;
     this._cursor = 0;
+    // Suppress close-on-menuPressed / cancelPressed for a few ms so the
+    // button press that opened us doesn't instantly dismiss us.
+    this._inputGracePeriodMs = 160;
     this._build();
     this._bindKeys();
   }
@@ -44,90 +53,164 @@ export class InventoryMenu {
     const cx = cam.width / 2;
     const cy = cam.height / 2;
 
-    const scrim = this.scene.add.rectangle(cx, cy, cam.width, cam.height, 0x05030a, 0.85)
-      .setScrollFactor(0).setDepth(280);
-    this.elements.push(scrim);
+    // Deep scrim
+    this.elements.push(this.scene.add.rectangle(cx, cy, cam.width, cam.height, 0x04020a, 0.82)
+      .setScrollFactor(0).setDepth(280));
 
     const panelW = Math.min(cam.width - 40, 720);
     const panelH = Math.min(cam.height - 40, 460);
-    const panel = this.scene.add.rectangle(cx, cy, panelW, panelH, 0x0c0814, 0.97)
-      .setScrollFactor(0).setDepth(281);
-    const border = this.scene.add.rectangle(cx, cy, panelW + 4, panelH + 4, 0x8866cc, 0.55)
-      .setScrollFactor(0).setDepth(280);
-    this.elements.push(panel, border);
 
-    const title = this.scene.add.text(cx - panelW / 2 + 20, cy - panelH / 2 + 14, 'SANCTUM', {
-      fontSize: '22px', fontFamily: 'monospace', color: '#d0b8ff',
+    // Codex-style panel: warm parchment-dark with amber border + a subtle
+    // inner glow band.
+    this.elements.push(this.scene.add.rectangle(cx, cy, panelW + 6, panelH + 6, 0xc89c5a, 0.55)
+      .setScrollFactor(0).setDepth(280));
+    this.elements.push(this.scene.add.rectangle(cx, cy, panelW, panelH, 0x1a1208, 0.98)
+      .setScrollFactor(0).setDepth(281));
+    this.elements.push(this.scene.add.rectangle(cx, cy - panelH / 2 + 50, panelW - 20, 1, 0xc89c5a, 0.35)
+      .setScrollFactor(0).setDepth(282));
+
+    // Decorative corner flourishes
+    const cornerColor = 0xc89c5a;
+    const cornerOffsetX = panelW / 2 - 14;
+    const cornerOffsetY = panelH / 2 - 14;
+    for (const sx of [-1, 1]) {
+      for (const sy of [-1, 1]) {
+        this.elements.push(this.scene.add.rectangle(cx + sx * cornerOffsetX, cy + sy * cornerOffsetY, 16, 2, cornerColor, 0.85)
+          .setScrollFactor(0).setDepth(283));
+        this.elements.push(this.scene.add.rectangle(cx + sx * cornerOffsetX, cy + sy * cornerOffsetY, 2, 16, cornerColor, 0.85)
+          .setScrollFactor(0).setDepth(283));
+      }
+    }
+
+    // Header: CODEX title + owner subtitle
+    this.elements.push(this.scene.add.text(cx, cy - panelH / 2 + 22, 'CODEX', {
+      fontSize: '22px', fontFamily: 'monospace', color: '#ffd48a',
       stroke: '#000', strokeThickness: 4,
-    }).setScrollFactor(0).setDepth(283);
-    this.elements.push(title);
+      letterSpacing: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(284));
 
     const name = this.scene.savedPlayerName || 'Traveler';
-    const sub = this.scene.add.text(cx - panelW / 2 + 20, cy - panelH / 2 + 42, `${name}'s Belongings`, {
-      fontSize: '11px', fontFamily: 'monospace', color: '#8a7aa0',
-      stroke: '#000', strokeThickness: 2,
-    }).setScrollFactor(0).setDepth(283);
-    this.elements.push(sub);
-
-    // Tab bar
-    const tabY = cy - panelH / 2 + 76;
-    this.tabLabels = [];
-    this.tabs.forEach((name, i) => {
-      const tx = cx - panelW / 2 + 28 + i * Math.min(130, (panelW - 60) / this.tabs.length);
-      const t = this.scene.add.text(tx, tabY, name.toUpperCase(), {
-        fontSize: '13px', fontFamily: 'monospace',
-        color: i === this.activeTab ? '#ffe680' : '#6a5a80',
-        stroke: '#000', strokeThickness: 3,
-      }).setScrollFactor(0).setDepth(283).setInteractive({ useHandCursor: true });
-      t.on('pointerdown', () => this._setTab(i));
-      this.tabLabels.push(t);
-      this.elements.push(t);
-    });
-
-    // Tab underline
-    this.tabUnderline = this.scene.add.rectangle(0, tabY + 12, 12, 2, 0xffe680, 0.9)
-      .setScrollFactor(0).setDepth(283);
-    this.elements.push(this.tabUnderline);
-
-    // Divider
-    const div = this.scene.add.rectangle(cx, tabY + 22, panelW - 40, 1, 0x5a4870, 0.5)
-      .setScrollFactor(0).setDepth(283);
-    this.elements.push(div);
-
-    // Footer hint (keyboard + gamepad)
-    const footer = this.scene.add.text(cx, cy + panelH / 2 - 16,
-      '[ ←/→  or  L/R : TABS   ·   ↑/↓ : SELECT   ·   ENTER  or  A : USE   ·   ESC / B / START : CLOSE ]', {
-        fontSize: '10px', fontFamily: 'monospace', color: '#6a5a80',
+    this.elements.push(this.scene.add.text(cx, cy - panelH / 2 + 44,
+      `Chronicles of ${name}`, {
+        fontSize: '10px', fontFamily: 'monospace', color: '#a68660',
         stroke: '#000', strokeThickness: 2,
-      }).setOrigin(0.5).setScrollFactor(0).setDepth(283);
-    this.elements.push(footer);
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(284));
 
-    // Coin count in top-right
-    const coinText = this.scene.add.text(cx + panelW / 2 - 20, cy - panelH / 2 + 20,
-      `Coins · ${this.scene.player.coins}`, {
-        fontSize: '13px', fontFamily: 'monospace', color: '#ffc840',
+    // Coin tally, top-right bookplate
+    this.elements.push(this.scene.add.text(cx + panelW / 2 - 16, cy - panelH / 2 + 22,
+      `⛁ ${this.scene.player.coins}`, {
+        fontSize: '14px', fontFamily: 'monospace', color: '#ffc840',
         stroke: '#000', strokeThickness: 3,
-      }).setOrigin(1, 0).setScrollFactor(0).setDepth(283);
-    this.elements.push(coinText);
+      }).setOrigin(1, 0.5).setScrollFactor(0).setDepth(284));
 
-    // Body
-    this._layout = { cx, cy, panelW, panelH, contentTop: tabY + 34 };
+    // Page navigation strip: ◀  PAGE TITLE  ▶  with chapter name + dots.
+    const navY = cy - panelH / 2 + 74;
+
+    this.leftArrow = this.scene.add.text(cx - panelW / 2 + 28, navY, '◀', {
+      fontSize: '20px', fontFamily: 'monospace', color: '#a68660',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(284)
+      .setInteractive({ useHandCursor: true });
+    this.leftArrow.on('pointerdown', () => this._flipPage(-1));
+    this.elements.push(this.leftArrow);
+
+    this.rightArrow = this.scene.add.text(cx + panelW / 2 - 28, navY, '▶', {
+      fontSize: '20px', fontFamily: 'monospace', color: '#a68660',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(284)
+      .setInteractive({ useHandCursor: true });
+    this.rightArrow.on('pointerdown', () => this._flipPage(1));
+    this.elements.push(this.rightArrow);
+
+    // Big current chapter heading.
+    this.pageHeading = this.scene.add.text(cx, navY, '', {
+      fontSize: '20px', fontFamily: 'monospace', color: '#ffd48a',
+      stroke: '#000', strokeThickness: 4,
+      letterSpacing: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(284);
+    this.elements.push(this.pageHeading);
+
+    // Tiny dots indicating page position (below heading).
+    this.pageDots = [];
+    const dotY = navY + 18;
+    const dotGap = 14;
+    const dotsTotal = this.tabs.length;
+    const dotStart = cx - ((dotsTotal - 1) * dotGap) / 2;
+    for (let i = 0; i < dotsTotal; i++) {
+      const dot = this.scene.add.rectangle(dotStart + i * dotGap, dotY, 8, 8, 0xc89c5a, 0.4)
+        .setScrollFactor(0).setDepth(284)
+        .setInteractive({ useHandCursor: true });
+      dot.on('pointerdown', () => this._setTab(i));
+      this.pageDots.push(dot);
+      this.elements.push(dot);
+    }
+
+    // Bottom ribbon with hints, laid out in two lines for clarity.
+    this.elements.push(this.scene.add.rectangle(cx, cy + panelH / 2 - 38, panelW - 20, 1, 0xc89c5a, 0.3)
+      .setScrollFactor(0).setDepth(282));
+    this.elements.push(this.scene.add.text(cx, cy + panelH / 2 - 24,
+      'L1 · [   ◀ TURN PAGE ▶   ]  · R1', {
+        fontSize: '10px', fontFamily: 'monospace', color: '#c89c5a',
+        stroke: '#000', strokeThickness: 2,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(284));
+    this.elements.push(this.scene.add.text(cx, cy + panelH / 2 - 12,
+      '↑↓ · SELECT    A · ENTER · USE    B · ESC · CLOSE    START · CLOSE', {
+        fontSize: '9px', fontFamily: 'monospace', color: '#7a6040',
+        stroke: '#000', strokeThickness: 2,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(284));
+
+    // Body area
+    this._layout = { cx, cy, panelW, panelH, contentTop: dotY + 24 };
     this._renderBody();
+    this._refreshPageChrome();
   }
 
-  _setTab(i) {
+  _refreshPageChrome() {
+    if (!this.pageHeading) return;
+    this.pageHeading.setText(this.tabs[this.activeTab].toUpperCase());
+    for (let i = 0; i < this.pageDots.length; i++) {
+      const dot = this.pageDots[i];
+      if (!dot) continue;
+      if (i === this.activeTab) {
+        dot.setFillStyle(0xffd48a, 1);
+        dot.setSize(10, 10);
+      } else {
+        dot.setFillStyle(0xc89c5a, 0.4);
+        dot.setSize(8, 8);
+      }
+    }
+  }
+
+  _flipPage(delta) {
+    const next = (this.activeTab + delta + this.tabs.length) % this.tabs.length;
+    this._setTab(next, delta);
+  }
+
+  _setTab(i, direction = 0) {
     if (i < 0 || i >= this.tabs.length) return;
+    if (i === this.activeTab && direction === 0) return;
     this.activeTab = i;
     this._cursor = 0;
-    for (let k = 0; k < this.tabLabels.length; k++) {
-      this.tabLabels[k].setColor(k === i ? '#ffe680' : '#6a5a80');
-    }
-    if (this.tabUnderline && this.tabLabels[i]) {
-      const lbl = this.tabLabels[i];
-      this.tabUnderline.setPosition(lbl.x + lbl.width / 2, lbl.y + 14);
-      this.tabUnderline.setSize(lbl.width + 6, 2);
-    }
+    this._refreshPageChrome();
+
+    // Page-turn animation: slide the body horizontally while swapping content.
     this._renderBody();
+    if (direction !== 0 && this.bodyElements.length > 0) {
+      const shift = direction * 28;
+      for (const el of this.bodyElements) {
+        if (!el || typeof el.x !== 'number') continue;
+        const targetX = el.x;
+        el.x -= shift;
+        el.alpha = 0;
+        this.scene.tweens.add({
+          targets: el,
+          x: targetX,
+          alpha: 1,
+          duration: 170,
+          ease: 'Cubic.easeOut',
+        });
+      }
+    }
   }
 
   _clearBody() {
@@ -391,29 +474,12 @@ export class InventoryMenu {
   }
 
   _bindKeys() {
-    const kb = this.scene.input.keyboard;
-    const handlers = [];
-    const on = (evt, fn) => { kb.on(evt, fn); handlers.push([evt, fn]); };
-
-    on('keydown-LEFT', () => this._setTab((this.activeTab - 1 + this.tabs.length) % this.tabs.length));
-    on('keydown-RIGHT', () => this._setTab((this.activeTab + 1) % this.tabs.length));
-    on('keydown-A', () => this._setTab((this.activeTab - 1 + this.tabs.length) % this.tabs.length));
-    on('keydown-D', () => this._setTab((this.activeTab + 1) % this.tabs.length));
-
-    on('keydown-UP', () => this._moveCursor(-1));
-    on('keydown-DOWN', () => this._moveCursor(1));
-    on('keydown-W', () => this._moveCursor(-1));
-    on('keydown-S', () => this._moveCursor(1));
-
-    on('keydown-ENTER', () => this._activate());
-    on('keydown-E', () => this._activate());
-    on('keydown-SPACE', () => this._activate());
-
-    on('keydown-ESC', () => this.close());
-    on('keydown-I', () => this.close());
-    on('keydown-TAB', () => this.close());
-
-    this._keyHandlers = handlers;
+    // Pointer-driven nav (page dots, arrows, weapon/item rows) is set up in
+    // _build; continuous input (directional nav, confirm, close, page flip)
+    // is driven from tick() via the InputManager edges. That single path
+    // gives us consistent behavior across keyboard, gamepad, and touch, and
+    // respects the post-open grace period.
+    this._keyHandlers = [];
   }
 
   _unbindKeys() {
@@ -429,17 +495,27 @@ export class InventoryMenu {
   tick(input) {
     if (!this.visible || !input) return;
 
+    // Decrement the open-grace period so the button that opened the menu
+    // can't immediately close it again on the same / next frame.
+    if (this._inputGracePeriodMs > 0) {
+      const delta = this.scene.game?.loop?.delta ?? 16;
+      this._inputGracePeriodMs = Math.max(0, this._inputGracePeriodMs - delta);
+      // Swallow close-class inputs during grace period.
+      if (input.menuPressed || input.cancelPressed) return;
+    }
+
     if (input.cancelPressed || input.menuPressed) {
       this.close();
       if (this.scene.physics) this.scene.physics.resume();
       return;
     }
-    if (input.navLeftPressed) {
-      this._setTab((this.activeTab - 1 + this.tabs.length) % this.tabs.length);
+    // Page turn: shoulder buttons, [ / ] keys, or d-pad left/right.
+    if (input.l1Pressed || input.navLeftPressed) {
+      this._flipPage(-1);
       return;
     }
-    if (input.navRightPressed) {
-      this._setTab((this.activeTab + 1) % this.tabs.length);
+    if (input.r1Pressed || input.navRightPressed) {
+      this._flipPage(1);
       return;
     }
     if (input.navUpPressed) { this._moveCursor(-1); return; }

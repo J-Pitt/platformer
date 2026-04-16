@@ -52,6 +52,9 @@ export class InputManager {
       navRightPressed: false,
       navUpPressed: false,
       navDownPressed: false,
+      // Shoulder-button edges (L1/R1), useful for UI page-turns
+      l1Pressed: false,
+      r1Pressed: false,
     };
 
     // Previous-state snapshots for stick/dpad edge-detection on menus
@@ -212,6 +215,8 @@ export class InputManager {
     const gpKickPressed = this.btnDown(pad, GP_R2) && !prevButtons[GP_R2];
     const gpMenuPressed = this.btnDown(pad, GP_START) && !prevButtons[GP_START];
     const gpPausePressed = this.btnDown(pad, GP_SELECT) && !prevButtons[GP_SELECT];
+    const gpL1Pressed = this.btnDown(pad, GP_L1) && !prevButtons[GP_L1];
+    const gpR1Pressed = this.btnDown(pad, GP_R1) && !prevButtons[GP_R1];
 
     // Menu-nav edges: A=confirm, B=cancel, dpad/stick with deadzone
     const gpConfirmPressed = this.btnDown(pad, GP_SOUTH) && !prevButtons[GP_SOUTH];
@@ -239,6 +244,8 @@ export class InputManager {
       pausePressed: gpPausePressed,
       confirmPressed: gpConfirmPressed,
       cancelPressed: gpCancelPressed,
+      l1Pressed: gpL1Pressed,
+      r1Pressed: gpR1Pressed,
       navL, navR, navU, navD,
     };
   }
@@ -333,6 +340,12 @@ export class InputManager {
     this.state.navRightPressed = kbNavRight || (gpState && gpState.navR && !this._gpNavPrevR);
     this.state.navUpPressed = kbNavUp || (gpState && gpState.navU && !this._gpNavPrevU);
     this.state.navDownPressed = kbNavDown || (gpState && gpState.navD && !this._gpNavPrevD);
+
+    // Shoulder-button edges ([ and ] keys are common "page turn" keys)
+    const kbL1 = keys.pageLeft && Phaser.Input.Keyboard.JustDown(keys.pageLeft);
+    const kbR1 = keys.pageRight && Phaser.Input.Keyboard.JustDown(keys.pageRight);
+    this.state.l1Pressed = kbL1 || (gpState && gpState.l1Pressed);
+    this.state.r1Pressed = kbR1 || (gpState && gpState.r1Pressed);
 
     // Snapshot nav state for next frame edge detection
     this._navPrev.up = rawNav.up;

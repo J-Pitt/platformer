@@ -76,13 +76,14 @@ export class GameScene extends Phaser.Scene {
       this.playerRimLight.setAlpha(0.38);
     }
 
+    // Keyboard pause/escape paths. Menu-toggle (I / TAB / gamepad START) is
+    // handled every frame via InputManager's menuPressed edge so a single
+    // press doesn't get double-consumed by both a listener and the edge.
     this.input.keyboard.on('keydown-P', () => this.togglePause());
     this.input.keyboard.on('keydown-ESC', () => {
       if (this.inventoryMenu?.visible) { this.inventoryMenu.close(); this.physics.resume(); return; }
       this.togglePause();
     });
-    this.input.keyboard.on('keydown-I', () => this.toggleInventoryMenu());
-    this.input.keyboard.on('keydown-TAB', () => this.toggleInventoryMenu());
 
     this._secretWarpSeq = [];
     this._secretWarpPattern = ['up', 'down', 'up', 'down', 'left', 'right', 'left', 'right'];
@@ -143,6 +144,8 @@ export class GameScene extends Phaser.Scene {
       p: this.input.keyboard.addKey('P'),
       enter: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ENTER),
       esc: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC),
+      pageLeft: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.OPEN_BRACKET),
+      pageRight: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.CLOSED_BRACKET),
     };
 
     // Prevent Tab from moving browser focus away from the canvas
