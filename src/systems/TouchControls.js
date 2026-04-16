@@ -25,8 +25,20 @@ export class TouchControls {
     if (!isMobileDevice()) return;
 
     this.active = true;
+    document.body.classList.add('mobile-layout');
+
     const el = document.getElementById('touch-controls');
     if (el) el.classList.add('visible');
+
+    const leftPanel = document.getElementById('ctrl-left');
+    const rightPanel = document.getElementById('ctrl-right');
+    const stickZone = document.getElementById('stick-zone');
+    const actionPanel = el?.querySelector('.action-panel');
+    const pauseBtn = document.getElementById('btn-pause');
+
+    if (leftPanel && stickZone) leftPanel.appendChild(stickZone);
+    if (rightPanel && pauseBtn) rightPanel.appendChild(pauseBtn);
+    if (rightPanel && actionPanel) rightPanel.appendChild(actionPanel);
 
     this._initStick();
     this._initButtons();

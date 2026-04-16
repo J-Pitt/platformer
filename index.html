@@ -28,31 +28,29 @@
       background: #000; overflow: hidden; touch-action: none;
       position: fixed; inset: 0;
     }
+
+    /* ── Desktop: game fills the viewport ── */
+    #mobile-wrapper {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #ctrl-left, #ctrl-right { display: none; }
     #game-container {
       width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
-      position: absolute; inset: 0;
+      flex: 1; min-width: 0;
     }
     #game-container canvas {
       image-rendering: pixelated;
       display: block;
     }
 
-    /* ── On-screen touch gamepad ── */
-    #touch-controls {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      pointer-events: none;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-    }
-    #touch-controls.visible { display: block; }
+    /* ── Touch controls (hidden by default, shown on mobile) ── */
+    #touch-controls { display: none; }
+    #touch-controls.visible { display: contents; }
 
+    /* ── Shared button styles ── */
     .touch-btn {
-      position: absolute;
       pointer-events: auto;
       border-radius: 50%;
       display: flex;
@@ -62,9 +60,12 @@
       font-weight: bold;
       color: rgba(68,255,102,0.55);
       text-shadow: 0 0 6px rgba(68,255,102,0.3);
-      background: rgba(26,16,8,0.45);
+      background: rgba(26,16,8,0.55);
       border: 2px solid rgba(68,255,102,0.25);
       transition: background 0.08s, border-color 0.08s;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
     .touch-btn.active {
       background: rgba(68,255,102,0.18);
@@ -72,30 +73,26 @@
       color: rgba(68,255,102,0.9);
     }
 
-    /* Big left/right movement buttons — REMOVED, replaced by stick zone */
-
     /* ── Virtual joystick ── */
     .stick-zone {
-      position: absolute;
-      bottom: 16px;
-      left: 16px;
-      width: 200px;
-      height: 200px;
+      width: 70%;
+      max-width: 180px;
+      aspect-ratio: 1;
       border-radius: 50%;
-      background: rgba(26,16,8,0.32);
+      background: rgba(26,16,8,0.40);
       border: 2px solid rgba(68,255,102,0.18);
       pointer-events: auto;
       touch-action: none;
+      position: relative;
     }
     .stick-knob {
       position: absolute;
-      width: 72px;
-      height: 72px;
+      width: 40%;
+      aspect-ratio: 1;
       border-radius: 50%;
       background: rgba(68,255,102,0.2);
       border: 2px solid rgba(68,255,102,0.45);
-      left: 50%;
-      top: 50%;
+      left: 50%; top: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
       transition: background 0.06s;
@@ -105,66 +102,125 @@
       border-color: rgba(68,255,102,0.7);
     }
 
-    /* Pause button (top-right) */
+    /* ── Pause button ── */
     #btn-pause {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 78px;
-      height: 78px;
-      font-size: 24px;
-      border-radius: 16px;
+      width: 52px; height: 52px;
+      font-size: 18px;
+      border-radius: 14px;
       pointer-events: auto;
     }
 
-    /* Action buttons */
-    .action-container {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
+    /* ── Mobile: side panels visible ── */
+    body.mobile-layout #mobile-wrapper {
+      flex-direction: row;
+      align-items: stretch;
     }
-    .action-container .touch-btn { width: 112px; height: 112px; font-size: 17px; letter-spacing: 0.5px; }
-    #btn-jump  { right: 62px; bottom: 192px; }
-    #btn-slash { right: 124px; bottom: 52px; }
-    #btn-dash  { right: 0; bottom: 52px; }
+    body.mobile-layout #ctrl-left,
+    body.mobile-layout #ctrl-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #050508;
+      z-index: 10;
+      padding: 8px;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    body.mobile-layout #ctrl-left {
+      width: 22vw;
+      max-width: 180px;
+      min-width: 110px;
+    }
+    body.mobile-layout #ctrl-right {
+      width: 22vw;
+      max-width: 180px;
+      min-width: 110px;
+    }
+    body.mobile-layout #game-container {
+      border-left: 1px solid rgba(68,255,102,0.08);
+      border-right: 1px solid rgba(68,255,102,0.08);
+    }
 
-    /* Landscape small phones: tighter spacing */
+    /* Action buttons in right panel */
+    .action-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .action-panel .touch-btn {
+      width: 70%;
+      max-width: 100px;
+      aspect-ratio: 1;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      position: relative;
+    }
+
+    /* Landscape small phones: tighter panels */
     @media (max-height: 400px) {
-      .stick-zone { bottom: 6px; left: 6px; width: 160px; height: 160px; }
-      .stick-knob { width: 58px; height: 58px; }
-
-      .action-container { bottom: 6px; right: 6px; }
-      .action-container .touch-btn { width: 92px; height: 92px; font-size: 13px; }
-      #btn-jump  { right: 52px; bottom: 156px; }
-      #btn-slash { right: 104px; bottom: 40px; }
-      #btn-dash  { right: 0; bottom: 40px; }
-
-      #btn-pause { top: 6px; right: 6px; width: 68px; height: 68px; font-size: 18px; }
+      body.mobile-layout #ctrl-left,
+      body.mobile-layout #ctrl-right {
+        padding: 4px;
+        gap: 6px;
+        min-width: 90px;
+      }
+      .action-panel { gap: 6px; }
+      .action-panel .touch-btn { font-size: 12px; }
+      #btn-pause { width: 42px; height: 42px; font-size: 15px; }
     }
 
-    /* Portrait mode: controls near bottom, spaced for thumbs */
+    /* Portrait mode: top/bottom layout */
     @media (orientation: portrait) {
-      .stick-zone { bottom: 24px; left: 14px; width: 210px; height: 210px; }
-      .stick-knob { width: 76px; height: 76px; }
-
-      .action-container { bottom: 20px; right: 10px; }
-      .action-container .touch-btn { width: 108px; height: 108px; font-size: 15px; }
-      #btn-jump  { right: 60px; bottom: 184px; }
-      #btn-slash { right: 122px; bottom: 48px; }
-      #btn-dash  { right: 0; bottom: 48px; }
-
-      #btn-pause { top: 10px; right: 10px; width: 78px; height: 78px; font-size: 22px; }
+      body.mobile-layout #mobile-wrapper {
+        flex-direction: column;
+      }
+      body.mobile-layout #ctrl-left,
+      body.mobile-layout #ctrl-right {
+        width: 100%;
+        max-width: none;
+        min-width: unset;
+        height: 18vh;
+        max-height: 140px;
+        min-height: 80px;
+        flex-direction: row;
+        justify-content: center;
+        padding: 6px 16px;
+      }
+      body.mobile-layout #game-container {
+        border-left: none;
+        border-right: none;
+        border-top: 1px solid rgba(68,255,102,0.08);
+        border-bottom: 1px solid rgba(68,255,102,0.08);
+      }
+      .stick-zone { max-width: 120px; }
+      .action-panel {
+        flex-direction: row;
+        width: auto;
+      }
+      .action-panel .touch-btn {
+        width: auto;
+        height: 80%;
+        max-width: 80px;
+        aspect-ratio: 1;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="game-container" tabindex="0" aria-label="Game"></div>
+  <div id="mobile-wrapper">
+    <div id="ctrl-left"></div>
+    <div id="game-container" tabindex="0" aria-label="Game"></div>
+    <div id="ctrl-right"></div>
+  </div>
 
   <div id="touch-controls">
     <div id="stick-zone" class="stick-zone">
       <div id="stick-knob" class="stick-knob"></div>
     </div>
-    <div class="action-container">
+    <div class="action-panel">
       <div id="btn-jump" class="touch-btn" data-btn="jump">JUMP</div>
       <div id="btn-slash" class="touch-btn" data-btn="slash">ATK</div>
       <div id="btn-dash" class="touch-btn" data-btn="dash">DASH</div>
@@ -173,6 +229,16 @@
   </div>
 
   <script type="module" src="/src/main.js"></script>
+
+  <script>
+    // Apply mobile layout early so side panels appear before Phaser loads
+    (function() {
+      var ua = navigator.userAgent || '';
+      var isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(ua) ||
+        ('ontouchstart' in window && navigator.maxTouchPoints > 1);
+      if (isMobile) document.body.classList.add('mobile-layout');
+    })();
+  </script>
 
   <script>
     if ('serviceWorker' in navigator) {

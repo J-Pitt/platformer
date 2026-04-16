@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { isMobileDevice } from './TouchControls.js';
 
 const DEFAULT = {
   deadzoneWidth: 60,
@@ -6,6 +7,10 @@ const DEFAULT = {
   lerpX: 0.08,
   lerpY: 0.08,
 };
+
+const MOBILE_ZOOM = 1.8;
+const MOBILE_DEADZONE = { width: 30, height: 20 };
+const MOBILE_LERP = { x: 0.1, y: 0.1 };
 
 /** Clamp so stacked shakes cannot blow up the view. */
 const SHAKE_DURATION_CAP = 600;
@@ -26,10 +31,16 @@ export class CameraRig {
    */
   applyRoom(room) {
     const c = room?.camera || {};
-    const dw = c.deadzoneWidth ?? DEFAULT.deadzoneWidth;
-    const dh = c.deadzoneHeight ?? DEFAULT.deadzoneHeight;
-    const lx = c.lerpX ?? DEFAULT.lerpX;
-    const ly = c.lerpY ?? DEFAULT.lerpY;
+    const mobile = isMobileDevice();
+
+    const dw = mobile ? MOBILE_DEADZONE.width : (c.deadzoneWidth ?? DEFAULT.deadzoneWidth);
+    const dh = mobile ? MOBILE_DEADZONE.height : (c.deadzoneHeight ?? DEFAULT.deadzoneHeight);
+    const lx = mobile ? MOBILE_LERP.x : (c.lerpX ?? DEFAULT.lerpX);
+    const ly = mobile ? MOBILE_LERP.y : (c.lerpY ?? DEFAULT.lerpY);
+
+    if (mobile) {
+      this.cam.setZoom(MOBILE_ZOOM);
+    }
 
     this.cam.setDeadzone(dw, dh);
     const target = this.scene.localFollowTarget?.() ?? this.scene.player;
