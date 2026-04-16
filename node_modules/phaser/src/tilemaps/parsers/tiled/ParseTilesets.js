@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -10,7 +10,11 @@ var ParseObject = require('./ParseObject');
 var ParseWangsets = require('./ParseWangsets');
 
 /**
- * Tilesets and Image Collections.
+ * Parses the tilesets and image collections from a Tiled JSON map, converting them into
+ * Phaser `Tileset` and `ImageCollection` instances. Handles both Tiled 1.x and Tiled 2.x
+ * formats, including per-tile properties, object groups, animation data, Wang sets, and
+ * typed tiles. External tilesets (those with a `source` property) are not supported and
+ * will produce a warning.
  *
  * @function Phaser.Tilemaps.Parsers.Tiled.ParseTilesets
  * @since 3.0.0
@@ -94,6 +98,25 @@ var ParseTilesets = function (json)
                         if (tile.type)
                         {
                             (datas[tile.id] || (datas[tile.id] = {})).type = tile.type;
+                        }
+                    }
+
+                    // Sum up animation length.
+                    for (var tid in datas)
+                    {
+                        var animData = datas[tid].animation;
+
+                        if (animData)
+                        {
+                            var animTime = 0;
+
+                            for (var j = 0; j < animData.length; j++)
+                            {
+                                animData[j].startTime = animTime;
+                                animTime += animData[j].duration;
+                            }
+
+                            datas[tid].animationDuration = animTime;
                         }
                     }
                 }

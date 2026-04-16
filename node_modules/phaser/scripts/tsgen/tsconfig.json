@@ -1,11 +1,12 @@
 {
     "version": "0.0.1",
     "compilerOptions": {
-        "target": "es6",
+        "target": "es2018",
         "module": "commonjs",
         "moduleResolution": "node",
         "declaration": false,
         "noImplicitAny": false,
+        "skipLibCheck": true,
         "sourceMap": true,
         "outDir": "./bin/"
     },

@@ -5255,7 +5255,6 @@ declare namespace MatterJS {
          * @return {collision|null} A collision record if detected, otherwise null
          */
         collides (bodyA: BodyType, bodyB: BodyType, pairs: Pairs | null): any;
-
     }
 }
 

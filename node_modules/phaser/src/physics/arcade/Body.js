@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -16,7 +16,11 @@ var Vector2 = require('../../math/Vector2');
 
 /**
  * @classdesc
- * A Dynamic Arcade Body.
+ * A Dynamic Arcade Body. This body type can move, accelerate, collide with other bodies,
+ * and bounce off surfaces. It supports rectangular and circular collision shapes, and
+ * provides velocity, acceleration, drag (with optional damping mode), friction, gravity,
+ * bounce, and world bounds collision. Dynamic bodies are the most common physics body type,
+ * used for players, enemies, projectiles, and other moving game entities.
  *
  * Its static counterpart is {@link Phaser.Physics.Arcade.StaticBody}.
  *
@@ -379,6 +383,7 @@ var Body = new Class({
          * When `useDamping` is false (the default), this is absolute loss of velocity due to movement, in pixels per second squared.
          *
          * When `useDamping` is true, this is a damping multiplier between 0 and 1.
+         *
          * A value of 0 means the Body stops instantly.
          * A value of 0.01 mean the Body keeps 1% of its velocity per second, losing 99%.
          * A value of 0.1 means the Body keeps 10% of its velocity per second, losing 90%.
@@ -530,7 +535,7 @@ var Body = new Class({
          * by using damping, avoiding the axis-drift that is prone with linear deceleration.
          *
          * If you enable this property then you should use far smaller `drag` values than with linear, as
-         * they are used as a multiplier on the velocity. Values such as 0.05 will give a nice slow
+         * they are used as a multiplier on the velocity. Values such as 0.95 will give a nice slow
          * deceleration.
          *
          * @name Phaser.Physics.Arcade.Body#useDamping
@@ -646,7 +651,7 @@ var Body = new Class({
          * colliding body. If that body is also not pushable, then the separation will be split
          * between them evenly.
          *
-         * If you want your body to never move or seperate at all, see the `setImmovable` method.
+         * If you want your body to never move or separate at all, see the `setImmovable` method.
          *
          * By default, Dynamic Bodies are always pushable.
          *
@@ -1109,7 +1114,7 @@ var Body = new Class({
     },
 
     /**
-     * Syncs the position body position with the parent Game Object.
+     * Syncs the Body's position with the parent Game Object.
      *
      * This method is called every game frame, regardless if the world steps or not.
      *
@@ -1734,7 +1739,7 @@ var Body = new Class({
      * @method Phaser.Physics.Arcade.Body#deltaAbsX
      * @since 3.0.0
      *
-     * @return {number} The delta value.
+     * @return {number} The absolute change in horizontal position since the last step, in pixels.
      */
     deltaAbsX: function ()
     {
@@ -1747,7 +1752,7 @@ var Body = new Class({
      * @method Phaser.Physics.Arcade.Body#deltaAbsY
      * @since 3.0.0
      *
-     * @return {number} The delta value.
+     * @return {number} The absolute change in vertical position since the last step, in pixels.
      */
     deltaAbsY: function ()
     {
@@ -1764,7 +1769,7 @@ var Body = new Class({
      * @method Phaser.Physics.Arcade.Body#deltaX
      * @since 3.0.0
      *
-     * @return {number} The delta value.
+     * @return {number} The change in horizontal position since the last step, in pixels.
      */
     deltaX: function ()
     {
@@ -1781,7 +1786,7 @@ var Body = new Class({
      * @method Phaser.Physics.Arcade.Body#deltaY
      * @since 3.0.0
      *
-     * @return {number} The delta value.
+     * @return {number} The change in vertical position since the last step, in pixels.
      */
     deltaY: function ()
     {
@@ -1836,7 +1841,7 @@ var Body = new Class({
      * @method Phaser.Physics.Arcade.Body#deltaZ
      * @since 3.0.0
      *
-     * @return {number} The delta value.
+     * @return {number} The change in rotation since the last step, in degrees.
      */
     deltaZ: function ()
     {
@@ -1855,7 +1860,7 @@ var Body = new Class({
 
         if (this.world)
         {
-            this.world.pendingDestroy.set(this);
+            this.world.pendingDestroy.add(this);
         }
     },
 
@@ -2684,7 +2689,7 @@ var Body = new Class({
     },
 
     /**
-     * The Bodys horizontal position (left edge).
+     * The Body's horizontal position (left edge).
      *
      * @name Phaser.Physics.Arcade.Body#x
      * @type {number}
@@ -2705,7 +2710,7 @@ var Body = new Class({
     },
 
     /**
-     * The Bodys vertical position (top edge).
+     * The Body's vertical position (top edge).
      *
      * @name Phaser.Physics.Arcade.Body#y
      * @type {number}

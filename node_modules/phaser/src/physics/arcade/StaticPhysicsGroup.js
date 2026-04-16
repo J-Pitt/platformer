@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -16,7 +16,14 @@ var IsPlainObject = require('../../utils/object/IsPlainObject');
  * @classdesc
  * An Arcade Physics Static Group object.
  *
- * All Game Objects created by or added to this Group will automatically be given static Arcade Physics bodies, if they have no body.
+ * A Static Group is a container for Game Objects that each have a static Arcade Physics body. Static bodies
+ * are fixed in place and never move in response to velocity, gravity, or collisions. They are ideal for
+ * level geometry such as platforms, walls, floors, and other immovable obstacles. Because their positions
+ * never change during gameplay, they are more performant than dynamic bodies for this purpose.
+ *
+ * All Game Objects created by or added to this Group will automatically be given a static Arcade Physics
+ * body, if they do not already have one. If a Game Object is added that already has a dynamic body, that
+ * body is destroyed and replaced with a static one.
  *
  * Its dynamic counterpart is {@link Phaser.Physics.Arcade.Group}.
  *
@@ -77,7 +84,7 @@ var StaticPhysicsGroup = new Class({
                 singleConfig.internalRemoveCallback = this.removeCallbackHandler;
                 singleConfig.createMultipleCallback = this.createMultipleCallbackHandler;
                 singleConfig.classType = GetFastValue(singleConfig, 'classType', ArcadeSprite);
-            });
+            }, this);
         }
         else
         {
@@ -98,7 +105,7 @@ var StaticPhysicsGroup = new Class({
         this.world = world;
 
         /**
-         * The scene this group belongs to.
+         * The type of physics body assigned to children of this group.
          *
          * @name Phaser.Physics.Arcade.StaticGroup#physicsType
          * @type {number}
@@ -157,8 +164,14 @@ var StaticPhysicsGroup = new Class({
      */
     createCallbackHandler: function (child)
     {
-        if (!child.body)
+        if (!child.body || child.body.physicsType !== CONST.STATIC_BODY)
         {
+            if (child.body)
+            {
+                child.body.destroy();
+                child.body = null;
+            }
+
             this.world.enableBody(child, CONST.STATIC_BODY);
         }
     },
@@ -182,7 +195,9 @@ var StaticPhysicsGroup = new Class({
     },
 
     /**
-     * Refreshes the group.
+     * Internal callback invoked after multiple group members are created at once via `createMultiple`.
+     * Calls {@link Phaser.Physics.Arcade.StaticGroup#refresh} to synchronize all static physics bodies
+     * with the current positions of their parent Game Objects.
      *
      * @method Phaser.Physics.Arcade.StaticGroup#createMultipleCallbackHandler
      * @since 3.0.0
@@ -197,8 +212,9 @@ var StaticPhysicsGroup = new Class({
     },
 
     /**
-     * Resets each Body to the position of its parent Game Object.
-     * Body sizes aren't changed (use {@link Phaser.Physics.Arcade.Components.Enable#refreshBody} for that).
+     * Resets each static physics body in this group to the current position of its parent Game Object.
+     * Call this after manually repositioning any members so their bodies stay in sync.
+     * Body sizes are not changed by this method; use {@link Phaser.Physics.Arcade.Components.Enable#refreshBody} to resize a body.
      *
      * @method Phaser.Physics.Arcade.StaticGroup#refresh
      * @since 3.0.0
@@ -209,7 +225,7 @@ var StaticPhysicsGroup = new Class({
      */
     refresh: function ()
     {
-        var children = this.children.entries;
+        var children = Array.from(this.children);
 
         for (var i = 0; i < children.length; i++)
         {

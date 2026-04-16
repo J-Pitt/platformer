@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -14,13 +14,12 @@ export const BlendModes = require('./renderer/BlendModes');
 export const Cache = require('./cache');
 export const Cameras = require('./cameras');
 export const Core = require('./core');
-export const Create = require('./create');
 export const Curves = require('./curves');
 export const Data = require('./data');
 export const Display = require('./display');
 export const DOM = require('./dom');
 export const Events = require('./events');
-export const FX = require('./fx');
+export const Filters = require('./filters');
 export const Game = require('./core/Game');
 export const GameObjects = require('./gameobjects');
 export const Geom = require('./geom');
@@ -39,6 +38,7 @@ export const Sound = require('./sound');
 export const Textures = require('./textures');
 export const Tilemaps = require('./tilemaps');
 export const Time = require('./time');
+export const TintModes = require('./renderer/TintModes');
 export const Tweens = require('./tweens');
 export const Utils = require('./utils');
 

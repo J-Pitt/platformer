@@ -1,7 +1,7 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
  * @author       Felipe Alfonso <@bitnenfer>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -40,8 +40,10 @@ var tempTransformMatrix = new Components.TransformMatrix();
  *
  * Containers can include other Containers for deeply nested transforms.
  *
- * Containers can have masks set on them and can be used as a mask too. However, Container children cannot be masked.
- * The masks do not 'stack up'. Only a Container on the root of the display list will use its mask.
+ * Containers can have masks set on them and can be used as a mask too.
+ * Because masks are filters, the container's children can also have masks,
+ * and the Container's mask will be applied over the top.
+ * In Canvas rendering, only the Container's mask will be applied.
  *
  * Containers can be enabled for input. Because they do not have a texture you need to provide a shape for them
  * to use as their hit area. Container children can also be enabled for input, independent of the Container.
@@ -72,7 +74,6 @@ var tempTransformMatrix = new Components.TransformMatrix();
  * @extends Phaser.GameObjects.Components.ComputedSize
  * @extends Phaser.GameObjects.Components.Depth
  * @extends Phaser.GameObjects.Components.Mask
- * @extends Phaser.GameObjects.Components.PostPipeline
  * @extends Phaser.GameObjects.Components.Transform
  * @extends Phaser.GameObjects.Components.Visible
  *
@@ -91,7 +92,6 @@ var Container = new Class({
         Components.ComputedSize,
         Components.Depth,
         Components.Mask,
-        Components.PostPipeline,
         Components.Transform,
         Components.Visible,
         Render
@@ -145,7 +145,8 @@ var Container = new Class({
         this.maxSize = -1;
 
         /**
-         * The cursor position.
+         * An internal cursor position used for iterating through the Container's children
+         * via methods such as `first`, `next`, `previous` and `last`.
          *
          * @name Phaser.GameObjects.Container#position
          * @type {number}
@@ -235,8 +236,6 @@ var Container = new Class({
          * @since 3.4.0
          */
         this.scrollFactorY = 1;
-
-        this.initPostPipeline();
 
         this.setPosition(x, y);
 
@@ -471,7 +470,7 @@ var Container = new Class({
     },
 
     /**
-     * Takes a Point-like object, such as a Vector2, Geom.Point or object with public x and y properties,
+     * Takes a Point-like object, such as a Vector2, or object with public x and y properties,
      * and transforms it into the space of this Container, then returns it in the output object.
      *
      * @method Phaser.GameObjects.Container#pointToContainer
@@ -511,7 +510,7 @@ var Container = new Class({
     /**
      * Returns the world transform matrix as used for Bounds checks.
      *
-     * The returned matrix is temporal and shouldn't be stored.
+     * The returned matrix is temporary and shouldn't be stored.
      *
      * @method Phaser.GameObjects.Container#getBoundsTransformMatrix
      * @since 3.4.0
@@ -614,7 +613,7 @@ var Container = new Class({
      * @since 3.4.0
      *
      * @param {string} property - The property to lexically sort by.
-     * @param {function} [handler] - Provide your own custom handler function. Will receive 2 children which it should compare and return a boolean.
+     * @param {function} [handler] - Provide your own custom handler function. Will receive 2 children which it should compare and return a negative, zero, or positive number.
      *
      * @return {this} This Container instance.
      */
@@ -1084,7 +1083,7 @@ var Container = new Class({
     },
 
     /**
-     * Shuffles the all Game Objects in this Container using the Fisher-Yates implementation.
+     * Shuffles all Game Objects in this Container using the Fisher-Yates implementation.
      *
      * @method Phaser.GameObjects.Container#shuffle
      * @since 3.4.0
@@ -1163,7 +1162,7 @@ var Container = new Class({
      * @since 3.4.0
      *
      * @param {string} property - The property that must exist on the Game Object.
-     * @param {any} value - The value to get the property to.
+     * @param {any} value - The value to set the property to.
      * @param {number} [startIndex=0] - An optional start index to search from.
      * @param {number} [endIndex=Container.length] - An optional end index to search up to (but not included)
      *

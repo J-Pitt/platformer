@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -14,13 +14,16 @@ var MultiFile = require('../MultiFile');
 
 /**
  * @classdesc
- * A single JSON based Texture Atlas File suitable for loading by the Loader.
+ * A single Aseprite Animation File suitable for loading by the Loader.
  *
- * These are created when you use the Phaser.Loader.LoaderPlugin#atlas method and are not typically created directly.
+ * Aseprite is an animated sprite editor and pixel art tool. This file type handles loading both
+ * the Aseprite sprite sheet image and its accompanying JSON data file, which contains frame and
+ * animation tag information. Once loaded, the texture and animation data are added to the Texture
+ * Manager and can be used to create animations via `AnimationManager.createFromAseprite`.
  *
- * For documentation about what all the arguments and configuration options mean please see Phaser.Loader.LoaderPlugin#atlas.
+ * These are created when you use the Phaser.Loader.LoaderPlugin#aseprite method and are not typically created directly.
  *
- * https://www.codeandweb.com/texturepacker/tutorials/how-to-create-sprite-sheets-for-phaser3?source=photonstorm
+ * For documentation about what all the arguments and configuration options mean please see Phaser.Loader.LoaderPlugin#aseprite.
  *
  * @class AsepriteFile
  * @extends Phaser.Loader.MultiFile
@@ -163,9 +166,7 @@ var AsepriteFile = new Class({
  *
  * This was tested with Aseprite 1.2.25.
  *
- * This will export a png and json file which you can load using the Aseprite Loader, i.e.:
- *
- * Phaser can load all common image types: png, jpg, gif and any other format the browser can natively handle.
+ * This will export a png and json file which you can load using the Aseprite Loader.
  *
  * The key must be a unique String. It is used to add the file to the global Texture Manager upon a successful load.
  * The key should be unique both in terms of files being loaded and files already present in the Texture Manager.

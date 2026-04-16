@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -14,7 +14,11 @@ var EPSILON = 0.000001;
 
 /**
  * @classdesc
- * A four-dimensional matrix.
+ * A 4x4 column-major matrix stored as a Float32Array of 16 values. Used for 3D
+ * transformations including projection, view, and model matrices. This is the primary
+ * matrix class for WebGL rendering operations in Phaser, supporting
+ * perspective/orthographic projection, look-at camera setup, and affine transforms
+ * (translate, rotate, scale).
  *
  * Adapted from [gl-matrix](https://github.com/toji/gl-matrix) by toji
  * and [vecmath](https://github.com/mattdesl/vecmath) by mattdesl
@@ -72,7 +76,7 @@ var Matrix4 = new Class({
      * @method Phaser.Math.Matrix4#set
      * @since 3.0.0
      *
-     * @param {Phaser.Math.Matrix4} src - The Matrix to set the values of this Matrix's from.
+     * @param {Phaser.Math.Matrix4} src - The Matrix to set the values of this Matrix from.
      *
      * @return {this} This Matrix4.
      */
@@ -1209,7 +1213,7 @@ var Matrix4 = new Class({
      * @since 3.0.0
      *
      * @param {number} fovy - Vertical field of view in radians
-     * @param {number} aspect - Aspect ratio. Typically viewport width  /height.
+     * @param {number} aspect - Aspect ratio. Typically viewport width / height.
      * @param {number} near - Near bound of the frustum.
      * @param {number} far - Far bound of the frustum.
      *
@@ -1244,7 +1248,10 @@ var Matrix4 = new Class({
     },
 
     /**
-     * Generate a perspective projection matrix with the given bounds.
+     * Generate a left-handed perspective projection matrix with the given frustum dimensions.
+     *
+     * Unlike `perspective`, this method takes explicit pixel width and height for the frustum
+     * rather than a field-of-view angle and aspect ratio.
      *
      * @method Phaser.Math.Matrix4#perspectiveLH
      * @since 3.0.0
@@ -1338,7 +1345,7 @@ var Matrix4 = new Class({
      *
      * @param {Phaser.Math.Vector3} eye - Position of the viewer.
      * @param {Phaser.Math.Vector3} target - Point the viewer is looking at.
-     * @param {Phaser.Math.Vector3} up - vec3 pointing up.
+     * @param {Phaser.Math.Vector3} up - A Vector3 pointing up, used to orient the camera roll.
      *
      * @return {this} This Matrix4.
      */
@@ -1398,7 +1405,7 @@ var Matrix4 = new Class({
      *
      * @param {Phaser.Math.Vector3} eye - Position of the viewer
      * @param {Phaser.Math.Vector3} center - Point the viewer is looking at
-     * @param {Phaser.Math.Vector3} up - vec3 pointing up.
+     * @param {Phaser.Math.Vector3} up - A Vector3 pointing up, used to orient the camera roll.
      *
      * @return {this} This Matrix4.
      */
@@ -1502,9 +1509,9 @@ var Matrix4 = new Class({
      * @method Phaser.Math.Matrix4#yawPitchRoll
      * @since 3.0.0
      *
-     * @param {number} yaw - The yaw value.
-     * @param {number} pitch - The pitch value.
-     * @param {number} roll - The roll value.
+     * @param {number} yaw - The yaw angle, in radians.
+     * @param {number} pitch - The pitch angle, in radians.
+     * @param {number} roll - The roll angle, in radians.
      *
      * @return {this} This Matrix4.
      */

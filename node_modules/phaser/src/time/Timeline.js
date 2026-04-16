@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -150,7 +150,7 @@ var Timeline = new Class({
         this.timeScale = 1;
 
         /**
-         * Whether the Timeline is running (`true`) or active (`false`).
+         * Whether the Timeline is paused (`true`) or active (`false`).
          *
          * When paused, the Timeline will not run any of its actions.
          *
@@ -201,7 +201,7 @@ var Timeline = new Class({
         /**
          * The number of times this timeline should loop.
          *
-         * If this value is -1 or any negative number this Timeline will not stop. 
+         * If this value is -1 or any negative number, this Timeline will loop indefinitely.
          *
          * @name Phaser.Time.Timeline#loop
          * @type {number}
@@ -265,7 +265,7 @@ var Timeline = new Class({
      *
      * Iterates through all of the Timeline Events and checks to see if they should be run.
      *
-     * If they should be run, then the `TimelineEvent.action` callback is invoked.
+     * If they should be run, then the event's callbacks and actions are invoked.
      *
      * If the `TimelineEvent.once` property is `true` then the event is removed from the Timeline.
      *
@@ -388,8 +388,20 @@ var Timeline = new Class({
             }
         }
 
-        //  It may be greater than the length if events have been removed
-        if (this.totalComplete >= events.length)
+        //  Count the number of incomplete events
+        var incompleteCount = 0;
+        for (i = 0; i < events.length; i++)
+        {
+            if (!events[i].complete)
+            {
+                incompleteCount++;
+            }
+        }
+
+        //  Timeline is complete when there are no incomplete events remaining
+        //  This can happen when all events are complete (and not removed),
+        //  or when all once events have been removed (events.length === 0 but totalComplete > 0)
+        if (incompleteCount === 0 && (events.length > 0 || this.totalComplete > 0))
         {
             if (this.loop !== 0 && (this.loop === -1 || this.loop > this.iteration))
             {
@@ -481,7 +493,7 @@ var Timeline = new Class({
      * If the value for `amount` is positive, the Timeline will repeat that many additional times.
      * For example a value of 1 will actually run this Timeline twice.
      * 
-     * Depending on the value given, `false` is 0 and `true`, undefined and negative numbers are infinite.
+     * Passing `false` is equivalent to 0 (no additional repeats). Passing `true`, `undefined`, or a negative number will repeat indefinitely.
      * 
      * If this Timeline had any events set to `once` that have already been removed,
      * they will **not** be repeated each loop.
@@ -565,12 +577,12 @@ var Timeline = new Class({
      * If the Timeline isn't currently running (i.e. it's paused or complete) then
      * calling this method resets those states, the same as calling `Timeline.play(true)`.
      * 
-     * Any Tweens that were currently running by this Timeline will be stopped.
+     * Any Tweens that were currently running as a result of this Timeline will be stopped.
      *
      * @method Phaser.Time.Timeline#reset
      * @since 3.60.0
      * 
-     * @param {boolean} [loop=false] - Set to true if you do not want to reset the loop counters.
+     * @param {boolean} [loop=false] - Set to `true` to preserve the loop iteration counters. Used internally when the Timeline auto-repeats. Leave as `false` to perform a full reset.
      * 
      * @return {this} This Timeline instance.
      */
@@ -715,7 +727,7 @@ var Timeline = new Class({
             }
         }
 
-        events = [];
+        events.length = 0;
 
         this.elapsed = 0;
         this.paused = true;
@@ -726,7 +738,7 @@ var Timeline = new Class({
     /**
      * Returns `true` if this Timeline is currently playing.
      *
-     * A Timeline is playing if it is not paused or not complete.
+     * A Timeline is playing if it is not paused and not complete.
      *
      * @method Phaser.Time.Timeline#isPlaying
      * @since 3.60.0
@@ -744,7 +756,7 @@ var Timeline = new Class({
      * A value of 0 means the Timeline has just started, 0.5 means it's half way through,
      * and 1 means it's complete.
      *
-     * If the Timeline has no events, or all events have been removed, this will return 1.
+     * If the Timeline has no events, or all events have been removed, this will return `NaN`.
      *
      * If the Timeline is paused, this will return the progress value at the time it was paused.
      *

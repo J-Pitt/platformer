@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -362,7 +362,8 @@ var RandomDataGenerator = new Class({
     },
 
     /**
-     * Returns a sign to be used with multiplication operator.
+     * Returns a randomly selected sign value, either -1 or +1. Useful for multiplying a value
+     * to randomly flip its direction, for example to randomize horizontal or vertical movement.
      *
      * @method Phaser.Math.RandomDataGenerator#sign
      * @since 3.0.0
@@ -410,12 +411,12 @@ var RandomDataGenerator = new Class({
     },
 
     /**
-     * Returns a random angle between -180 and 180.
+     * Returns a random angle in degrees, between -180 and 180.
      *
      * @method Phaser.Math.RandomDataGenerator#angle
      * @since 3.0.0
      *
-     * @return {number} A random number between -180 and 180.
+     * @return {number} A random integer angle in degrees, between -180 and 180.
      */
     angle: function ()
     {
@@ -423,12 +424,12 @@ var RandomDataGenerator = new Class({
     },
 
     /**
-     * Returns a random rotation in radians, between -3.141 and 3.141
+     * Returns a random rotation in radians, between -3.1415926 and 3.1415926 (approximately -π to π).
      *
      * @method Phaser.Math.RandomDataGenerator#rotation
      * @since 3.0.0
      *
-     * @return {number} A random number between -3.141 and 3.141
+     * @return {number} A random real number in radians, between -3.1415926 and 3.1415926.
      */
     rotation: function ()
     {

@@ -1,10 +1,11 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
 var Clamp = require('../../math/Clamp');
+var DefaultImageNodes = require('../../renderer/webgl/renderNodes/defaults/DefaultImageNodes');
 var Class = require('../../utils/Class');
 var Components = require('../components');
 var Events = require('../events');
@@ -49,6 +50,11 @@ var VideoRender = require('./VideoRender');
  * an alpha channel, and providing the browser supports WebM playback (not all of them do), then it will render
  * in-game with full transparency.
  *
+ * Transparent videos are supported by the HEVC (H.265) codec,
+ * but only on some devices and browsers, and sometimes the alpha channel is ignored,
+ * which can be a problem if you're aiming for a consistent experience.
+ * We advise against relying on HEVC.
+ *
  * Playback is handled entirely via the Request Video Frame API, which is supported by most modern browsers.
  * A polyfill is provided for older browsers.
  *
@@ -82,8 +88,6 @@ var VideoRender = require('./VideoRender');
  * You can set the `noAudio` parameter to `true` even if the video does contain audio. It will still allow the video
  * to play immediately, but the audio will not start.
  *
- * Note that due to a bug in IE11 you cannot play a video texture to a Sprite in WebGL. For IE11 force Canvas mode.
- *
  * More details about video playback and the supported media formats can be found on MDN:
  *
  * https://developer.mozilla.org/en-US/docs/Web/API/HTMLVideoElement
@@ -101,10 +105,10 @@ var VideoRender = require('./VideoRender');
  * @extends Phaser.GameObjects.Components.Depth
  * @extends Phaser.GameObjects.Components.Flip
  * @extends Phaser.GameObjects.Components.GetBounds
+ * @extends Phaser.GameObjects.Components.Lighting
  * @extends Phaser.GameObjects.Components.Mask
  * @extends Phaser.GameObjects.Components.Origin
- * @extends Phaser.GameObjects.Components.Pipeline
- * @extends Phaser.GameObjects.Components.PostPipeline
+ * @extends Phaser.GameObjects.Components.RenderNodes
  * @extends Phaser.GameObjects.Components.ScrollFactor
  * @extends Phaser.GameObjects.Components.TextureCrop
  * @extends Phaser.GameObjects.Components.Tint
@@ -127,10 +131,10 @@ var Video = new Class({
         Components.Depth,
         Components.Flip,
         Components.GetBounds,
+        Components.Lighting,
         Components.Mask,
         Components.Origin,
-        Components.Pipeline,
-        Components.PostPipeline,
+        Components.RenderNodes,
         Components.ScrollFactor,
         Components.TextureCrop,
         Components.Tint,
@@ -193,15 +197,15 @@ var Video = new Class({
 
         /**
          * If you have saved this video to a texture via the `saveTexture` method, this controls if the video
-         * is rendered with `flipY` in WebGL or not. You often need to set this if you wish to use the video texture
-         * as the input source for a shader. If you find your video is appearing upside down within a shader or
-         * custom pipeline, flip this property.
+         * is rendered with `flipY` in WebGL or not.
+         * If you find your video is appearing upside down within a shader or
+         * custom renderer, flip this property.
          *
-         * @name Phaser.GameObjects.Video#flipY
+         * @name Phaser.GameObjects.Video#glFlipY
          * @type {boolean}
-         * @since 3.20.0
+         * @since 4.0.0
          */
-        this.flipY = false;
+        this.glFlipY = true;
 
         /**
          * The key used by the texture as stored in the Texture Manager.
@@ -449,7 +453,7 @@ var Video = new Class({
         this._playingMarker = false;
 
         /**
-         * The previous frames mediaTime.
+         * The previous frame's mediaTime.
          *
          * @name Phaser.GameObjects.Video#_lastUpdate
          * @type {number}
@@ -527,8 +531,7 @@ var Video = new Class({
 
         this.setPosition(x, y);
         this.setSize(256, 256);
-        this.initPipeline();
-        this.initPostPipeline(true);
+        this.initRenderNodes(this._defaultRenderNodesMap);
 
         game.events.on(GameEvents.PAUSE, this.globalPause, this);
         game.events.on(GameEvents.RESUME, this.globalResume, this);
@@ -546,13 +549,44 @@ var Video = new Class({
         }
     },
 
-    //  Overrides Game Object method
+    /**
+     * The default render node map for this Game Object.
+     *
+     * @name Phaser.GameObjects.Video#_defaultRenderNodesMap
+     * @type {Map<string, string>}
+     * @private
+     * @webglOnly
+     * @readonly
+     * @since 4.0.0
+     */
+    _defaultRenderNodesMap: {
+        get: function ()
+        {
+            return DefaultImageNodes;
+        }
+    },
+
+    /**
+     * Adds this Video to the Scene's update list, ensuring it receives
+     * `preUpdate` calls each game step. This is called automatically by
+     * the Scene when this Game Object is added to it.
+     *
+     * @method Phaser.GameObjects.Video#addedToScene
+     * @since 3.20.0
+     */
     addedToScene: function ()
     {
         this.scene.sys.updateList.add(this);
     },
 
-    //  Overrides Game Object method
+    /**
+     * Removes this Video from the Scene's update list, stopping it from
+     * receiving `preUpdate` calls. This is called automatically by the
+     * Scene when this Game Object is removed from it.
+     *
+     * @method Phaser.GameObjects.Video#removedFromScene
+     * @since 3.20.0
+     */
     removedFromScene: function ()
     {
         this.scene.sys.updateList.remove(this);
@@ -868,7 +902,7 @@ var Video = new Class({
                 this.videoTexture = texture;
                 this.videoTextureSource = texture.source[0];
 
-                this.videoTextureSource.setFlipY(this.flipY);
+                this.videoTextureSource.setFlipY(this.glFlipY);
 
                 this.emit(Events.VIDEO_TEXTURE, this, texture);
             }
@@ -1289,7 +1323,7 @@ var Video = new Class({
      * @param {number} [width] - The width of the resulting CanvasTexture.
      * @param {number} [height] - The height of the resulting CanvasTexture.
      *
-     * @return {Phaser.Textures.CanvasTexture}
+     * @return {Phaser.Textures.CanvasTexture} The CanvasTexture the snapshot was drawn to.
      */
     snapshot: function (width, height)
     {
@@ -1316,7 +1350,7 @@ var Video = new Class({
      * @param {number} [destWidth] - The destination width of the grab, allowing you to resize it.
      * @param {number} [destHeight] - The destination height of the grab, allowing you to resize it.
      *
-     * @return {Phaser.Textures.CanvasTexture}
+     * @return {Phaser.Textures.CanvasTexture} The CanvasTexture the snapshot was drawn to.
      */
     snapshotArea: function (x, y, srcWidth, srcHeight, destWidth, destHeight)
     {
@@ -1597,7 +1631,7 @@ var Video = new Class({
      * @fires Phaser.GameObjects.Events#VIDEO_STALLED
      * @since 3.60.0
      *
-     * @param {Event} event - The error Event.
+     * @param {Event} event - The stall Event.
      */
     stalledHandler: function (event)
     {
@@ -2202,20 +2236,20 @@ var Video = new Class({
      * by using the `Texture.add` method. After doing this, you can then allow Game Objects
      * to use a specific frame.
      *
-     * If you intend to save the texture so you can use it as the input for a Shader, you may need to set the
-     * `flipY` parameter to `true` if you find the video renders upside down in your shader.
+     * If you intend to save the texture so you can use it as the input for a Shader, you may need to toggle the
+     * `flipY` parameter if you find the video renders upside down in your shader.
      *
      * @method Phaser.GameObjects.Video#saveTexture
      * @since 3.20.0
      *
      * @param {string} key - The unique key to store the texture as within the global Texture Manager.
-     * @param {boolean} [flipY=false] - Should the WebGL Texture set `UNPACK_MULTIPLY_FLIP_Y` during upload?
+     * @param {boolean} [flipY=true] - Should the WebGL Texture set `UNPACK_MULTIPLY_FLIP_Y` during upload?
      *
      * @return {boolean} Returns `true` if the texture is available immediately, otherwise returns `false` and you should listen for the `TEXTURE_READY` event.
      */
     saveTexture: function (key, flipY)
     {
-        if (flipY === undefined) { flipY = false; }
+        if (flipY === undefined) { flipY = true; }
 
         if (this.videoTexture)
         {
@@ -2224,7 +2258,7 @@ var Video = new Class({
         }
 
         this._key = key;
-        this.flipY = flipY;
+        this.glFlipY = flipY;
 
         return (this.videoTexture) ? true : false;
     },

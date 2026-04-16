@@ -1,6 +1,6 @@
 /**
  * @author       Benjamin D. Richards <benjamindrichards@gmail.com>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -9,12 +9,15 @@
  */
 
 var Wrappers = {
-    WebGLAttribLocationWrapper: require('./WebGLAttribLocationWrapper'),
+    WebGLGlobalWrapper: require('./WebGLGlobalWrapper'),
     WebGLBufferWrapper: require('./WebGLBufferWrapper'),
     WebGLProgramWrapper: require('./WebGLProgramWrapper'),
+    WebGLShaderSetterWrapper: require('./WebGLShaderSetterWrapper'),
     WebGLTextureWrapper: require('./WebGLTextureWrapper'),
+    WebGLTextureUnitsWrapper: require('./WebGLTextureUnitsWrapper'),
     WebGLFramebufferWrapper: require('./WebGLFramebufferWrapper'),
-    WebGLUniformLocationWrapper: require('./WebGLUniformLocationWrapper')
+    WebGLVAOWrapper: require('./WebGLVAOWrapper'),
+    WebGLVertexBufferLayoutWrapper: require('./WebGLVertexBufferLayoutWrapper')
 };
 
 module.exports = Wrappers;

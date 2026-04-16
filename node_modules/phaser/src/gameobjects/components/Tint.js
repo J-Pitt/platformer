@@ -1,8 +1,10 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
+
+var TintModes = require('../../renderer/TintModes');
 
 /**
  * Provides methods used for setting the tint of a Game Object.
@@ -16,7 +18,7 @@
 var Tint = {
 
     /**
-     * The tint value being applied to the top-left vertice of the Game Object.
+     * The tint value being applied to the top-left vertex of the Game Object.
      * This value is interpolated from the corner to the center of the Game Object.
      * The value should be set as a hex number, i.e. 0xff0000 for red, or 0xff00ff for purple.
      *
@@ -28,7 +30,7 @@ var Tint = {
     tintTopLeft: 0xffffff,
 
     /**
-     * The tint value being applied to the top-right vertice of the Game Object.
+     * The tint value being applied to the top-right vertex of the Game Object.
      * This value is interpolated from the corner to the center of the Game Object.
      * The value should be set as a hex number, i.e. 0xff0000 for red, or 0xff00ff for purple.
      *
@@ -40,7 +42,7 @@ var Tint = {
     tintTopRight: 0xffffff,
 
     /**
-     * The tint value being applied to the bottom-left vertice of the Game Object.
+     * The tint value being applied to the bottom-left vertex of the Game Object.
      * This value is interpolated from the corner to the center of the Game Object.
      * The value should be set as a hex number, i.e. 0xff0000 for red, or 0xff00ff for purple.
      *
@@ -52,7 +54,7 @@ var Tint = {
     tintBottomLeft: 0xffffff,
 
     /**
-     * The tint value being applied to the bottom-right vertice of the Game Object.
+     * The tint value being applied to the bottom-right vertex of the Game Object.
      * This value is interpolated from the corner to the center of the Game Object.
      * The value should be set as a hex number, i.e. 0xff0000 for red, or 0xff00ff for purple.
      *
@@ -64,22 +66,30 @@ var Tint = {
     tintBottomRight: 0xffffff,
 
     /**
-     * The tint fill mode.
+     * The tint mode to use when applying the tint to the texture.
      *
-     * `false` = An additive tint (the default), where vertices colors are blended with the texture.
-     * `true` = A fill tint, where the vertices colors replace the texture, but respects texture alpha.
+     * Available modes are:
+     * - Phaser.TintModes.MULTIPLY (default)
+     * - Phaser.TintModes.FILL
+     * - Phaser.TintModes.ADD
+     * - Phaser.TintModes.SCREEN
+     * - Phaser.TintModes.OVERLAY
+     * - Phaser.TintModes.HARD_LIGHT
      *
-     * @name Phaser.GameObjects.Components.Tint#tintFill
-     * @type {boolean}
-     * @default false
-     * @since 3.11.0
+     * Note that in Phaser 3, tint mode and color were set at the same time.
+     * In Phaser 4 they are separate settings.
+     *
+     * @name Phaser.GameObjects.Components.Tint#tintMode
+     * @type {Phaser.TintModes}
+     * @default Phaser.TintModes.MULTIPLY
+     * @since 4.0.0
      */
-    tintFill: false,
+    tintMode: TintModes.MULTIPLY,
 
     /**
      * Clears all tint values associated with this Game Object.
      *
-     * Immediately sets the color values back to 0xffffff and the tint type to 'additive',
+     * Immediately sets the color values back to 0xffffff and the tint mode to `MULTIPLY`,
      * which results in no visible change to the texture.
      *
      * @method Phaser.GameObjects.Components.Tint#clearTint
@@ -91,25 +101,30 @@ var Tint = {
     clearTint: function ()
     {
         this.setTint(0xffffff);
+        this.setTintMode(TintModes.MULTIPLY);
 
         return this;
     },
 
     /**
-     * Sets an additive tint on this Game Object.
+     * Sets the tint color on this Game Object.
      *
      * The tint works by taking the pixel color values from the Game Objects texture, and then
-     * multiplying it by the color value of the tint. You can provide either one color value,
+     * combining it with the color value of the tint. You can provide either one color value,
      * in which case the whole Game Object will be tinted in that color. Or you can provide a color
      * per corner. The colors are blended together across the extent of the Game Object.
      *
      * To modify the tint color once set, either call this method again with new values or use the
-     * `tint` property to set all colors at once. Or, use the properties `tintTopLeft`, `tintTopRight,
+     * `tint` property to set all colors at once. Or, use the properties `tintTopLeft`, `tintTopRight`,
      * `tintBottomLeft` and `tintBottomRight` to set the corner color values independently.
      *
      * To remove a tint call `clearTint`.
      *
-     * To swap this from being an additive tint to a fill based tint set the property `tintFill` to `true`.
+     * The tint color is combined according to the tint mode.
+     * By default, this is `MULTIPLY`.
+     *
+     * Note that, in Phaser 3, this would also swap the tint mode if it was set
+     * to fill. In Phaser 4, the tint mode is separate: use `setTintMode`.
      *
      * @method Phaser.GameObjects.Components.Tint#setTint
      * @webglOnly
@@ -138,51 +153,49 @@ var Tint = {
         this.tintBottomLeft = bottomLeft;
         this.tintBottomRight = bottomRight;
 
-        this.tintFill = false;
-
         return this;
     },
 
     /**
-     * Sets a fill-based tint on this Game Object.
+     * Sets the tint mode to use when applying the tint to the texture.
      *
-     * Unlike an additive tint, a fill-tint literally replaces the pixel colors from the texture
-     * with those in the tint. You can use this for effects such as making a player flash 'white'
-     * if hit by something. You can provide either one color value, in which case the whole
-     * Game Object will be rendered in that color. Or you can provide a color per corner. The colors
-     * are blended together across the extent of the Game Object.
+     * Note that, in Phaser 3, tint mode and color were set at the same time.
+     * In Phaser 4 they are separate settings.
      *
-     * To modify the tint color once set, either call this method again with new values or use the
-     * `tint` property to set all colors at once. Or, use the properties `tintTopLeft`, `tintTopRight,
-     * `tintBottomLeft` and `tintBottomRight` to set the corner color values independently.
+     * @method Phaser.GameObjects.Components.Tint#setTintMode
+     * @webglOnly
+     * @since 4.0.0
      *
-     * To remove a tint call `clearTint`.
-     *
-     * To swap this from being a fill-tint to an additive tint set the property `tintFill` to `false`.
+     * @param {number | Phaser.TintModes} mode - The tint mode to use.
+     * @return {this} This Game Object instance.
+     */
+    setTintMode: function (mode)
+    {
+        this.tintMode = mode;
+        return this;
+    },
+
+    /**
+     * Deprecated method which does nothing.
+     * In Phaser 3, this would set the tint color, and set the tint mode to fill.
+     * In Phaser 4, use `gameObject.setTint(color).setTintMode(Phaser.TintModes.FILL)` instead.
      *
      * @method Phaser.GameObjects.Components.Tint#setTintFill
      * @webglOnly
      * @since 3.11.0
-     *
-     * @param {number} [topLeft=0xffffff] - The tint being applied to the top-left of the Game Object. If not other values are given this value is applied evenly, tinting the whole Game Object.
-     * @param {number} [topRight] - The tint being applied to the top-right of the Game Object.
-     * @param {number} [bottomLeft] - The tint being applied to the bottom-left of the Game Object.
-     * @param {number} [bottomRight] - The tint being applied to the bottom-right of the Game Object.
-     *
-     * @return {this} This Game Object instance.
+     * @deprecated
      */
-    setTintFill: function (topLeft, topRight, bottomLeft, bottomRight)
+    setTintFill: function ()
     {
-        this.setTint(topLeft, topRight, bottomLeft, bottomRight);
-
-        this.tintFill = true;
-
-        return this;
+        // eslint-disable-next-line no-console
+        console.error('`setTintFill(color)` is removed as of Phaser 4. Use setTint(color).setTintMode(Phaser.TintModes.FILL)` instead.');
     },
 
     /**
      * The tint value being applied to the whole of the Game Object.
-     * Return `tintTopLeft` when read this tint property.
+     * Returns the value of `tintTopLeft` when read. When written, the same
+     * color value is applied to all four corner tint properties (`tintTopLeft`,
+     * `tintTopRight`, `tintBottomLeft`, and `tintBottomRight`) simultaneously.
      *
      * @name Phaser.GameObjects.Components.Tint#tint
      * @type {number}
@@ -205,8 +218,10 @@ var Tint = {
     /**
      * Does this Game Object have a tint applied?
      *
-     * It checks to see if the 4 tint properties are set to the value 0xffffff
-     * and that the `tintFill` property is `false`. This indicates that a Game Object isn't tinted.
+     * Returns `true` if any of the four corner tint values differ from 0xffffff,
+     * or if the `tintMode` property is set to anything other than `MULTIPLY`.
+     * Returns `false` when all four tint values are 0xffffff and the tint mode
+     * is `MULTIPLY`, which is the default untinted state.
      *
      * @name Phaser.GameObjects.Components.Tint#isTinted
      * @type {boolean}
@@ -221,7 +236,7 @@ var Tint = {
             var white = 0xffffff;
 
             return (
-                this.tintFill ||
+                this.tintMode !== TintModes.MULTIPLY ||
                 this.tintTopLeft !== white ||
                 this.tintTopRight !== white ||
                 this.tintBottomLeft !== white ||

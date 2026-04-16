@@ -1,11 +1,12 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
 var BlitterRender = require('./BlitterRender');
 var Bob = require('./Bob');
+var DefaultBlitterNodes = require('../../renderer/webgl/renderNodes/defaults/DefaultBlitterNodes');
 var Class = require('../../utils/Class');
 var Components = require('../components');
 var Frame = require('../../textures/Frame');
@@ -44,9 +45,9 @@ var List = require('../../structs/List');
  * @extends Phaser.GameObjects.Components.Alpha
  * @extends Phaser.GameObjects.Components.BlendMode
  * @extends Phaser.GameObjects.Components.Depth
+ * @extends Phaser.GameObjects.Components.Lighting
  * @extends Phaser.GameObjects.Components.Mask
- * @extends Phaser.GameObjects.Components.Pipeline
- * @extends Phaser.GameObjects.Components.PostPipeline
+ * @extends Phaser.GameObjects.Components.RenderNodes
  * @extends Phaser.GameObjects.Components.ScrollFactor
  * @extends Phaser.GameObjects.Components.Size
  * @extends Phaser.GameObjects.Components.Texture
@@ -67,9 +68,9 @@ var Blitter = new Class({
         Components.Alpha,
         Components.BlendMode,
         Components.Depth,
+        Components.Lighting,
         Components.Mask,
-        Components.Pipeline,
-        Components.PostPipeline,
+        Components.RenderNodes,
         Components.ScrollFactor,
         Components.Size,
         Components.Texture,
@@ -86,8 +87,7 @@ var Blitter = new Class({
 
         this.setTexture(texture, frame);
         this.setPosition(x, y);
-        this.initPipeline();
-        this.initPostPipeline();
+        this.initRenderNodes(this._defaultRenderNodesMap);
 
         /**
          * The children of this Blitter.
@@ -123,6 +123,23 @@ var Blitter = new Class({
     },
 
     /**
+     * The default render nodes to use for this Game Object.
+     *
+     * @name Phaser.GameObjects.Blitter#_defaultRenderNodesMap
+     * @type {Map<string, string>}
+     * @private
+     * @webglOnly
+     * @readonly
+     * @since 4.0.0
+     */
+    _defaultRenderNodesMap: {
+        get: function ()
+        {
+            return DefaultBlitterNodes;
+        }
+    },
+
+    /**
      * Creates a new Bob in this Blitter.
      *
      * The Bob is created at the given coordinates, relative to the Blitter and uses the given frame.
@@ -135,7 +152,7 @@ var Blitter = new Class({
      * @param {number} y - The y position of the Bob. Bob coordinate are relative to the position of the Blitter object.
      * @param {(string|number|Phaser.Textures.Frame)} [frame] - The Frame the Bob will use. It _must_ be part of the Texture the parent Blitter object is using.
      * @param {boolean} [visible=true] - Should the created Bob render or not?
-     * @param {number} [index] - The position in the Blitters Display List to add the new Bob at. Defaults to the top of the list.
+     * @param {number} [index] - The position in the Blitter's Display List to add the new Bob at. Defaults to the top of the list.
      *
      * @return {Phaser.GameObjects.Bob} The newly created Bob object.
      */
@@ -266,7 +283,7 @@ var Blitter = new Class({
     },
 
     /**
-     * Removes all Bobs from the children List and clears the dirty flag.
+     * Removes all Bobs from the children List and marks the Blitter as dirty.
      *
      * @method Phaser.GameObjects.Blitter#clear
      * @since 3.0.0

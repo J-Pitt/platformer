@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -8,6 +8,11 @@ var GetCollidesWith = require('../GetCollidesWith');
 
 /**
  * Provides methods used for setting the collision category and mask of an Arcade Physics Body.
+ *
+ * Collision categories and masks allow you to control which bodies interact with each other.
+ * Each body has a collision category (its "identity") and a collision mask (the set of categories
+ * it will collide with). Two bodies will only collide if each body's category is present in the
+ * other body's mask. By default, all bodies belong to category 1 and collide with all categories.
  *
  * @namespace Phaser.Physics.Arcade.Components.Collision
  * @since 3.70.0
@@ -26,7 +31,7 @@ var Collision = {
      * @method Phaser.Physics.Arcade.Components.Collision#setCollisionCategory
      * @since 3.70.0
      *
-     * @param {number} category - The collision category.
+     * @param {number} category - The collision category to assign to this body. Typically a power of 2, such as 1, 2, 4, 8, and so on.
      *
      * @return {this} This Game Object.
      */
@@ -64,7 +69,7 @@ var Collision = {
      * @method Phaser.Physics.Arcade.Components.Collision#addCollidesWith
      * @since 3.70.0
      *
-     * @param {number} category - The collision category to add.
+     * @param {number} category - The collision category to add to this body's collision mask.
      *
      * @return {this} This Game Object.
      */
@@ -84,7 +89,7 @@ var Collision = {
      * @method Phaser.Physics.Arcade.Components.Collision#removeCollidesWith
      * @since 3.70.0
      *
-     * @param {number} category - The collision category to add.
+     * @param {number} category - The collision category to remove from this body's collision mask.
      *
      * @return {this} This Game Object.
      */
@@ -106,7 +111,7 @@ var Collision = {
      * so only those passed to this method are enabled.
      *
      * If you wish to add a new category to the existing mask, call
-     * the `addCollisionCategory` method.
+     * the `addCollidesWith` method.
      *
      * If you wish to reset the collision category and mask, call
      * the `resetCollisionCategory` method.
@@ -129,7 +134,7 @@ var Collision = {
 
     /**
      * Resets the Collision Category and Mask back to the defaults,
-     * which is to collide with everything.
+     * which means the body will belong to category 1 and will collide with all other categories.
      *
      * @method Phaser.Physics.Arcade.Components.Collision#resetCollisionCategory
      * @since 3.70.0

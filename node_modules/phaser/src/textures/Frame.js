@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -10,7 +10,11 @@ var Extend = require('../utils/object/Extend');
 
 /**
  * @classdesc
- * A Frame is a section of a Texture.
+ * A Frame is a section of a Texture. It defines a rectangular sub-region within a
+ * Texture Source, storing its position, dimensions, UV coordinates, and optional trim
+ * data (for packed atlas frames with whitespace removed). Frames are the primary unit
+ * of texture addressing used by Game Objects -- when a Sprite displays a particular
+ * image, it references a Frame.
  *
  * @class Frame
  * @memberof Phaser.Textures
@@ -213,7 +217,7 @@ var Frame = new Class({
         /**
          * **CURRENTLY UNSUPPORTED**
          *
-         * Is this frame is rotated or not in the Texture?
+         * Is this frame rotated or not in the Texture?
          * Rotation allows you to use rotated frames in texture atlas packing.
          * It has nothing to do with Sprite rotation.
          *
@@ -225,7 +229,7 @@ var Frame = new Class({
         this.rotated = false;
 
         /**
-         * Over-rides the Renderer setting.
+         * Overrides the Renderer setting.
          * -1 = use Renderer Setting
          * 0 = No rounding
          * 1 = Round
@@ -359,7 +363,7 @@ var Frame = new Class({
     },
 
     /**
-     * Sets the width, and height of the area in the source image to cut.
+     * Sets the width and height of the area in the source image to cut.
      *
      * @method Phaser.Textures.Frame#setCutSize
      * @since 3.85.0
@@ -501,7 +505,7 @@ var Frame = new Class({
      * @param {number} x - The left coordinate of the center scale9 rectangle.
      * @param {number} y - The top coordinate of the center scale9 rectangle.
      * @param {number} width - The width of the center scale9 rectangle.
-     * @param {number} height - The height coordinate of the center scale9 rectangle.
+     * @param {number} height - The height of the center scale9 rectangle.
      *
      * @return {this} This Frame object.
      */
@@ -524,7 +528,7 @@ var Frame = new Class({
      * Takes a crop data object and, based on the rectangular region given, calculates the
      * required UV coordinates in order to crop this Frame for WebGL and Canvas rendering.
      *
-     * The crop size as well as coordinates can not exceed the the size of the frame.
+     * The crop size as well as coordinates can not exceed the size of the frame.
      * 
      * This is called directly by the Game Object Texture Components `setCrop` method.
      * Please use that method to crop a Game Object.
@@ -642,9 +646,9 @@ var Frame = new Class({
         //  Map the given coordinates into UV space, clamping to the 0-1 range.
 
         crop.u0 = Math.max(0, ox / tw);
-        crop.v0 = Math.max(0, oy / th);
+        crop.v0 = 1 - Math.max(0, oy / th);
         crop.u1 = Math.min(1, (ox + ow) / tw);
-        crop.v1 = Math.min(1, (oy + oh) / th);
+        crop.v1 = 1 - Math.min(1, (oy + oh) / th);
 
         crop.x = x;
         crop.y = y;
@@ -747,16 +751,18 @@ var Frame = new Class({
         var th = this.source.height;
 
         this.u0 = cx / tw;
-        this.v0 = cy / th;
+        this.v0 = 1 - cy / th;
 
         this.u1 = (cx + cw) / tw;
-        this.v1 = (cy + ch) / th;
+        this.v1 = 1 - (cy + ch) / th;
 
         return this;
     },
 
     /**
-     * Updates the internal WebGL UV cache.
+     * Updates the internal WebGL UV cache for a rotated frame, swapping the width and height
+     * axes so that the UV coordinates map correctly to a frame that has been rotated 90 degrees
+     * in the texture atlas.
      *
      * @method Phaser.Textures.Frame#updateUVsInverted
      * @since 3.0.0
@@ -769,10 +775,10 @@ var Frame = new Class({
         var th = this.source.height;
 
         this.u0 = (this.cutX + this.cutHeight) / tw;
-        this.v0 = this.cutY / th;
+        this.v0 = 1 - this.cutY / th;
 
         this.u1 = this.cutX / tw;
-        this.v1 = (this.cutY + this.cutWidth) / th;
+        this.v1 = 1 - (this.cutY + this.cutWidth) / th;
 
         return this;
     },
@@ -816,7 +822,7 @@ var Frame = new Class({
     },
 
     /**
-     * Destroys this Frame by nulling its reference to the parent Texture and and data objects.
+     * Destroys this Frame by nulling its reference to the parent Texture and data objects.
      *
      * @method Phaser.Textures.Frame#destroy
      * @since 3.0.0

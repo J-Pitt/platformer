@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -15,11 +15,17 @@ var Settings = require('./Settings');
 
 /**
  * @classdesc
- * The Scene Systems class.
+ * The Scene Systems class is the backbone of every Scene in Phaser. It is created automatically
+ * by the Scene Manager and is accessible from within a Scene via the `sys` property (e.g. `this.sys`).
  *
- * This class is available from within a Scene under the property `sys`.
- * It is responsible for managing all of the plugins a Scene has running, including the display list, and
- * handling the update step and renderer. It also contains references to global systems belonging to Game.
+ * Systems manages the lifecycle of a Scene — booting it, stepping it each frame, rendering it, and
+ * shutting it down or destroying it when required. It owns references to all of the core Scene plugins
+ * (such as the Display List, Update List, Camera Manager, and Event Emitter) as well as read-only
+ * references to the global Game-level managers (such as the Texture Manager, Sound Manager, and Cache).
+ *
+ * You will rarely need to interact with Systems directly; instead, use the convenience properties that
+ * Phaser injects into each Scene (e.g. `this.add`, `this.cameras`, `this.events`). However, Systems is
+ * the authoritative place to query a Scene's current status, pause, resume, sleep, or wake it.
  *
  * @class Systems
  * @memberof Phaser.Scenes
@@ -62,18 +68,6 @@ var Systems = new Class({
          */
         this.renderer;
 
-        if (typeof PLUGIN_FBINSTANT)
-        {
-            /**
-             * The Facebook Instant Games Plugin.
-             *
-             * @name Phaser.Scenes.Systems#facebook
-             * @type {Phaser.FacebookInstantGamesPlugin}
-             * @since 3.12.0
-             */
-            this.facebook;
-        }
-
         /**
          * The Scene Configuration object, as passed in when creating the Scene.
          *
@@ -93,7 +87,7 @@ var Systems = new Class({
         this.settings = Settings.create(config);
 
         /**
-         * A handy reference to the Scene canvas / context.
+         * A reference to the HTML Canvas Element that Phaser renders to.
          *
          * @name Phaser.Scenes.Systems#canvas
          * @type {HTMLCanvasElement}
@@ -449,6 +443,9 @@ var Systems = new Class({
     /**
      * Resume this Scene from a paused state.
      *
+     * Resuming a Scene sets its status back to RUNNING and marks it as active, allowing its
+     * update loop to execute again. It has no effect if the Scene is not currently paused.
+     *
      * @method Phaser.Scenes.Systems#resume
      * @fires Phaser.Scenes.Events#RESUME
      * @since 3.0.0
@@ -513,7 +510,12 @@ var Systems = new Class({
     },
 
     /**
-     * Wake-up this Scene if it was previously asleep.
+     * Wake this Scene if it was previously sent to sleep.
+     *
+     * Waking a Scene sets its status back to RUNNING and marks it as both active and visible,
+     * allowing its update loop to execute and its camera(s) to render again. Unlike `resume`,
+     * which only restores the active flag, `wake` also restores visibility. If the Scene is
+     * part of an ongoing transition, a `TRANSITION_WAKE` event is also emitted.
      *
      * @method Phaser.Scenes.Systems#wake
      * @fires Phaser.Scenes.Events#WAKE
@@ -809,7 +811,7 @@ var Systems = new Class({
 
         events.removeAllListeners();
 
-        var props = [ 'scene', 'game', 'anims', 'cache', 'plugins', 'registry', 'sound', 'textures', 'add', 'camera', 'displayList', 'events', 'make', 'scenePlugin', 'updateList' ];
+        var props = [ 'scene', 'game', 'anims', 'cache', 'plugins', 'registry', 'sound', 'textures', 'add', 'cameras', 'displayList', 'events', 'make', 'scenePlugin', 'updateList' ];
 
         for (var i = 0; i < props.length; i++)
         {

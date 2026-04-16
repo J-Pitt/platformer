@@ -6,6 +6,7 @@
         "noImplicitThis": true,
         "noImplicitReturns": true,
         "preserveConstEnums": true,
+        "skipLibCheck": true,
         "outFile": "./bin/game.js",
         "sourceMap": true,
         "moduleResolution": "node",

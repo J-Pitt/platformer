@@ -1,7 +1,7 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
  * @author       Pavle Goloskokovic <pgoloskokovic@gmail.com> (http://prunegames.com)
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -17,7 +17,11 @@ var Vector2 = require('../math/Vector2');
 
 /**
  * @classdesc
- * Base class for other Sound Manager classes.
+ * Base class for the Web Audio and HTML5 Audio Sound Manager implementations.
+ * It manages a collection of sound instances, handles global volume, mute, rate,
+ * and detune settings, provides spatial audio listener positioning (Web Audio only),
+ * and coordinates with the game lifecycle for pausing and resuming audio when the
+ * game loses or regains focus.
  *
  * @class BaseSoundManager
  * @extends Phaser.Events.EventEmitter
@@ -93,7 +97,7 @@ var BaseSoundManager = new Class({
         this.volume = 1;
 
         /**
-         * Flag indicating if sounds should be paused when game looses focus,
+         * Flag indicating if sounds should be paused when game loses focus,
          * for instance when user switches to another tab/program/app.
          *
          * @name Phaser.Sound.BaseSoundManager#pauseOnBlur
@@ -480,7 +484,7 @@ var BaseSoundManager = new Class({
     },
 
     /**
-     * Sets the X and Y position of the Spatial Audio listener on this Web Audios context.
+     * Sets the X and Y position of the Spatial Audio listener on this Web Audio context.
      *
      * If you call this method with no parameters it will default to the center-point of
      * the game canvas. Depending on the type of game you're making, you may need to call
@@ -715,7 +719,7 @@ var BaseSoundManager = new Class({
      * @private
      * @since 3.0.0
      *
-     * @param {Phaser.Types.Sound.EachActiveSoundCallback} callback - Callback function. (manager: Phaser.Sound.BaseSoundManager, sound: Phaser.Sound.BaseSound, index: number, sounds: Phaser.Manager.BaseSound[]) => void
+     * @param {Phaser.Types.Sound.EachActiveSoundCallback} callback - Callback function. (manager: Phaser.Sound.BaseSoundManager, sound: Phaser.Sound.BaseSound, index: number, sounds: Phaser.Sound.BaseSound[]) => void
      * @param {*} [scope] - Callback context.
      */
     forEachActiveSound: function (callback, scope)
@@ -785,13 +789,13 @@ var BaseSoundManager = new Class({
 
     /**
      * Sets the global detuning of all sounds in [cents](https://en.wikipedia.org/wiki/Cent_%28music%29).
-     * The range of the value is -1200 to 1200, but we recommend setting it to [50](https://en.wikipedia.org/wiki/50_Cent).
+     * The range of the value is -1200 to 1200, but we recommend keeping it within a reasonable range for musical purposes.
      *
      * @method Phaser.Sound.BaseSoundManager#setDetune
      * @fires Phaser.Sound.Events#GLOBAL_DETUNE
      * @since 3.3.0
      *
-     * @param {number} value - The range of the value is -1200 to 1200, but we recommend setting it to [50](https://en.wikipedia.org/wiki/50_Cent).
+     * @param {number} value - The detuning value in cents. The range is -1200 to 1200, but we recommend keeping it within a reasonable range for musical purposes.
      *
      * @return {this} This Sound Manager.
      */
@@ -804,7 +808,7 @@ var BaseSoundManager = new Class({
 
     /**
      * Global detuning of all sounds in [cents](https://en.wikipedia.org/wiki/Cent_%28music%29).
-     * The range of the value is -1200 to 1200, but we recommend setting it to [50](https://en.wikipedia.org/wiki/50_Cent).
+     * The range of the value is -1200 to 1200, but we recommend keeping it within a reasonable range for musical purposes.
      *
      * @name Phaser.Sound.BaseSoundManager#detune
      * @type {number}

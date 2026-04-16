@@ -91,14 +91,16 @@ export class Parser {
                 case 'Phaser.GameObjects.Components.ComputedSize':
                 case 'Phaser.GameObjects.Components.Crop':
                 case 'Phaser.GameObjects.Components.Depth':
+                case 'Phaser.GameObjects.Components.ElapseTimer':
+                case 'Phaser.GameObjects.Components.Filters':
                 case 'Phaser.GameObjects.Components.Flip':
-                case 'Phaser.GameObjects.Components.FX':
                 case 'Phaser.GameObjects.Components.GetBounds':
+                case 'Phaser.GameObjects.Components.Lighting':
                 case 'Phaser.GameObjects.Components.Mask':
                 case 'Phaser.GameObjects.Components.Origin':
                 case 'Phaser.GameObjects.Components.PathFollower':
-                case 'Phaser.GameObjects.Components.Pipeline':
-                case 'Phaser.GameObjects.Components.PostPipeline':
+                case 'Phaser.GameObjects.Components.RenderNodes':
+                case 'Phaser.GameObjects.Components.RenderSteps':
                 case 'Phaser.GameObjects.Components.ScrollFactor':
                 case 'Phaser.GameObjects.Components.Size':
                 case 'Phaser.GameObjects.Components.Texture':
@@ -112,6 +114,7 @@ export class Parser {
 
                 //  Because, sod you TypeScript
                 case 'Phaser.BlendModes':
+                case 'Phaser.TintModes':
                 case 'Phaser.ScaleModes':
                 case 'Phaser.Physics.Impact.TYPE':
                 case 'Phaser.Physics.Impact.COLLIDES':
@@ -120,6 +123,7 @@ export class Parser {
                 case 'Phaser.Scale.ScaleModes':
                 case 'Phaser.Scale.Zoom':
                 case 'Phaser.Textures.FilterMode':
+                case 'Phaser.Textures.WrapMode':
                 case 'Phaser.Tilemaps.Orientation':
                 case 'Phaser.Tweens.States':
                     // console.log('Forcing enum for ' + doclet.longname);
@@ -229,6 +233,7 @@ export class Parser {
                 {
                     console.log(`${doclet.longname} - Kind: ${doclet.kind}`);
                     console.log(`PARENT WARNING: ${doclet.longname} in ${doclet.meta.filename}@${doclet.meta.lineno} has parent '${doclet.memberof}' that is not defined.`);
+                    continue;
                 }
 
                 if (!(parent as any).kind)
@@ -445,8 +450,9 @@ export class Parser {
         let obj = dom.create.function(doclet.name, null, returnType);
         this.setParams(doclet, obj);
 
-        if (doclet.returns?.length)
-            obj.jsDocComment += `\n@returns ${doclet.returns[0].description}`
+        if (doclet.returns?.length) {
+            obj.jsDocComment += `\n@returns ${doclet.returns[0]?.description}`;
+        }
 
         this.processGeneric(doclet, obj, obj.parameters);
 
@@ -524,6 +530,7 @@ export class Parser {
                     console.log(`Docs Error in '${doclet.longname}' in ${doclet.meta.filename}@${doclet.meta.lineno}`);
 
                     console.info(paramDoc);
+                    continue;
                 }
 
                 if (paramDoc.name.indexOf('.') != -1) {

@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -20,7 +20,7 @@ var CONST = {
      * @type {string}
      * @since 3.0.0
      */
-    VERSION: '3.90.0',
+    VERSION: '4.0.0',
 
     /**
      * Phaser Release Version as displayed in the console.log header URL.
@@ -30,14 +30,14 @@ var CONST = {
      * @type {string}
      * @since 3.87.0
      */
-    LOG_VERSION: 'v390',
+    LOG_VERSION: 'v400',
 
     BlendModes: require('./renderer/BlendModes'),
 
     ScaleModes: require('./renderer/ScaleModes'),
 
     /**
-     * This setting will auto-detect if the browser is capable of suppporting WebGL.
+     * This setting will auto-detect if the browser is capable of supporting WebGL.
      * If it is, it will use the WebGL Renderer. If not, it will fall back to the Canvas Renderer.
      *
      * @name Phaser.AUTO
@@ -94,7 +94,8 @@ var CONST = {
     FOREVER: -1,
 
     /**
-     * Direction constant.
+     * Direction constant representing no direction, or an unset direction. Used in various
+     * Phaser systems such as physics and input where a direction value is required but none applies.
      *
      * @name Phaser.NONE
      * @const
@@ -104,7 +105,8 @@ var CONST = {
     NONE: 4,
 
     /**
-     * Direction constant.
+     * Direction constant representing upward movement or orientation. Used in physics,
+     * tilemaps, and other Phaser systems that work with cardinal directions.
      *
      * @name Phaser.UP
      * @const
@@ -114,7 +116,8 @@ var CONST = {
     UP: 5,
 
     /**
-     * Direction constant.
+     * Direction constant representing downward movement or orientation. Used in physics,
+     * tilemaps, and other Phaser systems that work with cardinal directions.
      *
      * @name Phaser.DOWN
      * @const
@@ -124,7 +127,8 @@ var CONST = {
     DOWN: 6,
 
     /**
-     * Direction constant.
+     * Direction constant representing leftward movement or orientation. Used in physics,
+     * tilemaps, and other Phaser systems that work with cardinal directions.
      *
      * @name Phaser.LEFT
      * @const
@@ -134,7 +138,8 @@ var CONST = {
     LEFT: 7,
 
     /**
-     * Direction constant.
+     * Direction constant representing rightward movement or orientation. Used in physics,
+     * tilemaps, and other Phaser systems that work with cardinal directions.
      *
      * @name Phaser.RIGHT
      * @const

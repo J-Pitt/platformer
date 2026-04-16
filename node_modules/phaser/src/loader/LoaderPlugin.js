@@ -1,12 +1,11 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
 var Class = require('../utils/Class');
 var CONST = require('./const');
-var CustomSet = require('../structs/Set');
 var EventEmitter = require('eventemitter3');
 var Events = require('./events');
 var FileTypesManager = require('./FileTypesManager');
@@ -185,7 +184,7 @@ var LoaderPlugin = new Class({
         this.maxParallelDownloads = GetFastValue(sceneConfig, 'maxParallelDownloads', gameConfig.loaderMaxParallelDownloads);
 
         /**
-         * xhr specific global settings (can be overridden on a per-file basis)
+         * XHR-specific global settings (can be overridden on a per-file basis)
          *
          * @name Phaser.Loader.LoaderPlugin#xhr
          * @type {Phaser.Types.Loader.XHRSettingsObject}
@@ -262,10 +261,10 @@ var LoaderPlugin = new Class({
          * By the end of the load process this Set will be empty.
          *
          * @name Phaser.Loader.LoaderPlugin#list
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
+         * @type {Set.<Phaser.Loader.File>}
          * @since 3.0.0
          */
-        this.list = new CustomSet();
+        this.list = new Set();
 
         /**
          * Files are stored in this Set while they're in the process of being loaded.
@@ -275,10 +274,10 @@ var LoaderPlugin = new Class({
          * By the end of the load process this Set will be empty.
          *
          * @name Phaser.Loader.LoaderPlugin#inflight
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
+         * @type {Set.<Phaser.Loader.File>}
          * @since 3.0.0
          */
-        this.inflight = new CustomSet();
+        this.inflight = new Set();
 
         /**
          * Files are stored in this Set while they're being processed.
@@ -289,21 +288,21 @@ var LoaderPlugin = new Class({
          * At the end of the load process this Set will be empty.
          *
          * @name Phaser.Loader.LoaderPlugin#queue
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
+         * @type {Set.<Phaser.Loader.File>}
          * @since 3.0.0
          */
-        this.queue = new CustomSet();
+        this.queue = new Set();
 
         /**
          * A temporary Set in which files are stored after processing,
          * awaiting destruction at the end of the load process.
          *
          * @name Phaser.Loader.LoaderPlugin#_deleteQueue
-         * @type {Phaser.Structs.Set.<Phaser.Loader.File>}
+         * @type {Set.<Phaser.Loader.File>}
          * @private
          * @since 3.7.0
          */
-        this._deleteQueue = new CustomSet();
+        this._deleteQueue = new Set();
 
         /**
          * The total number of files that failed to load during the most recent load.
@@ -545,7 +544,7 @@ var LoaderPlugin = new Class({
             //  Or will it conflict with a file already in the queue or inflight?
             if (!this.keyExists(item))
             {
-                this.list.set(item);
+                this.list.add(item);
 
                 this.emit(Events.ADD, item.key, item.type, this, item);
 
@@ -575,7 +574,7 @@ var LoaderPlugin = new Class({
 
         if (!keyConflict)
         {
-            this.list.iterate(function (item)
+            this.list.forEach(function (item)
             {
                 if (item.type === file.type && item.key === file.key)
                 {
@@ -589,7 +588,7 @@ var LoaderPlugin = new Class({
 
         if (!keyConflict && this.isLoading())
         {
-            this.inflight.iterate(function (item)
+            this.inflight.forEach(function (item)
             {
                 if (item.type === file.type && item.key === file.key)
                 {
@@ -600,7 +599,7 @@ var LoaderPlugin = new Class({
 
             });
 
-            this.queue.iterate(function (item)
+            this.queue.forEach(function (item)
             {
                 if (item.type === file.type && item.key === file.key)
                 {
@@ -963,7 +962,9 @@ var LoaderPlugin = new Class({
     },
 
     /**
-     * Called automatically during the load process.
+     * Called automatically once per game step while the Loader is in the LOADING state.
+     * Checks whether there is capacity in the inflight queue and, if so, calls `checkLoadQueue`
+     * to move more files from the pending list into active loading.
      *
      * @method Phaser.Loader.LoaderPlugin#update
      * @since 3.10.0
@@ -982,7 +983,7 @@ var LoaderPlugin = new Class({
      * It will check to see if there are any more files in the pending list that need loading, and if so it will move
      * them from the list Set into the inflight Set, set their CORs flag and start them loading.
      *
-     * It will carrying on doing this for each file in the pending list until it runs out, or hits the max allowed parallel downloads.
+     * It will carry on doing this for each file in the pending list until it runs out, or hits the max allowed parallel downloads.
      *
      * @method Phaser.Loader.LoaderPlugin#checkLoadQueue
      * @private
@@ -990,11 +991,11 @@ var LoaderPlugin = new Class({
      */
     checkLoadQueue: function ()
     {
-        this.list.each(function (file)
+        this.list.forEach(function (file)
         {
             if (file.state === CONST.FILE_POPULATED || (file.state === CONST.FILE_PENDING && this.inflight.size < this.maxParallelDownloads))
             {
-                this.inflight.set(file);
+                this.inflight.add(file);
 
                 this.list.delete(file);
 
@@ -1046,7 +1047,7 @@ var LoaderPlugin = new Class({
         {
             this.totalComplete++;
 
-            this.queue.set(file);
+            this.queue.add(file);
 
             this.emit(Events.FILE_LOAD, file);
 
@@ -1056,7 +1057,7 @@ var LoaderPlugin = new Class({
         {
             this.totalFailed++;
 
-            this._deleteQueue.set(file);
+            this._deleteQueue.add(file);
 
             this.emit(Events.FILE_LOAD_ERROR, file);
 
@@ -1148,7 +1149,10 @@ var LoaderPlugin = new Class({
         this.systems.events.off(SceneEvents.UPDATE, this.update, this);
 
         //  Call 'destroy' on each file ready for deletion
-        this._deleteQueue.iterateLocal('destroy');
+        this._deleteQueue.forEach(function (file)
+        {
+            file.destroy();
+        });
 
         this._deleteQueue.clear();
 
@@ -1165,13 +1169,13 @@ var LoaderPlugin = new Class({
      */
     flagForRemoval: function (file)
     {
-        this._deleteQueue.set(file);
+        this._deleteQueue.add(file);
     },
 
     /**
-     * Converts the given JSON data into a file that the browser then prompts you to download so you can save it locally.
+     * Converts the given JavaScript object into JSON and triggers a browser download so you can save it locally.
      *
-     * The data must be well formed JSON and ready-parsed, not a JavaScript object.
+     * The data must be a plain JavaScript object that can be serialized via `JSON.stringify`. Do not pass a pre-stringified JSON string.
      *
      * @method Phaser.Loader.LoaderPlugin#saveJSON
      * @since 3.0.0

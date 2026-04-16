@@ -1,6 +1,6 @@
 /**
  * @author       Richard Davey <rich@phaser.io>
- * @copyright    2013-2025 Phaser Studio Inc.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -347,7 +347,7 @@ var InputPlugin = new Class({
         this._drag = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [], 9: [], 10: [] };
 
         /**
-         * A array containing the dragStates, for this Scene, index by the Pointer ID.
+         * An array containing the drag states for this Scene, indexed by the Pointer ID.
          *
          * @name Phaser.Input.InputPlugin#_dragState
          * @type {number[]}
@@ -1446,8 +1446,8 @@ var InputPlugin = new Class({
     },
 
     /**
-     * Processes a 'drag down' event for the given pointer. Checks the pointer state, builds-up the drag list
-     * and prepares them all for interaction.
+     * Processes a 'drag up' event for the given pointer. Handles the release of any dragged Game Objects,
+     * dispatching drop and drag end events as appropriate.
      *
      * @method Phaser.Input.InputPlugin#processDragUpEvent
      * @fires Phaser.Input.Events#DRAG_END
@@ -2378,25 +2378,16 @@ var InputPlugin = new Class({
         {
             var config = hitArea;
 
-            // Check if any supplied Game Object is a Mesh based Game Object
-            var isMesh = gameObjects.some(function (gameObject)
+            hitArea = GetFastValue(config, 'hitArea', null);
+            hitAreaCallback = GetFastValue(config, 'hitAreaCallback', null);
+
+            pixelPerfect = GetFastValue(config, 'pixelPerfect', false);
+            var alphaTolerance = GetFastValue(config, 'alphaTolerance', 1);
+
+            if (pixelPerfect)
             {
-                return gameObject.hasOwnProperty('faces');
-            });
-
-            if (!isMesh)
-            {
-                hitArea = GetFastValue(config, 'hitArea', null);
-                hitAreaCallback = GetFastValue(config, 'hitAreaCallback', null);
-
-                pixelPerfect = GetFastValue(config, 'pixelPerfect', false);
-                var alphaTolerance = GetFastValue(config, 'alphaTolerance', 1);
-
-                if (pixelPerfect)
-                {
-                    hitArea = {};
-                    hitAreaCallback = this.makePixelPerfect(alphaTolerance);
-                }
+                hitArea = {};
+                hitAreaCallback = this.makePixelPerfect(alphaTolerance);
             }
 
             draggable = GetFastValue(config, 'draggable', false);
@@ -2502,7 +2493,7 @@ var InputPlugin = new Class({
      * @method Phaser.Input.InputPlugin#setHitAreaFromTexture
      * @since 3.0.0
      *
-     * @param {(Phaser.GameObjects.GameObject|Phaser.GameObjects.GameObject[])} gameObjects - An array of Game Objects to set as having an ellipse hit area.
+     * @param {(Phaser.GameObjects.GameObject|Phaser.GameObjects.GameObject[])} gameObjects - An array of Game Objects to set as having a Rectangle hit area based on their texture frame.
      * @param {Phaser.Types.Input.HitAreaCallback} [callback] - The hit area callback. If undefined it uses Rectangle.Contains.
      *
      * @return {this} This InputPlugin object.
@@ -2585,7 +2576,7 @@ var InputPlugin = new Class({
      * @method Phaser.Input.InputPlugin#setHitAreaTriangle
      * @since 3.0.0
      *
-     * @param {(Phaser.GameObjects.GameObject|Phaser.GameObjects.GameObject[])} gameObjects - An array of Game Objects to set as having a  triangular hit area.
+     * @param {(Phaser.GameObjects.GameObject|Phaser.GameObjects.GameObject[])} gameObjects - An array of Game Objects to set as having a triangular hit area.
      * @param {number} x1 - The x coordinate of the first point of the triangle.
      * @param {number} y1 - The y coordinate of the first point of the triangle.
      * @param {number} x2 - The x coordinate of the second point of the triangle.
@@ -3197,7 +3188,7 @@ var InputPlugin = new Class({
     },
 
     /**
-     * The x coordinates of the ActivePointer based on the first camera in the camera list.
+     * The x coordinate of the ActivePointer based on the first camera in the camera list.
      * This is only safe to use if your game has just 1 non-transformed camera and doesn't use multi-touch.
      *
      * @name Phaser.Input.InputPlugin#x
@@ -3215,7 +3206,7 @@ var InputPlugin = new Class({
     },
 
     /**
-     * The y coordinates of the ActivePointer based on the first camera in the camera list.
+     * The y coordinate of the ActivePointer based on the first camera in the camera list.
      * This is only safe to use if your game has just 1 non-transformed camera and doesn't use multi-touch.
      *
      * @name Phaser.Input.InputPlugin#y
@@ -3286,8 +3277,8 @@ var InputPlugin = new Class({
     },
 
     /**
-     * A touch-based Pointer object.
-     * This will be `undefined` by default unless you add a new Pointer using `addPointer`.
+     * A touch-based Pointer object. This is the first pointer created by Phaser and is available by default,
+     * alongside the `mousePointer`.
      *
      * @name Phaser.Input.InputPlugin#pointer1
      * @type {Phaser.Input.Pointer}

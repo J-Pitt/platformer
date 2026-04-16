@@ -1,6 +1,6 @@
 /**
  * @author       Ben Richards <benjamindrichards@gmail.com>
- * @copyright    2024 Photon Storm Ltd.
+ * @copyright    2013-2026 Phaser Studio Inc.
  * @license      {@link https://opensource.org/licenses/MIT|MIT License}
  */
 
@@ -17,7 +17,7 @@ var IsSizePowerOfTwo = require('../../math/pow2/IsSizePowerOfTwo');
  * @function Phaser.Textures.Parsers.verifyCompressedTexture
  * @param {Phaser.Types.Textures.CompressedTextureData} data - The compressed texture data to verify.
  * @since 3.80.0
- * @returns {boolean} Whether the compressed texture data is valid.
+ * @return {boolean} Whether the compressed texture data is valid.
  */
 var verifyCompressedTexture = function (data)
 {
@@ -79,6 +79,9 @@ function checkAlways ()
     return true;
 }
 
+/**
+ * @ignore
+ */
 function checkPVRTC (data)
 {
     // WEBGL_compressed_texture_pvrtc
