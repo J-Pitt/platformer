@@ -928,6 +928,24 @@ export class LevelManager {
     const ow = opening?.w ?? TILE_SIZE * 2;
     const oh = opening?.h ?? TILE_SIZE * 4;
 
+    // Back-of-portal radial glow (soft teal halo around the opening).
+    const portalHalo = this.scene.add.image(cx, cy, 'door');
+    portalHalo.setDepth(2);
+    portalHalo.setBlendMode(Phaser.BlendModes.ADD);
+    portalHalo.setAlpha(0.35);
+    portalHalo.setDisplaySize(ow * 1.7, oh * 1.25);
+
+    const haloTween = this.scene.tweens.add({
+      targets: portalHalo,
+      alpha: { from: 0.22, to: 0.45 },
+      scaleX: { from: portalHalo.scaleX * 0.95, to: portalHalo.scaleX * 1.08 },
+      scaleY: { from: portalHalo.scaleY * 0.95, to: portalHalo.scaleY * 1.08 },
+      duration: 1800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
     const portalGlow = this.scene.add.image(cx, cy, 'door');
     portalGlow.setDepth(3);
     portalGlow.setBlendMode(Phaser.BlendModes.ADD);
@@ -953,6 +971,15 @@ export class LevelManager {
     door.requiresAbilities = Array.isArray(obj.requiresAbilities) ? obj.requiresAbilities : [];
     door.setAlpha(0.96);
 
+    // Trigger body: cover the full opening AND reach one tile into the
+    // room so the player triggers while still standing on the approach
+    // surface (no "walk off the ledge then fall past the portal" gap).
+    if (oh >= ow) {
+      door.body.setSize(ow + TILE_SIZE * 2, oh, true);
+    } else {
+      door.body.setSize(ow, oh + TILE_SIZE * 2, true);
+    }
+
     const pulseTween = this.scene.tweens.add({
       targets: door,
       alpha: { from: 0.9, to: 1 },
@@ -964,14 +991,90 @@ export class LevelManager {
 
     const onDoor = (player) => {
       if (this.roomLocked) return;
+      if (player._enteringDoor) return;
       if (!meetsAbilityRequirements(player, door.requiresAbilities)) return;
-      this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
+
+      player._enteringDoor = true;
+
+      // Freeze the player and play an entry flourish: pull toward the
+      // portal center, shrink, and dim while the portal itself flashes
+      // white-teal. The existing camera fade starts once the tween
+      // completes so the transition reads as "walking through" rather
+      // than a blind cut.
+      if (player.body) {
+        player.body.setVelocity(0, 0);
+        player.body.allowGravity = false;
+        player.body.enable = false;
+      }
+      if (this.scene.tweens) this.scene.tweens.killTweensOf(player);
+
+      this.scene.tweens.add({
+        targets: player,
+        x: door.x,
+        y: door.y,
+        scaleX: 0.25,
+        scaleY: 0.25,
+        alpha: 0.2,
+        angle: (player.angle || 0) + 30,
+        duration: 220,
+        ease: 'Cubic.easeIn',
+      });
+
+      // Portal burst: halo + core pulse open, then collapse as the fade
+      // takes over.
+      this.scene.tweens.killTweensOf([portalHalo, portalGlow, door]);
+      portalHalo.setAlpha(0.6);
+      portalGlow.setAlpha(0.95);
+      this.scene.tweens.add({
+        targets: [portalHalo, portalGlow],
+        alpha: { from: 0.9, to: 1 },
+        scaleX: '*=1.35',
+        scaleY: '*=1.2',
+        duration: 180,
+        ease: 'Cubic.easeOut',
+      });
+      this.scene.tweens.add({
+        targets: door,
+        alpha: 1,
+        scaleX: '*=1.15',
+        scaleY: '*=1.05',
+        duration: 180,
+        ease: 'Cubic.easeOut',
+      });
+
+      // Short flash ring spark
+      const spark = this.scene.add.image(door.x, door.y, 'particle_teal');
+      spark.setBlendMode(Phaser.BlendModes.ADD);
+      spark.setDepth(6);
+      spark.setScale(0.1);
+      spark.setAlpha(0.9);
+      this.scene.tweens.add({
+        targets: spark,
+        scale: 8,
+        alpha: 0,
+        duration: 260,
+        ease: 'Cubic.easeOut',
+        onComplete: () => spark.destroy(),
+      });
+
+      this.scene.time.delayedCall(210, () => {
+        player.setScale(1);
+        player.setAlpha(1);
+        player.setAngle(0);
+        delete player._enteringDoor;
+        if (player.body) {
+          player.body.enable = true;
+          player.body.allowGravity = true;
+          player.body.setVelocity(0, 0);
+        }
+        this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
+      });
     };
 
     for (const player of this.allPlayers) {
       this.scene.physics.add.overlap(player, door, onDoor);
     }
-    this.doorZones.push({ door, portalGlow, glowTween, pulseTween });
+    this.doorZones.push({ door, portalGlow, portalHalo, glowTween, haloTween, pulseTween });
   }
 
   createAbilityOrb(x, y, obj) {
@@ -1845,14 +1948,15 @@ export class LevelManager {
     const sprite = this.scene.add.image(x, y, 'floor_spikes_down').setDepth(4);
     sprite.setOrigin(0.5, 1);
 
-    // Hit zone covers the full height of the extended spikes (24 tall) so
-    // the new taller forged spikes actually hurt along their whole length,
-    // not just their base.
-    const zone = this.scene.physics.add.image(x, y - 10, 'particle_dust');
+    // Hit zone covers the full height of the extended spikes. The sprite
+    // is 32 tall with the base slab at y=22..32, so the spikes live in
+    // y=0..22 (22 px of lethal steel). Zone is centered 11 px above the
+    // sprite's anchor.
+    const zone = this.scene.physics.add.image(x, y - 12, 'particle_dust');
     zone.setVisible(false);
     zone.body.allowGravity = false;
     zone.body.setImmovable(true);
-    zone.body.setSize(28, 20);
+    zone.body.setSize(28, 22);
     zone.body.enable = false;
 
     for (const player of this.allPlayers) {
@@ -2795,11 +2899,16 @@ export class LevelManager {
     for (const d of this.doorZones) {
       if (d.pulseTween) d.pulseTween.pause();
       if (d.glowTween) d.glowTween.pause();
+      if (d.haloTween) d.haloTween.pause();
       d.door.setTint(0xff3333);
       d.door.setAlpha(0.78);
       if (d.portalGlow) {
         d.portalGlow.setTint(0xff4444);
         d.portalGlow.setAlpha(0.32);
+      }
+      if (d.portalHalo) {
+        d.portalHalo.setTint(0xff4444);
+        d.portalHalo.setAlpha(0.35);
       }
     }
     this.createDoorBarriers();
@@ -2819,8 +2928,13 @@ export class LevelManager {
         d.portalGlow.clearTint();
         d.portalGlow.setAlpha(0.2);
       }
+      if (d.portalHalo) {
+        d.portalHalo.clearTint();
+        d.portalHalo.setAlpha(0.35);
+      }
       if (d.pulseTween) d.pulseTween.resume();
       if (d.glowTween) d.glowTween.resume();
+      if (d.haloTween) d.haloTween.resume();
     }
     this.scene.cameras.main.flash(300, 64, 232, 192);
   }
@@ -3084,7 +3198,9 @@ export class LevelManager {
     for (const d of this.doorZones) {
       if (d.glowTween) d.glowTween.stop();
       if (d.pulseTween) d.pulseTween.stop();
+      if (d.haloTween) d.haloTween.stop();
       if (d.portalGlow && d.portalGlow.active) d.portalGlow.destroy();
+      if (d.portalHalo && d.portalHalo.active) d.portalHalo.destroy();
       d.door.destroy();
     }
     this.doorZones = [];

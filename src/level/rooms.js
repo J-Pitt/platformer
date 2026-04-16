@@ -206,11 +206,12 @@ function buildRoom2() {
 
   // Door openings
   clearRect(tiles, H - 4, 0, H - 2, 0);  // bottom-left back to room1
-  clearRect(tiles, 5, 0, 7, 0);           // top-left to room3 (lowered to match new landing row)
-  clearRect(tiles, 5, W - 1, 7, W - 1);   // top-right to room4 (lowered to match new landing row)
-  // Lips where wall openings left column 0 / W-1 air on platform rows (no floor when stepping into doorway)
-  setTile(tiles, 6, 0, 1);
-  setTile(tiles, 6, W - 1, 1);
+  clearRect(tiles, 5, 0, 7, 0);           // top-left to room3 — spans the landing row so the portal sits AT the ledge
+  clearRect(tiles, 5, W - 1, 7, W - 1);   // top-right to room4 — same
+  // Bottom door keeps its lip so the player can approach without dropping
+  // past the frame; the top side doors intentionally omit a lip so the
+  // opening is clear at the ledge's walking height. Triggering is handled
+  // by the door's enlarged overlap body (extends one tile into the room).
   setTile(tiles, H - 2, 0, 1);
 
   return {

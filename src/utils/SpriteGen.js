@@ -2245,77 +2245,100 @@ function generateHazardTextures(scene) {
   pb.generateTexture('pendulum_blade', 16, 28);
   pb.destroy();
 
-  // --- Spike Wall panel 32x32: heavy iron backing + dense forged spikes ---
+  // --- Spike Wall panel 32x32: heavy iron backing + long forged spikes ---
   const sw = scene.make.graphics({ add: false });
-  // Dark backing plate with vertical shading
+  // Dark backing plate with vertical shading (plate slimmed to 9px so the
+  // spikes themselves can run a full ~23px before the panel edge).
   for (let y = 0; y < 32; y++) {
-    sw.fillStyle(lerpRgb(0x0a0a10, 0x14141c, y / 31));
-    sw.fillRect(0, y, 10, 1);
+    sw.fillStyle(lerpRgb(0x08080e, 0x16161e, y / 31));
+    sw.fillRect(0, y, 9, 1);
   }
+  // Plate edge strip (right side of the plate, before spikes start)
+  sw.fillStyle(0x22242c);
+  sw.fillRect(8, 0, 1, 32);
   // Iron rivets along the mounting rail (left edge)
   sw.fillStyle(0x3a3a46);
-  for (const ry of [4, 14, 24]) {
-    sw.fillCircle(3, ry, 1.8);
-    sw.fillStyle(0x5a5a66);
-    sw.fillCircle(2.6, ry - 0.4, 0.9);
+  for (const ry of [3, 12, 21, 29]) {
+    sw.fillCircle(3, ry, 1.9);
+    sw.fillStyle(0x6a6a78);
+    sw.fillCircle(2.5, ry - 0.5, 0.9);
     sw.fillStyle(0x3a3a46);
   }
-  // Blood/rust streak running down the plate
-  sw.fillStyle(0x5a1414);
-  sw.setAlpha(0.45);
-  sw.fillRect(6, 0, 1, 32);
-  sw.setAlpha(0.3);
-  sw.fillRect(8, 6, 1, 22);
+  // Blood/rust streaks on the plate
+  sw.fillStyle(0x5a1212);
+  sw.setAlpha(0.5);
+  sw.fillRect(5, 0, 1, 32);
+  sw.setAlpha(0.35);
+  sw.fillRect(7, 4, 1, 26);
   sw.setAlpha(1);
 
-  // Seven forged spikes (staggered lengths) pointing right
+  // Eight long forged spikes pointing right. Tips land in y=[28..31] so
+  // they visibly bite the panel edge, and lengths reach ~22 pixels.
   const swSpikes = [
-    { y: 2,  len: 22 },
-    { y: 7,  len: 26 },
-    { y: 12, len: 20 },
-    { y: 16, len: 28 },
-    { y: 21, len: 23 },
-    { y: 26, len: 25 },
-    { y: 30, len: 18 },
+    { y: 2,  len: 20, thick: 2.0 },
+    { y: 6,  len: 22, thick: 2.4 },
+    { y: 10, len: 23, thick: 2.2 },
+    { y: 14, len: 21, thick: 2.6 },
+    { y: 18, len: 23, thick: 2.3 },
+    { y: 22, len: 21, thick: 2.4 },
+    { y: 26, len: 22, thick: 2.2 },
+    { y: 30, len: 19, thick: 2.0 },
   ];
   for (const s of swSpikes) {
     const baseX = 9;
-    const tipX = baseX + s.len;
-    const halfH = 2.2;
-    // Dark outer silhouette (slightly larger for strong edge)
-    sw.fillStyle(0x05050a);
-    sw.fillTriangle(baseX - 1, s.y - halfH - 0.4, baseX - 1, s.y + halfH + 0.4, tipX + 0.4, s.y);
-    // Iron body gradient: dark at base → light near tip
-    sw.fillStyle(0x2e3240);
+    const tipX = Math.min(31.5, baseX + s.len);
+    const halfH = s.thick;
+    // Hard black silhouette (1px halo all around)
+    sw.fillStyle(0x02020a);
+    sw.fillTriangle(baseX - 1, s.y - halfH - 0.7, baseX - 1, s.y + halfH + 0.7, tipX + 0.7, s.y);
+    // Iron body gradient: dark at base
+    sw.fillStyle(0x30343f);
     sw.fillTriangle(baseX, s.y - halfH, baseX, s.y + halfH, tipX, s.y);
-    // Upper lit face
-    sw.fillStyle(0x585e70);
-    sw.fillTriangle(baseX + 1, s.y - halfH + 0.3, baseX + 1, s.y - 0.2, tipX - 2, s.y - 0.2);
-    // Sharp specular along the tip
-    sw.fillStyle(0xc0c6d2);
+    // Mid body shading (lower half is darker)
+    sw.fillStyle(0x1a1c24);
     sw.setAlpha(0.85);
-    sw.fillTriangle(tipX - 6, s.y - 0.5, tipX - 6, s.y + 0.3, tipX, s.y);
+    sw.fillTriangle(baseX, s.y + 0.1, baseX, s.y + halfH, tipX - 2, s.y + 0.15);
     sw.setAlpha(1);
-    // Bright tip spark
-    sw.fillStyle(0xffffff);
+    // Upper lit face (strong diagonal highlight)
+    sw.fillStyle(0x6a7082);
+    sw.fillTriangle(baseX + 0.5, s.y - halfH + 0.2, baseX + 0.5, s.y - 0.1, tipX - 2, s.y - 0.1);
+    // Bright steel specular that runs most of the spike
+    sw.fillStyle(0xd0d4dc);
     sw.setAlpha(0.9);
-    sw.fillCircle(tipX - 0.5, s.y, 0.6);
+    sw.fillTriangle(baseX + 2, s.y - 0.5, baseX + 2, s.y + 0.1, tipX - 1, s.y);
+    sw.setAlpha(1);
+    // White-hot tip spark
+    sw.fillStyle(0xffffff);
+    sw.setAlpha(0.95);
+    sw.fillCircle(tipX - 0.4, s.y, 0.7);
+    sw.setAlpha(1);
+    // Rust/blood at the socket where spike meets plate (reads as forged in)
+    sw.fillStyle(0x5a1a12);
+    sw.setAlpha(0.7);
+    sw.fillRect(baseX, s.y - halfH + 0.2, 1.6, halfH * 2 - 0.4);
     sw.setAlpha(1);
   }
 
-  // Dripping blood on two of the spikes (suggests recent damage)
-  sw.fillStyle(0x8a1a1a);
-  sw.fillCircle(28, 9, 1.3);
-  sw.fillRect(27.6, 9, 0.8, 4);
-  sw.fillStyle(0xb22a2a);
-  sw.fillCircle(28, 9, 0.6);
-  sw.fillStyle(0x8a1a1a);
-  sw.fillCircle(30, 18, 1);
-  sw.fillRect(29.6, 18, 0.8, 3);
+  // Heavier blood drips on three spikes (streaking downward)
+  const drips = [
+    { x: 26, y: 6 },
+    { x: 28, y: 14 },
+    { x: 27, y: 22 },
+  ];
+  for (const d of drips) {
+    sw.fillStyle(0x6a0e0e);
+    sw.fillRect(d.x - 0.4, d.y, 0.8, 5);
+    sw.fillStyle(0x8e1818);
+    sw.fillCircle(d.x, d.y + 5, 1.2);
+    sw.fillStyle(0xbe2828);
+    sw.fillCircle(d.x, d.y + 5, 0.55);
+  }
 
-  // Hard outer border to punch the silhouette against any background
+  // Hard outer border + inner shadow to punch the silhouette
   sw.lineStyle(1, 0x000000, 0.95);
   sw.strokeRect(0, 0, 32, 32);
+  sw.lineStyle(1, 0x000000, 0.4);
+  sw.strokeRect(1, 1, 30, 30);
   sw.generateTexture('spike_wall', 32, 32);
   sw.destroy();
 
@@ -2434,110 +2457,144 @@ function generateNewHazardTextures(scene) {
   fb.generateTexture('fireball', 16, 16);
   fb.destroy();
 
-  // Shared iron base slab drawer used by both extended + retracted floor
-  // spikes so they line up pixel-perfect when swapping textures.
+  // Shared iron base slab drawer. Slab sits at y=22..32 of a 32-tall
+  // texture so the spikes get a full 22px of vertical real estate above.
   const drawFloorSpikeBase = (g) => {
-    // Shadow band under the base
+    // Dark shadow band under the slab
     g.fillStyle(0x000000);
-    g.setAlpha(0.35);
-    g.fillRect(1, 22, 30, 2);
+    g.setAlpha(0.45);
+    g.fillRect(0, 30, 32, 2);
     g.setAlpha(1);
     // Iron base slab with top→bottom gradient
     for (let yy = 0; yy < 10; yy++) {
-      g.fillStyle(lerpRgb(0x2a2e3a, 0x101118, yy / 9));
-      g.fillRect(0, 14 + yy, 32, 1);
+      g.fillStyle(lerpRgb(0x2e3340, 0x0e1018, yy / 9));
+      g.fillRect(0, 22 + yy, 32, 1);
     }
-    // Top lip highlight
+    // Top lip highlight (bright forged edge)
+    g.fillStyle(0x707888);
+    g.fillRect(0, 22, 32, 1);
     g.fillStyle(0x4a5060);
-    g.fillRect(0, 14, 32, 1);
-    // Bolts at each corner
+    g.fillRect(0, 23, 32, 1);
+    // Bolts at each corner with bright specular
+    g.fillStyle(0x2a2e38);
+    g.fillCircle(3, 27, 1.8);
+    g.fillCircle(29, 27, 1.8);
     g.fillStyle(0x5a6272);
-    g.fillCircle(3, 18, 1.4);
-    g.fillCircle(29, 18, 1.4);
-    g.fillStyle(0x8892a2);
-    g.fillCircle(2.7, 17.7, 0.7);
-    g.fillCircle(28.7, 17.7, 0.7);
+    g.fillCircle(3, 27, 1.3);
+    g.fillCircle(29, 27, 1.3);
+    g.fillStyle(0x98a2b2);
+    g.fillCircle(2.7, 26.7, 0.7);
+    g.fillCircle(28.7, 26.7, 0.7);
     // Rust streaks down the front of the slab
     g.fillStyle(0x4a2612);
-    g.setAlpha(0.35);
-    g.fillRect(10, 16, 1, 8);
-    g.fillRect(22, 17, 1, 7);
+    g.setAlpha(0.4);
+    g.fillRect(9, 24, 1, 8);
+    g.fillRect(15, 25, 1, 7);
+    g.fillRect(23, 24, 1, 8);
+    g.setAlpha(1);
+    // Faint red under-glow the spikes sit on (subtle blood pool)
+    g.fillStyle(0x6a0808);
+    g.setAlpha(0.18);
+    g.fillRect(0, 21, 32, 1);
     g.setAlpha(1);
   };
 
-  // --- Floor Spikes (extended) 32x24: forged iron spikes, blood-tipped ---
+  // --- Floor Spikes (extended) 32x32: tall forged iron spikes ---
   const sUp = scene.make.graphics({ add: false });
   drawFloorSpikeBase(sUp);
 
-  // Five spikes, each slightly different, tallest in the middle for depth.
+  // Five long spikes. Tips reach y=0..4; bases at y=22. That's 18-22 px of
+  // visible spike, compared to ~10 before.
   const floorSpikesData = [
-    { cx: 3,  top: 4,  halfW: 2.2 },
-    { cx: 10, top: 1,  halfW: 2.6 },
-    { cx: 17, top: 2,  halfW: 2.8 },
-    { cx: 24, top: 0,  halfW: 2.6 },
-    { cx: 30, top: 5,  halfW: 2.2 },
+    { cx: 3,  top: 6,  halfW: 2.2 },
+    { cx: 10, top: 1,  halfW: 2.8 },
+    { cx: 17, top: 0,  halfW: 3.0 },
+    { cx: 24, top: 1,  halfW: 2.8 },
+    { cx: 30, top: 6,  halfW: 2.2 },
   ];
   for (const sp of floorSpikesData) {
     const { cx, top, halfW } = sp;
-    const baseY = 15;
-    // Dark silhouette
-    sUp.fillStyle(0x04040a);
-    sUp.fillTriangle(cx - halfW - 0.5, baseY + 0.3, cx + halfW + 0.5, baseY + 0.3, cx, top - 0.5);
+    const baseY = 22;
+    // Hard black silhouette (1px halo for pop against any background)
+    sUp.fillStyle(0x02030a);
+    sUp.fillTriangle(cx - halfW - 0.7, baseY + 0.2, cx + halfW + 0.7, baseY + 0.2, cx, top - 0.7);
     // Iron body
-    sUp.fillStyle(0x2e3340);
+    sUp.fillStyle(0x30343f);
     sUp.fillTriangle(cx - halfW, baseY, cx + halfW, baseY, cx, top);
-    // Lit edge (left side)
-    sUp.fillStyle(0x5a6270);
-    sUp.fillTriangle(cx - halfW + 0.4, baseY - 0.2, cx - 0.2, baseY - 0.2, cx, top + 1);
-    // Bright specular highlight down the center
-    sUp.fillStyle(0xaab0bc);
+    // Darker right-half shading for depth
+    sUp.fillStyle(0x18191f);
     sUp.setAlpha(0.75);
-    sUp.fillTriangle(cx - 0.4, baseY - 1, cx + 0.4, baseY - 1, cx, top + 1);
+    sUp.fillTriangle(cx + 0.2, baseY, cx + halfW, baseY, cx, top + 1);
     sUp.setAlpha(1);
-    // Sharp tip highlight
-    sUp.fillStyle(0xffffff);
+    // Strong lit left face
+    sUp.fillStyle(0x6a7080);
+    sUp.fillTriangle(cx - halfW + 0.4, baseY - 0.2, cx - 0.2, baseY - 0.2, cx - 0.1, top + 1.5);
+    // Bright steel specular stripe running nearly the full length
+    sUp.fillStyle(0xc8ccd6);
     sUp.setAlpha(0.9);
-    sUp.fillCircle(cx, top + 0.5, 0.5);
+    sUp.fillTriangle(cx - 0.45, baseY - 1, cx + 0.1, baseY - 1, cx, top + 1);
     sUp.setAlpha(1);
-    // Socket shadow at spike base (reads as emerging from slot)
+    // Bright white tip spark
+    sUp.fillStyle(0xffffff);
+    sUp.setAlpha(0.95);
+    sUp.fillCircle(cx, top + 0.4, 0.7);
+    sUp.setAlpha(1);
+    // Dark socket shadow at the base (spike emerging from slot)
     sUp.fillStyle(0x000000);
-    sUp.setAlpha(0.5);
-    sUp.fillRect(cx - halfW, baseY - 0.5, halfW * 2, 1.5);
+    sUp.setAlpha(0.7);
+    sUp.fillRect(cx - halfW - 0.2, baseY - 0.6, halfW * 2 + 0.4, 1.8);
+    sUp.setAlpha(1);
+    // Rust/blood staining at the socket
+    sUp.fillStyle(0x5a1010);
+    sUp.setAlpha(0.55);
+    sUp.fillRect(cx - halfW + 0.2, baseY - 0.4, halfW * 2 - 0.4, 1);
     sUp.setAlpha(1);
   }
 
-  // Blood on the two middle spikes — they've tasted adventurers
-  sUp.fillStyle(0x8a1a1a);
-  sUp.fillTriangle(10 - 1.5, 1.5, 10 + 1.5, 1.5, 10, 3);
-  sUp.fillRect(9.6, 1.5, 0.8, 3);
-  sUp.fillStyle(0xb22a2a);
-  sUp.fillCircle(10, 2, 0.6);
-  sUp.fillStyle(0x8a1a1a);
-  sUp.fillCircle(17, 3.5, 1);
-  sUp.fillRect(16.6, 3.5, 0.8, 4);
+  // Heavy blood on the three middle spikes (adventurer's misfortune)
+  const bloodSpikes = [
+    { cx: 10, top: 1 },
+    { cx: 17, top: 0 },
+    { cx: 24, top: 1 },
+  ];
+  for (const b of bloodSpikes) {
+    sUp.fillStyle(0x6a0e0e);
+    sUp.fillRect(b.cx - 0.5, b.top + 0.8, 1, 4);
+    sUp.fillStyle(0x8e1818);
+    sUp.fillCircle(b.cx, b.top + 4.8, 1.2);
+    sUp.fillStyle(0xbe2828);
+    sUp.fillCircle(b.cx, b.top + 4.8, 0.55);
+    // Tiny bright tip-gleam on the blood
+    sUp.fillStyle(0xffcccc);
+    sUp.setAlpha(0.75);
+    sUp.fillCircle(b.cx - 0.3, b.top + 4.5, 0.25);
+    sUp.setAlpha(1);
+  }
 
-  sUp.generateTexture('floor_spikes_up', 32, 24);
+  sUp.generateTexture('floor_spikes_up', 32, 32);
   sUp.destroy();
 
-  // --- Floor Spikes (retracted nubs) 32x24 ---
+  // --- Floor Spikes (retracted nubs) 32x32 ---
   const sDn = scene.make.graphics({ add: false });
   drawFloorSpikeBase(sDn);
-  // Slot channels: darker insets where spikes retract into
+  // Slot channels: darker insets where the spikes retract into
   for (const sp of floorSpikesData) {
     const { cx, halfW } = sp;
-    sDn.fillStyle(0x05060a);
-    sDn.fillRect(cx - halfW, 14, halfW * 2, 1.5);
-    sDn.fillStyle(0x2e3340);
-    sDn.fillTriangle(cx - halfW + 0.3, 14.8, cx + halfW - 0.3, 14.8, cx, 12.6);
-    sDn.fillStyle(0x5a6270);
-    sDn.fillTriangle(cx - halfW + 0.6, 14.6, cx - 0.1, 14.6, cx, 13);
+    // Dark slot
+    sDn.fillStyle(0x03050a);
+    sDn.fillRect(cx - halfW, 21.6, halfW * 2, 1.6);
+    // A hint of spike tip just showing in the slot
+    sDn.fillStyle(0x30343f);
+    sDn.fillTriangle(cx - halfW + 0.4, 22.4, cx + halfW - 0.4, 22.4, cx, 20.4);
+    sDn.fillStyle(0x6a7080);
+    sDn.fillTriangle(cx - halfW + 0.7, 22.3, cx - 0.1, 22.3, cx, 20.7);
     sDn.fillStyle(0xffffff);
-    sDn.setAlpha(0.7);
-    sDn.fillCircle(cx, 13.1, 0.3);
+    sDn.setAlpha(0.75);
+    sDn.fillCircle(cx, 20.9, 0.35);
     sDn.setAlpha(1);
   }
 
-  sDn.generateTexture('floor_spikes_down', 32, 24);
+  sDn.generateTexture('floor_spikes_down', 32, 32);
   sDn.destroy();
 
   // --- Saw Blade 28x28 ---
