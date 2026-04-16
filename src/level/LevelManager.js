@@ -12,7 +12,6 @@ import { ChargerBrute } from '../entities/ChargerBrute.js';
 import { Spitter } from '../entities/Spitter.js';
 import { FrostWarden } from '../entities/FrostWarden.js';
 import { VoidKing } from '../entities/VoidKing.js';
-import { shakeScene } from '../systems/CameraRig.js';
 
 /**
  * Center + size (px) of the contiguous air gap at a wall/floor so door portals match the opening.
@@ -116,7 +115,6 @@ export class LevelManager {
     this.abilityOrbs = [];
     this.benches = [];
     this.healthPickups = [];
-    this.roomLocked = false;
     this.fogParticles = null;
     this.parallaxLayers = [];
     this.dripEmitters = [];
@@ -138,16 +136,6 @@ export class LevelManager {
     this.checkpointShrines = [];
     this.loreFragments = [];
     this.secretWalls = [];
-    this.sealDoorsUntilCleared = false;
-    this.waves = null;
-    this.waveIndex = 0;
-    this.waveDelayTimer = 0;
-    this.waveQueue = [];
-    this.roomLockVisuals = [];
-    this.roomLockTweens = [];
-    /** Fixed-screen notice when entering enemy-locked rooms */
-    this.roomLockNoticeText = null;
-    this.roomLockNoticeTimer = null;
   }
 
   get roomWidth() {
@@ -179,14 +167,7 @@ export class LevelManager {
 
     this.currentRoomId = roomId;
     this.currentRoom = room;
-    this.roomLocked = room.locked || false;
-
-    // Wave / sealed-arena config
-    this.waves = Array.isArray(room.waves) ? room.waves.map(w => ({ ...w })) : null;
-    this.waveIndex = 0;
-    this.waveDelayTimer = 0;
-    this.sealDoorsUntilCleared = !!room.sealDoorsUntilCleared;
-    if (this.sealDoorsUntilCleared) this.roomLocked = true;
+    this._levelCompleteTriggered = false;
 
     this.createParallaxBackground(room);
     this.buildTiles(room);
@@ -201,10 +182,6 @@ export class LevelManager {
 
     this.scene.cameras.main.setBounds(0, 0, this.roomPixelW, this.roomPixelH);
     this.scene.physics.world.setBounds(0, 0, this.roomPixelW, this.roomPixelH);
-
-    if (this.roomLocked) {
-      this.lockDoors();
-    }
 
     this.scene.cameraRig?.applyRoom(room);
   }
@@ -990,7 +967,6 @@ export class LevelManager {
     });
 
     const onDoor = (player) => {
-      if (this.roomLocked) return;
       if (player._enteringDoor) return;
       if (!meetsAbilityRequirements(player, door.requiresAbilities)) return;
 
@@ -1460,7 +1436,6 @@ export class LevelManager {
     });
 
     const onTeleport = (player) => {
-      if (this.roomLocked) return;
       if (!meetsAbilityRequirements(player, pad.requiresAbilities)) return;
       this.scene.transitionToRoom(pad.targetRoom, pad.spawnX, pad.spawnY);
     };
@@ -2552,7 +2527,6 @@ export class LevelManager {
       door.setAlpha(0.96);
       for (const player of this.allPlayers) {
         this.scene.physics.add.overlap(player, door, () => {
-          if (this.roomLocked) return;
           this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
         });
       }
@@ -2693,24 +2667,6 @@ export class LevelManager {
       const ic = this.activeIcicles[i];
       if (!ic.fallBody) { this.activeIcicles.splice(i, 1); continue; }
       if (!ic.fallBody.active) { this.activeIcicles.splice(i, 1); continue; }
-    }
-
-    // Wave / sealed arena progression
-    if (this.waves && this.sealDoorsUntilCleared) {
-      const alive = this.scene.enemies?.getChildren()?.filter(e => !e.isDead).length || 0;
-      if (this.waveIndex < this.waves.length) {
-        if (alive === 0) {
-          if (this.waveDelayTimer <= 0) {
-            const w = this.waves[this.waveIndex];
-            this.spawnWave(w);
-            this.waveIndex++;
-            this.waveDelayTimer = (w.nextDelay || 600);
-            this.announceWave(this.waveIndex, this.waves.length);
-          } else {
-            this.waveDelayTimer -= dt;
-          }
-        }
-      }
     }
 
     for (const plat of this.movingPlatforms) {
@@ -2895,279 +2851,21 @@ export class LevelManager {
     return tile === 1 || tile === 2 || tile === 3 ? tile : null;
   }
 
-  lockDoors() {
-    for (const d of this.doorZones) {
-      if (d.pulseTween) d.pulseTween.pause();
-      if (d.glowTween) d.glowTween.pause();
-      if (d.haloTween) d.haloTween.pause();
-      d.door.setTint(0xff3333);
-      d.door.setAlpha(0.78);
-      if (d.portalGlow) {
-        d.portalGlow.setTint(0xff4444);
-        d.portalGlow.setAlpha(0.32);
-      }
-      if (d.portalHalo) {
-        d.portalHalo.setTint(0xff4444);
-        d.portalHalo.setAlpha(0.35);
-      }
-    }
-    this.createDoorBarriers();
-    this.showRoomLockBarrier();
-    this.showRoomLockEnemyNotice();
-  }
-
-  unlockDoors() {
-    this.clearRoomLockNotice();
-    this.destroyRoomLockVisuals();
-    this.destroyDoorBarriers();
-    this.roomLocked = false;
-    for (const d of this.doorZones) {
-      d.door.clearTint();
-      d.door.setAlpha(0.96);
-      if (d.portalGlow) {
-        d.portalGlow.clearTint();
-        d.portalGlow.setAlpha(0.2);
-      }
-      if (d.portalHalo) {
-        d.portalHalo.clearTint();
-        d.portalHalo.setAlpha(0.35);
-      }
-      if (d.pulseTween) d.pulseTween.resume();
-      if (d.glowTween) d.glowTween.resume();
-      if (d.haloTween) d.haloTween.resume();
-    }
-    this.scene.cameras.main.flash(300, 64, 232, 192);
-  }
-
-  /** Solid physics blockers at each door while the room is locked so the
-   *  player can't walk into the doorway (and fall out / respawn). */
-  createDoorBarriers() {
-    this.destroyDoorBarriers();
-    if (!this.doorBarrierGroup) {
-      this.doorBarrierGroup = this.scene.physics.add.staticGroup();
-    }
-    this.doorBarriers = this.doorBarriers || [];
-
-    for (const d of this.doorZones) {
-      const door = d.door;
-      if (!door || !door.active) continue;
-      const w = Math.max(12, door.displayWidth || TILE_SIZE);
-      const h = Math.max(TILE_SIZE, door.displayHeight || TILE_SIZE * 2);
-      const bar = this.doorBarrierGroup.create(door.x, door.y, 'particle_white');
-      bar.setVisible(false);
-      bar.setDisplaySize(w, h);
-      bar.body.setSize(w, h);
-      bar.refreshBody();
-      this.doorBarriers.push(bar);
-
-      // Shimmering red warding visual so the player can see it's sealed
-      const shield = this.scene.add.rectangle(door.x, door.y, w, h, 0xff3344, 0.12)
-        .setDepth(6).setScrollFactor(1).setBlendMode(Phaser.BlendModes.ADD);
-      const shieldEdge = this.scene.add.rectangle(door.x, door.y, w, h, 0xff3344, 0)
-        .setStrokeStyle(2, 0xff4466, 0.7).setDepth(7).setScrollFactor(1);
-      this.roomLockVisuals.push(shield, shieldEdge);
-      const tw = this.scene.tweens.add({
-        targets: shield, fillAlpha: { from: 0.1, to: 0.28 },
-        duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
-      });
-      this.roomLockTweens.push(tw);
-    }
-
-    // Collide the player(s) with the barriers (hard-stop them)
-    for (const p of this.allPlayers) {
-      const c = this.scene.physics.add.collider(p, this.doorBarrierGroup, () => {
-        // Small visual thump when player bumps a sealed door
-        if (!this._sealBumpCooldown || this._sealBumpCooldown <= 0) {
-          this._sealBumpCooldown = 250;
-          shakeScene(this.scene, 60, 0.002);
-        }
-      });
-      this.doorBarrierColliders = this.doorBarrierColliders || [];
-      this.doorBarrierColliders.push(c);
-    }
-  }
-
-  destroyDoorBarriers() {
-    if (Array.isArray(this.doorBarrierColliders)) {
-      for (const c of this.doorBarrierColliders) {
-        if (c) this.scene.physics.world.removeCollider(c);
-      }
-    }
-    this.doorBarrierColliders = [];
-    if (this.doorBarrierGroup) {
-      this.doorBarrierGroup.clear(true, true);
-      this.doorBarrierGroup.destroy(true);
-      this.doorBarrierGroup = null;
-    }
-    this.doorBarriers = [];
-  }
-
-  destroyRoomLockVisuals() {
-    for (const tw of this.roomLockTweens) {
-      if (tw && tw.stop) tw.stop();
-    }
-    this.roomLockTweens = [];
-    for (const o of this.roomLockVisuals) {
-      if (o && o.active) o.destroy();
-    }
-    this.roomLockVisuals = [];
-  }
-
-  showRoomLockBarrier() {
-    this.destroyRoomLockVisuals();
-
-    const rpw = this.roomPixelW;
-    const rph = this.roomPixelH;
-    const band = Math.max(12, Math.min(18, Math.floor(TILE_SIZE * 0.45)));
-    const fill = 0x660011;
-    const edge = 0xff3344;
-
-    const addBand = (cx, cy, w, h) => {
-      const r = this.scene.add.rectangle(cx, cy, w, h, fill)
-        .setAlpha(0.35).setDepth(4).setScrollFactor(1);
-      this.roomLockVisuals.push(r);
-      const tw = this.scene.tweens.add({
-        targets: r,
-        alpha: { from: 0.2, to: 0.5 },
-        duration: 1000,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
-      this.roomLockTweens.push(tw);
-      return r;
-    };
-
-    addBand(rpw / 2, band / 2, rpw, band);
-    addBand(rpw / 2, rph - band / 2, rpw, band);
-    addBand(band / 2, rph / 2, band, rph);
-    addBand(rpw - band / 2, rph / 2, band, rph);
-
-    const g = this.scene.add.graphics().setDepth(10).setScrollFactor(1);
-    g.lineStyle(3, edge, 0.92);
-    g.strokeRect(2, 2, rpw - 4, rph - 4);
-    g.lineStyle(2, edge, 0.55);
-    const step = 22;
-    for (let x = step; x < rpw; x += step) {
-      g.lineBetween(x, 0, x, band + 8);
-      g.lineBetween(x, rph, x, rph - band - 8);
-    }
-    for (let y = step; y < rph; y += step) {
-      g.lineBetween(0, y, band + 8, y);
-      g.lineBetween(rpw, y, rpw - band - 8, y);
-    }
-    this.roomLockVisuals.push(g);
-
-    const twG = this.scene.tweens.add({
-      targets: g,
-      alpha: { from: 0.75, to: 1 },
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
-    this.roomLockTweens.push(twG);
-  }
-
-  clearRoomLockNotice() {
-    if (this.roomLockNoticeTimer) {
-      this.roomLockNoticeTimer.remove(false);
-      this.roomLockNoticeTimer = null;
-    }
-    if (this.roomLockNoticeText?.active) {
-      this.scene.tweens.killTweensOf(this.roomLockNoticeText);
-      this.roomLockNoticeText.destroy();
-    }
-    this.roomLockNoticeText = null;
-  }
-
-  /** Big red screen-fixed message: enemy-locked room (shown 7s). */
-  showRoomLockEnemyNotice() {
-    this.clearRoomLockNotice();
-
-    const cam = this.scene.cameras.main;
-    const msg = 'This room is sealed until you\ndefeat every enemy.\nClear them to unlock the exits.';
-    const text = this.scene.add.text(cam.centerX, cam.height * 0.2, msg, {
-      fontSize: '36px',
-      fontFamily: 'monospace',
-      color: '#ff2222',
-      stroke: '#1a0000',
-      strokeThickness: 10,
-      align: 'center',
-      lineSpacing: 10,
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(55);
-
-    this.roomLockNoticeText = text;
-
-    this.roomLockNoticeTimer = this.scene.time.delayedCall(7000, () => {
-      this.roomLockNoticeTimer = null;
-      if (!text.active) return;
-      this.scene.tweens.add({
-        targets: text,
-        alpha: 0,
-        duration: 450,
-        ease: 'Sine.easeIn',
-        onComplete: () => {
-          if (text.active) text.destroy();
-          if (this.roomLockNoticeText === text) this.roomLockNoticeText = null;
-        },
-      });
-    });
-  }
-
-  spawnWave(wave) {
-    if (!wave || !Array.isArray(wave.enemies)) return;
-    for (const e of wave.enemies) {
-      const px = e.x * TILE_SIZE + TILE_SIZE / 2;
-      const py = e.y * TILE_SIZE + TILE_SIZE / 2;
-      switch (e.type) {
-        case 'crawler':       this.createCrawler(px, py); break;
-        case 'flyer':         this.createFlyer(px, py); break;
-        case 'brute':         this.createBrute(px, py); break;
-        case 'armored_flyer': this.createArmoredFlyer(px, py); break;
-        case 'charger':       this.createChargerBrute(px, py); break;
-        case 'spitter':       this.createSpitter(px, py); break;
-      }
-    }
-    this.setupCollisions();
-  }
-
-  announceWave(idx, total) {
-    const cam = this.scene.cameras.main;
-    const label = idx >= total ? 'FINAL WAVE' : `WAVE ${idx} / ${total}`;
-    const t = this.scene.add.text(cam.width / 2, 120, label, {
-      fontSize: '22px', fontFamily: 'monospace', color: '#ff6644',
-      stroke: '#000', strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(50).setScrollFactor(0).setAlpha(0);
-    this.scene.tweens.add({
-      targets: t, alpha: 1, duration: 260, yoyo: true, hold: 900,
-      onComplete: () => t.destroy(),
-    });
-  }
-
+  /** Trigger level-complete flow when the final boss room is cleared.
+   *  Rooms are no longer sealed on entry; this simply watches for room29
+   *  to be empty of enemies after the boss is defeated. */
   checkRoomCleared() {
-    if (!this.roomLocked) return;
-    // Sealed arena with remaining waves: do not unlock yet
-    if (this.waves && this.waveIndex < this.waves.length) return;
-    const alive = this.scene.enemies.getChildren().filter(e => !e.isDead);
+    if (this.currentRoomId !== 'room29') return;
+    if (this._levelCompleteTriggered) return;
+    if (!this.scene.enemies) return;
+    const children = this.scene.enemies.getChildren();
+    if (children.length === 0) return;
+    const alive = children.filter(e => !e.isDead);
     if (alive.length === 0) {
-      this.unlockDoors();
-
-      const text = this.scene.add.text(
-        this.roomPixelW / 2, this.roomPixelH / 2 - 50, 'AREA CLEARED',
-        { fontSize: '32px', fontFamily: 'monospace', color: '#40ffd8', stroke: '#000', strokeThickness: 5 },
-      ).setOrigin(0.5).setDepth(20);
-
-      this.scene.tweens.add({
-        targets: text, alpha: 0, y: '-=30', duration: 2000, delay: 1000,
-        onComplete: () => text.destroy(),
+      this._levelCompleteTriggered = true;
+      this.scene.time.delayedCall(2500, () => {
+        this.scene.showLevelComplete();
       });
-
-      if (this.currentRoomId === 'room29') {
-        this.scene.time.delayedCall(2500, () => {
-          this.scene.showLevelComplete();
-        });
-      }
     }
   }
 
@@ -3190,8 +2888,6 @@ export class LevelManager {
   }
 
   clearCurrentRoom() {
-    this.clearRoomLockNotice();
-
     if (this.wallLayer) { this.wallLayer.clear(true, true); this.wallLayer = null; }
     if (this.platformGroup) { this.platformGroup.clear(true, true); this.platformGroup = null; }
 
@@ -3322,11 +3018,6 @@ export class LevelManager {
     this.secretWalls = [];
     if (this.secretWallGroup) { this.secretWallGroup.clear(true, true); this.secretWallGroup = null; }
 
-    this.waves = null;
-    this.waveIndex = 0;
-    this.waveDelayTimer = 0;
-    this.sealDoorsUntilCleared = false;
-
     for (const n of this.npcs) {
       if (n.npc && n.npc.active) n.npc.destroy();
       if (n.zone && n.zone.active) n.zone.destroy();
@@ -3339,9 +3030,6 @@ export class LevelManager {
 
     for (const e of this.dripEmitters) { e.destroy(); }
     this.dripEmitters = [];
-
-    this.destroyRoomLockVisuals();
-    this.destroyDoorBarriers();
 
     for (const l of this.parallaxLayers) { if (l && l.active) l.destroy(); }
     this.parallaxLayers = [];

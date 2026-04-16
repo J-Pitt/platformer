@@ -12,8 +12,8 @@ const WALL_JUMP_VELOCITY_X = 240;
 const WALL_JUMP_VELOCITY_Y = -420;
 const WALL_JUMP_LOCKOUT = 180;
 const DASH_SPEED = 520;
-const DASH_DURATION = 220;
-const DASH_COOLDOWN = 800;
+const DASH_DURATION = 440;
+const DASH_COOLDOWN = 1000;
 
 export class MovementSystem {
   constructor(player) {

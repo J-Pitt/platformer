@@ -1,13 +1,21 @@
 import * as Phaser from 'phaser';
 import { shakeScene } from '../systems/CameraRig.js';
 
-const PATROL_SPEED = 28;
-const DETECT_RANGE = 320;
-const CHARGE_SPEED = 260;
+const PATROL_SPEED = 32;
+const CHASE_SPEED = 90;
+const DETECT_RANGE = 360;
+const LOSE_RANGE = 480;
+const CHARGE_SPEED = 280;
 const TELEGRAPH_MS = 900;
 const CHARGE_COOLDOWN_MS = 2400;
 const WALL_STUN_MS = 1600;
 const TURN_CHECK_OFFSET = 30;
+
+const JUMP_VELOCITY = -320;
+const GAP_JUMP_VELOCITY = -270;
+const JUMP_COOLDOWN_MS = 700;
+const JUMP_PLAYER_ABOVE = 60;
+const JUMP_REACH_HORIZ = 200;
 
 function nearestPlayer(enemy, players) {
   const arr = Array.isArray(players) ? players : [players];
@@ -22,9 +30,10 @@ function nearestPlayer(enemy, players) {
 }
 
 /**
- * Charger — patrolling brute variant with a telegraphed horizontal charge.
- * When it sees the player on the same level it winds up with a red glow
- * then lunges. Hitting a wall at charge speed stuns it (vulnerable window).
+ * Charger — patrolling brute variant with a telegraphed horizontal charge,
+ * aggressive pursuit, and platform-hopping mobility. When it sees the player
+ * it either winds up a charge (same-level) or chases while jumping gaps and
+ * short ledges. Hitting a wall at charge speed stuns it (vulnerable window).
  */
 export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
@@ -32,10 +41,16 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.body.setSize(46, 44);
-    this.body.setOffset(9, 10);
+    // Frame 64x56, feet rendered down to frame y=56. Match body size so the
+    // enemy visually stands on the floor instead of sinking into it.
+    this.body.setSize(46, 48, true);
+    this.body.setOffset(9, 8);
     this.setScale(1.45);
     this.setDepth(4);
+
+    // Lift spawn so body.bottom starts above the floor tile (prevents the
+    // "half sunk into the ground" look on the first physics step).
+    this.y -= 26;
 
     this.hp = 4;
     this.maxHp = 4;
@@ -52,6 +67,9 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
     this.chargeDir = 1;
     this.stunTimer = 0;
     this.telegraphOverlay = null;
+
+    this.jumpCooldown = 0;
+    this._aggro = false;
   }
 
   isOnGround() {
@@ -75,12 +93,38 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  shouldHopGap() {
+    const lm = this.scene.levelManager;
+    if (!lm) return false;
+    const dir = this.direction;
+    const footY = this.y + 30;
+    const ahead1 = lm.getTileAt(this.x + dir * 30, footY);
+    const ahead2 = lm.getTileAt(this.x + dir * 58, footY);
+    const ahead3 = lm.getTileAt(this.x + dir * 84, footY);
+    const wallAhead = lm.getTileAt(this.x + dir * 28, this.y);
+    if (wallAhead) return false;
+    return !ahead1 && (ahead2 || ahead3);
+  }
+
+  tryJumpTowardPlayer(player) {
+    if (!this.isOnGround() || this.jumpCooldown > 0) return false;
+    const above = this.y - player.y > JUMP_PLAYER_ABOVE;
+    const horizReach = Math.abs(player.x - this.x) < JUMP_REACH_HORIZ;
+    if (above && horizReach) {
+      this.body.velocity.y = JUMP_VELOCITY;
+      this.jumpCooldown = JUMP_COOLDOWN_MS;
+      return true;
+    }
+    return false;
+  }
+
   update(dt, players) {
     if (this.isDead) return;
 
     this.knockbackTimer = Math.max(0, this.knockbackTimer - dt);
     this.hitCooldown = Math.max(0, this.hitCooldown - dt);
     this.chargeCooldown = Math.max(0, this.chargeCooldown - dt);
+    this.jumpCooldown = Math.max(0, this.jumpCooldown - dt);
 
     if (this.knockbackTimer > 0) return;
 
@@ -91,27 +135,55 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
     }
 
     const player = nearestPlayer(this, players);
+    if (!player) return;
+
+    const distToPlayer = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
+    const sameLevel = Math.abs(this.y - player.y) < 56;
+
+    if (distToPlayer < DETECT_RANGE && !player.isDead) this._aggro = true;
+    else if (distToPlayer > LOSE_RANGE || player.isDead) this._aggro = false;
 
     switch (this.state) {
       case 'patrol': {
-        if (!player) { this.body.velocity.x = 0; return; }
-        this.body.velocity.x = this.direction * PATROL_SPEED;
-
-        const distToPlayer = Phaser.Math.Distance.Between(this.x, this.y, player.x, player.y);
-        const sameLevel = Math.abs(this.y - player.y) < 56;
-
-        if (distToPlayer < DETECT_RANGE && sameLevel && this.chargeCooldown <= 0 && !player.isDead) {
+        if (this._aggro && sameLevel && this.chargeCooldown <= 0) {
+          // Telegraphed horizontal charge
           this.state = 'telegraph';
           this.telegraphTimer = TELEGRAPH_MS;
           this.chargeDir = player.x > this.x ? 1 : -1;
           this.direction = this.chargeDir;
           this.body.velocity.x = 0;
           this.ensureTelegraphOverlay();
+          break;
         }
 
-        // Edge / wall turnaround
+        if (this._aggro) {
+          // Pursue — chase the player across platforms
+          const dir = player.x > this.x ? 1 : -1;
+          this.direction = dir;
+          this.body.velocity.x = dir * CHASE_SPEED;
+
+          this.tryJumpTowardPlayer(player);
+
+          if (this.isOnGround() && this.jumpCooldown <= 0 && this.shouldHopGap()) {
+            this.body.velocity.y = GAP_JUMP_VELOCITY;
+            this.jumpCooldown = JUMP_COOLDOWN_MS;
+          }
+
+          const wallAhead =
+            (dir > 0 && this.body.blocked.right)
+            || (dir < 0 && this.body.blocked.left);
+          if (wallAhead && this.isOnGround() && this.jumpCooldown <= 0
+              && this.y - player.y > 10) {
+            this.body.velocity.y = JUMP_VELOCITY;
+            this.jumpCooldown = JUMP_COOLDOWN_MS;
+          }
+          break;
+        }
+
+        // Passive patrol
+        this.body.velocity.x = this.direction * PATROL_SPEED;
         const checkX = this.x + this.direction * TURN_CHECK_OFFSET;
-        const checkY = this.y + 24;
+        const checkY = this.y + 30;
         const floorTile = this.scene.levelManager?.getTileAt?.(checkX, checkY);
         const wallTile = this.scene.levelManager?.getTileAt?.(this.x + this.direction * 26, this.y);
         if (!floorTile || wallTile) this.direction *= -1;
@@ -137,7 +209,6 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
 
       case 'charge': {
         this.body.velocity.x = this.chargeDir * CHARGE_SPEED;
-        // Detect wall impact
         const hitWall = (this.chargeDir > 0 && this.body.blocked.right)
           || (this.chargeDir < 0 && this.body.blocked.left);
         if (hitWall) {
@@ -147,7 +218,6 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
           shakeScene(this.scene, 160, 0.012);
           this.setTint(0x4488ff).setTintMode(Phaser.TintModes.FILL);
           this.scene.time.delayedCall(120, () => { if (this.active) this.clearTint(); });
-          // Dust
           if (this.scene.dustEmitter) {
             this.scene.dustEmitter.emitParticleAt(this.x + this.chargeDir * 22, this.y + 16, 10);
           }
@@ -158,7 +228,6 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
       case 'stun': {
         this.body.velocity.x = 0;
         this.stunTimer -= dt;
-        // Wobble
         this.rotation = Math.sin(this.scene.time.now * 0.02) * 0.05;
         if (this.stunTimer <= 0) {
           this.rotation = 0;
@@ -175,12 +244,12 @@ export class ChargerBrute extends Phaser.Physics.Arcade.Sprite {
   takeDamage(amount, slashDir) {
     if (this.isDead) return;
 
-    // Double damage while stunned — reward the "bait into wall" mechanic
     const mult = this.state === 'stun' ? 2 : 1;
 
     this.hp -= amount * mult;
     this.isHit = true;
     this.hitCooldown = 300;
+    this._aggro = true;
 
     this.setTint(mult > 1 ? 0xffd540 : 0xff4444).setTintMode(Phaser.TintModes.FILL);
     this.scene.time.delayedCall(100, () => {

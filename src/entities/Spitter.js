@@ -30,7 +30,9 @@ export class Spitter extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.body.setSize(26, 26);
+    // Frame 32x32. Extend body to the full sprite height so the spitter
+    // doesn't render with its tripod legs clipped into the floor.
+    this.body.setSize(26, 28, true);
     this.body.setOffset(3, 4);
     this.body.allowGravity = true;
     this.body.setMaxVelocity(0, 400);

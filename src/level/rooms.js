@@ -669,7 +669,6 @@ function buildRoom5() {
       ambientColor: 0xcc4488,
       ambientAlpha: 0.055,
     },
-    locked: true,
     ambience: 'tunnel_guardian',
   };
 }
@@ -1069,7 +1068,6 @@ function buildRoom8() {
       ambientColor: 0xff4444,
       ambientAlpha: 0.055,
     },
-    locked: true,
     ambience: 'tunnel_guardian',
   };
 }
@@ -1167,7 +1165,6 @@ function buildRoom9() {
       ambientColor: 0xff2244,
       ambientAlpha: 0.065,
     },
-    locked: true,
     ambience: 'tunnel_guardian',
   };
 }
@@ -1652,7 +1649,6 @@ function buildRoom13() {
       ambientColor: 0x88ccff,
       ambientAlpha: 0.055,
     },
-    locked: true,
     ambience: 'tunnel_crystal',
   };
 }
@@ -2133,7 +2129,6 @@ function buildRoom17() {
       ambientColor: 0xff3322,
       ambientAlpha: 0.06,
     },
-    locked: true,
     ambience: 'tunnel_guardian',
   };
 }
@@ -2312,7 +2307,6 @@ function buildRoom19() {
 
   return {
     name: 'Frost Warden Arena',
-    locked: true,
     width: W,
     height: H,
     tiles,
@@ -2617,7 +2611,6 @@ function buildRoom21() {
       ambientColor: 0x442266,
       ambientAlpha: 0.065,
     },
-    locked: true,
     ambience: 'tunnel',
   };
 }
@@ -3126,7 +3119,6 @@ function buildRoom25() {
       ambientColor: 0x669944,
       ambientAlpha: 0.055,
     },
-    locked: true,
     ambience: 'tunnel_fungal',
   };
 }
@@ -3495,7 +3487,6 @@ function buildRoom28() {
       ambientColor: 0x7722cc,
       ambientAlpha: 0.06,
     },
-    locked: true,
     ambience: 'tunnel_guardian',
   };
 }
@@ -3599,7 +3590,6 @@ function buildRoom29() {
       ambientColor: 0x8833dd,
       ambientAlpha: 0.07,
     },
-    locked: true,
     ambience: 'tunnel_guardian',
   };
 }
