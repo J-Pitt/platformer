@@ -492,9 +492,10 @@ function buildRoom4() {
   fillRow(tiles, 12, 43, 47, 2);
   fillRow(tiles, 10, 43, 47, 2);
 
-  // Spike columns (wall-jump obstacles with danger)
-  fillRect(tiles, 6, 11, 12, 11, 1);
-  fillRect(tiles, 6, 32, 12, 32, 1);
+  // Spike columns (wall-jump obstacles with danger) — grounded so you must
+  // jump them instead of running under.
+  fillRect(tiles, 6, 11, H - 3, 11, 1);
+  fillRect(tiles, 6, 32, H - 3, 32, 1);
 
   // Crystal tunnel — low roof bands + choke points
   fillRect(tiles, 2, 9, 5, 24, 1);
@@ -639,9 +640,10 @@ function buildRoom5() {
   fillRow(tiles, 14, 5, 11, 2);
   fillRow(tiles, 10, 12, 22, 2);
 
-  // Arena pillars (taller, with spike walls on faces)
-  fillRect(tiles, 3, 10, 12, 10, 1);
-  fillRect(tiles, 3, 29, 12, 29, 1);
+  // Arena pillars (taller, with spike walls on faces) — grounded to block
+  // sprinting between them.
+  fillRect(tiles, 3, 10, H - 3, 10, 1);
+  fillRect(tiles, 3, 29, H - 3, 29, 1);
 
   // Buried arena — ceiling slabs over side aisles
   fillRect(tiles, 2, 5, 5, 16, 1);
@@ -1370,9 +1372,9 @@ function buildRoom10() {
   // ----- Wall-jump ice pillars framing the chasm -----
   fillRect(tiles, 8, 11, 18, 11, 1);
   fillRect(tiles, 8, 38, 18, 38, 1);
-  // Outer ascending shafts near each edge
-  fillRect(tiles, 6, 5, 16, 5, 1);
-  fillRect(tiles, 6, 44, 16, 44, 1);
+  // Outer ascending shafts near each edge — grounded so you can't sprint under them.
+  fillRect(tiles, 6, 5, H - 3, 5, 1);
+  fillRect(tiles, 6, 44, H - 3, 44, 1);
 
   // ----- Mid tier platforms (row 13) -----
   fillRow(tiles, 13, 3, 4, 2);
@@ -1699,9 +1701,10 @@ function buildRoom12() {
   fillRow(tiles, 14, 58, 63, 2);
   fillRow(tiles, 10, 62, 66, 2);
 
-  // Ice pillars
+  // Ice pillars — west pair frames the first chasm (cols 11-19 are open
+  // below), east pair is grounded so it actually blocks a sprint.
   fillRect(tiles, 5, 14, 16, 15, 1);
-  fillRect(tiles, 5, 48, 16, 49, 1);
+  fillRect(tiles, 5, 48, H - 3, 49, 1);
 
   // Ice ceiling slabs
   fillRect(tiles, 2, 6, 4, 22, 1);
@@ -1875,9 +1878,10 @@ function buildRoom13() {
   fillRow(tiles, 12, 14, 26, 2);
   fillRow(tiles, 8, 18, 22, 2);
 
-  // Arena pillars
-  fillRect(tiles, 4, 12, 14, 12, 1);
-  fillRect(tiles, 4, W - 13, 14, W - 13, 1);
+  // Arena pillars — grounded so the boss room actually has walls instead
+  // of hanging decor.
+  fillRect(tiles, 4, 12, H - 3, 12, 1);
+  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
 
   // Icy ceiling
   fillRect(tiles, 2, 4, 5, W - 5, 1);
@@ -2008,9 +2012,10 @@ function buildRoom14() {
   setTile(tiles, f, 38, 3);
   setTile(tiles, 22, 39, 3);
 
-  // Lava pillars
+  // Lava pillars — west pair stands over a magma gap (cols 11-16); east
+  // pair is grounded so it actually blocks the path.
   fillRect(tiles, 5, 14, 14, 15, 1);
-  fillRect(tiles, 5, 34, 14, 35, 1);
+  fillRect(tiles, 5, 34, H - 3, 35, 1);
 
   // Cavern ceiling
   fillRect(tiles, 2, 6, 5, 20, 1);
@@ -2568,9 +2573,10 @@ function buildRoom18() {
   // Wall-jump shadow pillars framing the pit
   fillRect(tiles, 7, 11, 18, 11, 1);
   fillRect(tiles, 7, 38, 18, 38, 1);
-  // Outer wall-jump shafts
-  fillRect(tiles, 6, 5, 15, 5, 1);
-  fillRect(tiles, 6, 44, 15, 44, 1);
+  // Outer wall-jump shafts — grounded to become true blockers (they used to
+  // hang above the floor and let you sprint right underneath).
+  fillRect(tiles, 6, 5, H - 3, 5, 1);
+  fillRect(tiles, 6, 44, H - 3, 44, 1);
 
   // Mid tier platforms (row 13)
   fillRow(tiles, 13, 3, 4, 2);
@@ -2851,9 +2857,9 @@ function buildRoom20() {
   // Wall-jump pillars framing the pit
   fillRect(tiles, 7, 12, 18, 12, 1);
   fillRect(tiles, 7, 42, 18, 42, 1);
-  // Outer ascending shafts
-  fillRect(tiles, 6, 5, 16, 5, 1);
-  fillRect(tiles, 6, 49, 16, 49, 1);
+  // Outer ascending shafts — grounded so the nave's flanks actually wall you in.
+  fillRect(tiles, 6, 5, H - 3, 5, 1);
+  fillRect(tiles, 6, 49, H - 3, 49, 1);
 
   // Mid tier choir stalls (row 13)
   fillRow(tiles, 13, 3, 4, 2);
@@ -3034,9 +3040,10 @@ function buildRoom21() {
   fillRow(tiles, 12, 18, 26, 2);
   fillRow(tiles, 8, 20, 24, 2);
 
-  // Shadow arena pillars
-  fillRect(tiles, 4, 12, 16, 12, 1);
-  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+  // Shadow arena pillars — grounded so the warden's flanks aren't just
+  // floating decor you can run under.
+  fillRect(tiles, 4, 12, H - 3, 12, 1);
+  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
 
   // Vaulted ceiling
   fillRect(tiles, 2, 4, 5, W - 5, 1);
@@ -3159,9 +3166,9 @@ function buildRoom22() {
   // ----- Toppled-shelf wall-jump pillars -----
   fillRect(tiles, 7, 11, 18, 11, 1);
   fillRect(tiles, 7, 38, 18, 38, 1);
-  // Outer ascending shafts
-  fillRect(tiles, 6, 5, 16, 5, 1);
-  fillRect(tiles, 6, 44, 16, 44, 1);
+  // Outer ascending shafts — grounded so the library's flanks really block.
+  fillRect(tiles, 6, 5, H - 3, 5, 1);
+  fillRect(tiles, 6, 44, H - 3, 44, 1);
 
   // ----- Mid tier shelves (row 13) -----
   fillRow(tiles, 13, 3, 4, 2);
@@ -3449,9 +3456,9 @@ function buildRoom24() {
   fillRow(tiles, 17, 31, 32, 2);
   fillRow(tiles, 17, 38, 39, 2);
 
-  // Wall-jump pillars
-  fillRect(tiles, 7, 12, 18, 12, 1);
-  fillRect(tiles, 7, 42, 18, 42, 1);
+  // Wall-jump pillars — grounded so they actually wall off the sprint lane.
+  fillRect(tiles, 7, 12, H - 3, 12, 1);
+  fillRect(tiles, 7, 42, H - 3, 42, 1);
   fillRect(tiles, 6, 5, 16, 5, 1);
   fillRect(tiles, 6, 49, 16, 49, 1);
 
@@ -3640,9 +3647,9 @@ function buildRoom25() {
   fillRow(tiles, 12, 18, 26, 2);
   fillRow(tiles, 8, 20, 24, 2);
 
-  // Archive sentinels — pillars
-  fillRect(tiles, 4, 12, 16, 12, 1);
-  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+  // Archive sentinels — pillars, grounded so the sentinel's flanks really wall.
+  fillRect(tiles, 4, 12, H - 3, 12, 1);
+  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
 
   // Vaulted ceiling
   fillRect(tiles, 2, 4, 5, W - 5, 1);
@@ -3760,8 +3767,8 @@ function buildRoom26() {
 
   fillRect(tiles, 7, 11, 18, 11, 1);
   fillRect(tiles, 7, 38, 18, 38, 1);
-  fillRect(tiles, 6, 5, 15, 5, 1);
-  fillRect(tiles, 6, 44, 15, 44, 1);
+  fillRect(tiles, 6, 5, H - 3, 5, 1);
+  fillRect(tiles, 6, 44, H - 3, 44, 1);
 
   fillRow(tiles, 13, 3, 4, 2);
   fillRow(tiles, 13, 45, 46, 2);
@@ -4055,9 +4062,10 @@ function buildRoom28() {
   fillRow(tiles, 6, 10, 14, 2);
   fillRow(tiles, 6, 40, 44, 2);
 
-  // Arena pillars
-  fillRect(tiles, 3, 8, 14, 8, 1);
-  fillRect(tiles, 3, 46, 14, 46, 1);
+  // Arena pillars — outer pair grounded so they block the flanks; inner
+  // pair hangs over the central pit as wall-jump markers.
+  fillRect(tiles, 3, 8, H - 3, 8, 1);
+  fillRect(tiles, 3, 46, H - 3, 46, 1);
   fillRect(tiles, 3, 20, 8, 20, 1);
   fillRect(tiles, 3, 34, 8, 34, 1);
 
@@ -4204,9 +4212,10 @@ function buildRoom29() {
   fillRow(tiles, 10, 20, 28, 2);
   fillRow(tiles, 6, 22, 26, 2);
 
-  // Arena pillars framing the center
-  fillRect(tiles, 4, 12, 16, 12, 1);
-  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
+  // Arena pillars framing the center — grounded so the king's arena has
+  // real walls, not floating banners.
+  fillRect(tiles, 4, 12, H - 3, 12, 1);
+  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
 
   // Throne ceiling — oppressive stone dome
   fillRect(tiles, 2, 4, 5, W - 5, 1);
