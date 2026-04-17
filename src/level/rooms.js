@@ -262,6 +262,10 @@ function buildRoom2() {
       { type: 'floor_spikes', x: 10, y: 27, onTime: 1500, offTime: 2000, phase: 0 },
       { type: 'flame_jet', x: 11, y: 8, dir: 'down', onTime: 1200, offTime: 1800, phase: 300 },
       { type: 'lore_fragment', x: 18, y: 26, text: "Carved into stone: \"We delved too greedily, and woke the dreaming king.\"" },
+      // New hazards — the shaft tests your wall jump
+      { type: 'crusher', x: 11, y: 4, dropDist: 3, downTime: 400, upTime: 2200, phase: 'top' },
+      { type: 'arrow_turret', x: 2, y: 17, dir: 'right', interval: 3000, burstSize: 2, burstSpacing: 150 },
+      { type: 'arrow_turret', x: W - 3, y: 21, dir: 'left', interval: 3000, burstSize: 2, burstSpacing: 150 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -338,7 +342,7 @@ function buildRoom3() {
     playerSpawn: { x: 40, y: 9 },
     objects: [
       { type: 'door', targetRoom: 'room2', x: W - 2, y: 10, spawnX: 2, spawnY: 5 },
-      { type: 'door', targetRoom: 'room6', x: 1, y: 19, spawnX: 3, spawnY: 19 },
+      { type: 'door', targetRoom: 'room6', x: 1, y: 19, spawnX: 3, spawnY: 22 },
       { type: 'ability_orb', ability: 'map', x: 3, y: 3, hint: 'Press M or tap the map icon' },
       { type: 'moving_platform', x: 30, y: 12, axis: 'x', range: 44, speed: 1.2, phase: 0.4, spin: 0.6 },
       { type: 'crumble_platform', x: 24, y: 10, collapseDelay: 520, respawnDelay: 2600 },
@@ -387,6 +391,10 @@ function buildRoom3() {
       { type: 'lore_fragment', x: 42, y: 17, text: 'Hidden alcove: "The fungal bloom remembers the forest above." ' },
       { type: 'health_pickup', x: 43, y: 17 },
       { type: 'fungal_bloom_large', x: 10, y: 17 },
+      // New hazards — fungal passage ambush points
+      { type: 'arrow_turret', x: 2, y: 14, dir: 'right', interval: 2800, burstSize: 2, burstSpacing: 140 },
+      { type: 'laser_beam', x: W - 3, y: 8, dir: 'left', length: 8, onTime: 900, offTime: 1400, phase: 0 },
+      { type: 'crusher', x: 22, y: 6, dropDist: 3, downTime: 380, upTime: 2200, phase: 'up' },
     ],
     foreground: [
       { type: 'fg_mushroom_large', x: 0, y: H - 1, flipX: false },
@@ -531,6 +539,11 @@ function buildRoom4() {
       { type: 'glow_spore', x: 22, y: 6 },
       { type: 'glow_spore', x: 35, y: 4 },
       { type: 'glow_spore', x: 8, y: 10 },
+      // New hazards — Crystal Hall dash gauntlet
+      { type: 'laser_beam', x: 2, y: 15, dir: 'right', length: 10, onTime: 900, offTime: 1300, phase: 0 },
+      { type: 'crusher', x: 22, y: 1, dropDist: 4, downTime: 400, upTime: 2200, phase: 'top' },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2800, burstSize: 2, burstSpacing: 140 },
+      { type: 'phase_platform', x: 20, y: 10, width: 4, onTime: 1200, offTime: 900, phase: 0 },
     ],
     foreground: [
       { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
@@ -608,7 +621,7 @@ function buildRoom5() {
     playerSpawn: { x: 3, y: 21 },
     objects: [
       { type: 'door', targetRoom: 'room4', x: 1, y: 21, spawnX: 47, spawnY: 19 },
-      { type: 'door', targetRoom: 'room8', x: W - 2, y: 21, spawnX: 46, spawnY: 23 },
+      { type: 'door', targetRoom: 'room8', x: W - 2, y: 21, spawnX: 64, spawnY: 26 },
       { type: 'moving_platform', x: 20, y: 14, axis: 'x', range: 160, speed: 1.2, phase: 0, spin: 0 },
       { type: 'crumble_platform', x: 18, y: 8, collapseDelay: 340, respawnDelay: 2400 },
       { type: 'crumble_platform', x: 21, y: 8, collapseDelay: 460, respawnDelay: 2400 },
@@ -647,6 +660,10 @@ function buildRoom5() {
       { type: 'glow_spore', x: 32, y: 6 },
       { type: 'hanging_moss', x: 20, y: 2 },
       { type: 'lore_fragment', x: 28, y: 21, text: "A shattered helm. The bone sentinels were warriors once, bound to protect." },
+      // New hazards
+      { type: 'crusher', x: 20, y: 1, dropDist: 4, downTime: 380, upTime: 2200, phase: 'top' },
+      { type: 'laser_beam', x: 5, y: 11, dir: 'right', length: 5, onTime: 1100, offTime: 1500, phase: 0 },
+      { type: 'arrow_turret', x: 36, y: 15, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 120 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -676,52 +693,68 @@ function buildRoom5() {
 }
 
 function buildRoom6() {
-  const W = 60, H = 22;
+  // Double-jump acquisition room. Post-dash, pre-doubleJump: the whole
+  // climb up to the orb is playable with just wall-jump + dash; the
+  // descent back and the east exit are deliberately tuned so
+  // players who grabbed the orb can now clear 4-tile air gaps with the
+  // second jump they just earned.
+  const W = 72, H = 26;
   const tiles = makeRoom(W, H);
-  const f = H - 3;
+  const f = H - 3; // 23
 
-  // Lower floor segments with lava gaps
-  fillRect(tiles, H - 2, 1, H - 1, 14, 1);
-  clearRect(tiles, H - 2, 15, H - 2, 19);
-  fillRect(tiles, H - 2, 20, H - 1, 30, 1);
-  clearRect(tiles, H - 2, 31, H - 2, 35);
-  fillRect(tiles, H - 2, 36, H - 1, 44, 1);
-  clearRect(tiles, H - 2, 45, H - 2, 49);
-  fillRect(tiles, H - 2, 50, H - 1, W - 2, 1);
+  // ----- A. Entrance run (cols 1..15) -----
+  // Solid floor up to col 7, then a 6-tile dash-only lava chasm.
+  fillRect(tiles, H - 2, 1, H - 1, 7, 1);
+  fillRow(tiles, H - 1, 8, 14, 1);  // lava trough bottom
+  fillRect(tiles, H - 2, 15, H - 1, 19, 1);
+  // Low stone overhang forces the player to DASH the chasm instead of jumping.
+  fillRect(tiles, 17, 3, 18, 19, 1);
+  fillRect(tiles, 16, 3, 16, 6, 1);
+  fillRect(tiles, 16, 14, 16, 19, 1);
 
-  // Stepping platforms (bridge floor bumps at row 18 to the main tier at row 14)
-  fillRow(tiles, 16, 6, 9, 2);
-  fillRow(tiles, 16, 26, 29, 2);
-  fillRow(tiles, 16, 50, 53, 2);
+  // ----- B. Wall-jump chimney (cols 20..26) -----
+  // Two parallel stone columns: climb via alternating wall-jumps to reach row 10 ledge.
+  fillRect(tiles, 8, 20, H - 3, 20, 1);
+  fillRect(tiles, 8, 26, H - 3, 26, 1);
+  // Floor between the columns is a drop-through gap (lava below)
+  clearRect(tiles, H - 2, 21, H - 2, 25);
+  fillRow(tiles, H - 1, 21, 25, 1);
+  // Top ledge out of chimney
+  fillRow(tiles, 8, 20, 29, 2);
 
-  // Elevated platforms (aqueduct channels)
-  fillRow(tiles, 14, 4, 10, 2);
-  fillRow(tiles, 12, 8, 14, 2);
-  fillRow(tiles, 10, 16, 22, 2);
-  fillRow(tiles, 14, 24, 30, 2);
-  fillRow(tiles, 11, 28, 34, 2);
-  fillRow(tiles, 8, 36, 42, 2);
-  fillRow(tiles, 14, 44, 50, 2);
-  fillRow(tiles, 10, 48, 54, 2);
-  fillRow(tiles, 7, 52, 56, 2);
+  // ----- C. Middle aqueduct above lava (cols 27..48) -----
+  // The whole floor is gone — cross on a mixed gauntlet of moving platforms,
+  // crumble platforms, and the orb island.
+  clearRect(tiles, H - 2, 27, H - 2, 50);
+  fillRow(tiles, H - 1, 27, 50, 1);
+  // Upper-mid ledge (row 14) — short segments forcing hops + moving platforms.
+  fillRow(tiles, 14, 28, 31, 2);
+  fillRow(tiles, 14, 44, 48, 2);
+  // Orb platform way up at row 5, cols 36..42 (reachable via vertical movers).
+  fillRow(tiles, 5, 36, 42, 2);
+  // Wall nubs on either side of the orb for wall-jump dismount.
+  fillRect(tiles, 7, 33, 11, 33, 1);
+  fillRect(tiles, 7, 45, 11, 45, 1);
 
-  // Pillars / walls
-  fillRect(tiles, 4, 20, 9, 21, 1);
-  fillRect(tiles, 4, 40, 9, 41, 1);
+  // ----- D. Post-orb upper route (cols 49..W-2) -----
+  // Floor returns at col 49 but only a thin ribbon.
+  fillRect(tiles, H - 2, 49, H - 1, W - 2, 1);
+  // Climb via three ascending ledges with 4-tile gaps — doubleJump required to skip
+  // a missing crumble cleanly.
+  fillRow(tiles, 17, 51, 55, 2);
+  fillRow(tiles, 13, 56, 60, 2);
+  fillRow(tiles, 9, 61, 65, 2);
+  // East door ledge at row 8 (matches existing east door y).
+  fillRow(tiles, 8, 66, W - 2, 2);
 
-  // Aqueduct tunnel — roof over the walkway
-  fillRect(tiles, 2, 6, 5, 18, 1);
-  fillRect(tiles, 2, 24, 5, 32, 1);
-  fillRect(tiles, 2, 38, 5, 52, 1);
-
-  // Terrain bumps
-  fillRect(tiles, 18, 5, 19, 7, 1);
-  fillRect(tiles, 18, 25, 19, 27, 1);
-  fillRect(tiles, 18, 51, 19, 53, 1);
+  // ----- E. Ambient ruin slabs (bg cover) -----
+  fillRect(tiles, 2, 6, 4, 14, 1);
+  fillRect(tiles, 2, 30, 3, 44, 1);
+  fillRect(tiles, 2, 58, 3, W - 2, 1);
 
   // Door openings
-  clearRect(tiles, f - 2, 0, f + 1, 0);        // left back to room3
-  clearRect(tiles, 6, W - 1, 9, W - 1);         // right to room7
+  clearRect(tiles, f - 2, 0, f + 1, 0);        // west to room3
+  clearRect(tiles, 6, W - 1, 9, W - 1);         // east to room7
 
   return {
     name: 'Sunken Aqueduct',
@@ -732,66 +765,79 @@ function buildRoom6() {
     objects: [
       { type: 'door', targetRoom: 'room3', x: 1, y: f, spawnX: 42, spawnY: 19 },
       { type: 'door', targetRoom: 'room7', x: W - 2, y: 8, spawnX: 2, spawnY: 19 },
-      { type: 'ability_orb', ability: 'doubleJump', x: 54, y: 6, hint: 'Press jump again in mid-air!' },
-      { type: 'bench', x: 30, y: 13 },
-      // Lava pits,
-      // Moving platforms over lava,
-      { type: 'moving_platform', x: 17, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 33, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 1.5, spin: 0 },
-      { type: 'moving_platform', x: 47, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0.8, spin: 0 },
-      // Vertical platforms,
-      { type: 'moving_platform', x: 22, y: 6, axis: 'y', range: 96, speed: 0.8, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 42, y: 6, axis: 'y', range: 96, speed: 0.9, phase: 1.0, spin: 0 },
-      // Traps,
-      // Crumble platforms,
-      { type: 'crumble_platform', x: 26, y: 11, collapseDelay: 400, respawnDelay: 2600 },
-      { type: 'crumble_platform', x: 38, y: 8, collapseDelay: 380, respawnDelay: 2400 },
-      { type: 'crumble_platform', x: 54, y: 10, collapseDelay: 420, respawnDelay: 2600 },
-      // Enemies,
-      { type: 'brute', x: 30, y: f },
-      { type: 'flyer', x: 26, y: 6 },
-      { type: 'flyer', x: 37, y: 4 },
-      { type: 'flyer', x: 50, y: 7 },
-      { type: 'flyer', x: 18, y: 12 },
-      { type: 'flyer', x: 46, y: 10 },
-      // Decorations,
+      { type: 'ability_orb', ability: 'doubleJump', x: 39, y: 4, hint: 'Press jump again in mid-air!' },
+      { type: 'bench', x: 4, y: f - 1 },
+
+      // --- A. Entrance hazards ---
+      { type: 'floor_spikes', x: 10, y: H - 2, onTime: 1200, offTime: 2000, phase: 0 },
+      { type: 'floor_spikes', x: 12, y: H - 2, onTime: 1200, offTime: 2000, phase: 1000 },
+      { type: 'fireball_shooter', x: 2, y: 19, dir: 'right', interval: 2400, phase: 0 },
+      { type: 'flame_jet', x: 8, y: H - 2, dir: 'up', onTime: 900, offTime: 1800, phase: 0 },
+
+      // --- B. Wall-jump chimney hazards ---
+      { type: 'saw_blade', x: 23, y: 14, axis: 'y', range: 120, speed: 1.1, phase: 0 },
+      { type: 'arrow_turret', x: 27, y: 12, dir: 'left', interval: 2500, burstSize: 3, burstSpacing: 110 },
+
+      // --- C. Middle aqueduct: moving platforms + lava ---
+      // Horizontal mover bridging col 31 → col 44 (the gap is ~12 tiles).
+      { type: 'moving_platform', x: 37, y: 14, axis: 'x', range: 160, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 37, y: 18, axis: 'x', range: 160, speed: 1.2, phase: 1.5, spin: 0 },
+      // Vertical riser to the orb (row 5)
+      { type: 'moving_platform', x: 34, y: 10, axis: 'y', range: 120, speed: 0.9, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 44, y: 10, axis: 'y', range: 120, speed: 0.9, phase: 1.8, spin: 0 },
+      // Crumble stepping stones under the mover path (for when timing fails)
+      { type: 'crumble_platform', x: 33, y: 18, collapseDelay: 400, respawnDelay: 2800 },
+      { type: 'crumble_platform', x: 40, y: 16, collapseDelay: 400, respawnDelay: 2800 },
+      // Crusher centered on the orb approach — forces timing even mid-jump.
+      { type: 'crusher', x: 39, y: 1, dropDist: 5, downTime: 450, upTime: 2000, phase: 'top' },
+      // Lava hazards below
+      { type: 'magma_pool', x: 34, y: H - 2, width: 10 },
+      { type: 'magma_pool', x: 46, y: H - 2, width: 6 },
+
+      // --- D. Post-orb climb ---
+      { type: 'crumble_platform', x: 58, y: 13, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 63, y: 9, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'pendulum_trap', x: 60, y: 11, length: 90, swing: 42, speed: 1.4, phase: 0 },
+      { type: 'pendulum_trap', x: 65, y: 7, length: 80, swing: 38, speed: 1.6, phase: 0.8 },
+      { type: 'saw_blade', x: 53, y: 17, axis: 'x', range: 96, speed: 1.0, phase: 0 },
+
+      // --- Enemies ---
+      { type: 'brute', x: 5, y: f },
+      { type: 'flyer', x: 24, y: 5 },
+      { type: 'flyer', x: 38, y: 7 },
+      { type: 'flyer', x: 54, y: 7 },
+      { type: 'flyer', x: 60, y: 4 },
+      { type: 'flyer', x: 66, y: 5 },
+
+      // --- Decorations ---
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 25, y: 1 },
       { type: 'stalactite', x: 42, y: 1 },
-      { type: 'stalactite', x: 55, y: 1 },
+      { type: 'stalactite', x: 58, y: 1 },
       { type: 'stalactite_sm', x: 6, y: 1 },
       { type: 'stalactite_sm', x: 18, y: 1 },
       { type: 'stalactite_sm', x: 34, y: 1 },
       { type: 'stalactite_sm', x: 48, y: 1 },
+      { type: 'stalactite_sm', x: 64, y: 1 },
       { type: 'chain', x: 14, y: 1 },
       { type: 'chain', x: 30, y: 1 },
       { type: 'chain', x: 46, y: 1 },
-      { type: 'vine', x: 8, y: 1 },
+      { type: 'chain', x: 62, y: 1 },
       { type: 'vine', x: 22, y: 1 },
-      { type: 'vine', x: 38, y: 1 },
       { type: 'vine', x: 52, y: 1 },
       { type: 'ruin_arch', x: 10, y: f },
-      { type: 'ruin_arch', x: 28, y: f },
       { type: 'ruin_arch', x: 44, y: f },
+      { type: 'ruin_arch', x: 62, y: f },
       { type: 'glow_spore', x: 16, y: 8 },
       { type: 'glow_spore', x: 32, y: 6 },
       { type: 'glow_spore', x: 48, y: 4 },
-      { type: 'mud_patch', x: 6, y: f },
-      { type: 'mud_patch', x: 24, y: f },
-      { type: 'mud_patch', x: 40, y: f },
-      { type: 'gravel_patch', x: 12, y: f },
-      { type: 'gravel_patch', x: 36, y: f },
-      { type: 'gravel_patch', x: 54, y: f },
-      { type: 'stalactite_sm', x: 2, y: 1 },
-      { type: 'stalactite_sm', x: 20, y: 1 },
-      { type: 'stalactite_sm', x: 36, y: 1 },
-      { type: 'stalactite_sm', x: 52, y: 1 },
-      { type: 'glow_spore', x: 15, y: 4 },
-      { type: 'glow_spore', x: 35, y: 4 },
-      { type: 'glow_spore', x: 50, y: 4 },
+      { type: 'glow_spore', x: 60, y: 6 },
+      { type: 'mud_patch', x: 4, y: f },
+      { type: 'gravel_patch', x: 52, y: f },
       { type: 'hanging_moss', x: 12, y: 2 },
       { type: 'hanging_moss', x: 30, y: 2 },
       { type: 'hanging_moss', x: 46, y: 2 },
+      { type: 'hanging_moss', x: 62, y: 2 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -865,8 +911,8 @@ function buildRoom7() {
     tiles,
     playerSpawn: { x: 3, y: 19 },
     objects: [
-      { type: 'door', targetRoom: 'room6', x: 1, y: 19, spawnX: 56, spawnY: 8 },
-      { type: 'door', targetRoom: 'room8', x: W - 2, y: 5, spawnX: 2, spawnY: 19 },
+      { type: 'door', targetRoom: 'room6', x: 1, y: 19, spawnX: 68, spawnY: 8 },
+      { type: 'door', targetRoom: 'room8', x: W - 2, y: 5, spawnX: 2, spawnY: 26 },
       { type: 'ability_orb', ability: 'spear', x: 26, y: 3, hint: 'Soul Spear — double damage and reach!' },
       { type: 'bench', x: 16, y: 9 },
       { type: 'npc', npcType: 'hermit', x: 18, y: 9, dialogue: [
@@ -946,49 +992,65 @@ function buildRoom7() {
 }
 
 function buildRoom8() {
-  const W = 50, H = 26;
+  // The Crucible: a massive multi-tier lava chamber. With double-jump now
+  // acquired (room6), everything here is tuned for long jump arcs, wall-jump
+  // columns, and timing crushers / lasers over open lava.
+  const W = 68, H = 30;
   const tiles = makeRoom(W, H);
-  const f = H - 3;
+  const f = H - 3; // 27
 
-  // Arena floor with lava pit center
-  fillRect(tiles, H - 2, 1, H - 1, 15, 1);
-  clearRect(tiles, H - 2, 16, H - 2, 33);
-  fillRect(tiles, H - 2, 34, H - 1, W - 2, 1);
-  fillRow(tiles, H - 1, 16, 33, 1);
+  // ----- Arena floor: two narrow side platforms separated by a massive
+  //       lava pit spanning ~36 tiles across the middle. -----
+  fillRect(tiles, H - 2, 1, H - 1, 14, 1);
+  clearRect(tiles, H - 2, 15, H - 2, 52);
+  fillRect(tiles, H - 2, 53, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 15, 52, 1);
 
-  // Multi-tier platforms
-  fillRow(tiles, 20, 3, 8, 2);
-  fillRow(tiles, 18, 10, 16, 2);
-  fillRow(tiles, 20, 33, 38, 2);
-  fillRow(tiles, 18, 40, 46, 2);
-  fillRow(tiles, 14, 6, 12, 2);
-  fillRow(tiles, 14, 37, 43, 2);
-  fillRow(tiles, 16, 18, 24, 2);
-  fillRow(tiles, 16, 26, 32, 2);
-  fillRow(tiles, 12, 20, 29, 2);
-  fillRow(tiles, 10, 14, 18, 2);
-  fillRow(tiles, 10, 32, 36, 2);
-  fillRow(tiles, 8, 22, 28, 2);
-  fillRow(tiles, 6, 10, 14, 2);
-  fillRow(tiles, 6, 36, 40, 2);
+  // ----- Mid-low stepping islands over the pit (row 24) -----
+  // Chain of tiny islands spaced for doubleJump gaps (3-4 tile gaps each).
+  fillRow(tiles, 24, 17, 19, 2);
+  fillRow(tiles, 24, 24, 26, 2);
+  fillRow(tiles, 24, 32, 34, 2);
+  fillRow(tiles, 24, 41, 43, 2);
+  fillRow(tiles, 24, 48, 50, 2);
 
-  // Arena pillars
-  fillRect(tiles, 3, 8, 13, 8, 1);
-  fillRect(tiles, 3, 41, 13, 41, 1);
-  fillRect(tiles, 3, 18, 7, 18, 1);
-  fillRect(tiles, 3, 31, 7, 31, 1);
+  // ----- Lower-mid zig platforms for alternate route -----
+  fillRow(tiles, 21, 3, 9, 2);
+  fillRow(tiles, 21, 58, 64, 2);
+  fillRow(tiles, 19, 11, 15, 2);
+  fillRow(tiles, 19, 52, 56, 2);
 
-  // Door opening left
-  clearRect(tiles, f - 2, 0, f + 1, 0);
-  // Door opening right (back to room5)
-  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
-  // Top center opening to boss room
-  clearRect(tiles, 0, 23, 0, 26);
-  fillRow(tiles, 4, 22, 27, 2);
+  // ----- Wall-jump columns framing the lava pit (left + right) -----
+  fillRect(tiles, 12, 15, 24, 15, 1);  // tall left column
+  fillRect(tiles, 12, 52, 24, 52, 1);  // tall right column
+  // Outer wall-jump shafts near each edge for ascending
+  fillRect(tiles, 10, 6, 20, 6, 1);
+  fillRect(tiles, 10, 61, 20, 61, 1);
 
-  // Vaulted cavern ceiling (thin band — keep mid-level platforms clear)
-  fillRect(tiles, 2, 6, 4, 20, 1);
-  fillRect(tiles, 2, 30, 4, 44, 1);
+  // ----- Mid tier platforms (row 15) -----
+  fillRow(tiles, 15, 3, 7, 2);
+  fillRow(tiles, 15, 60, 64, 2);
+  fillRow(tiles, 15, 20, 24, 2);
+  fillRow(tiles, 15, 43, 47, 2);
+
+  // ----- Upper tier platforms (row 10) - narrow, across lava -----
+  fillRow(tiles, 10, 26, 30, 2);
+  fillRow(tiles, 10, 37, 41, 2);
+
+  // ----- Top route (row 6) with crumbles and crushers overhead -----
+  fillRow(tiles, 6, 8, 12, 2);
+  fillRow(tiles, 6, 55, 59, 2);
+  fillRow(tiles, 5, 30, 38, 2);
+
+  // Vaulted ceiling slabs
+  fillRect(tiles, 2, 6, 4, 22, 1);
+  fillRect(tiles, 2, 46, 4, 62, 1);
+
+  // ----- Door openings -----
+  clearRect(tiles, f - 2, 0, f + 1, 0);               // west to room7
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);       // east back to room5
+  clearRect(tiles, 0, Math.floor(W / 2) - 2, 0, Math.floor(W / 2) + 1);  // top to room9
+  fillRow(tiles, 4, Math.floor(W / 2) - 3, Math.floor(W / 2) + 2, 2);    // landing ledge under top door
 
   return {
     name: 'The Crucible',
@@ -999,51 +1061,79 @@ function buildRoom8() {
     objects: [
       { type: 'door', targetRoom: 'room7', x: 1, y: f, spawnX: 26, spawnY: 5 },
       { type: 'door', targetRoom: 'room5', x: W - 2, y: f, spawnX: 37, spawnY: 21 },
-      { type: 'door', targetRoom: 'room9', x: W / 2, y: 2, spawnX: 3, spawnY: 17 },
-      // Central lava,
-      // Moving platforms over lava,
-      { type: 'moving_platform', x: 20, y: 20, axis: 'x', range: 128, speed: 1.3, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 30, y: 20, axis: 'x', range: 128, speed: 1.3, phase: 1.5, spin: 0 },
-      // Side pillars with spikes,
-      // Pendulums,
-      // Vertical movers,
-      { type: 'moving_platform', x: 7, y: 7, axis: 'y', range: 128, speed: 1.1, phase: 0.5, spin: 0 },
-      { type: 'moving_platform', x: 40, y: 7, axis: 'y', range: 128, speed: 1.1, phase: 1.5, spin: 0 },
-      { type: 'moving_platform', x: 25, y: 4, axis: 'y', range: 64, speed: 0.9, phase: 0, spin: 0 },
-      // Crumble,
-      { type: 'crumble_platform', x: 38, y: 14, collapseDelay: 350, respawnDelay: 2200 },
-      { type: 'crumble_platform', x: 15, y: 10, collapseDelay: 280, respawnDelay: 1800 },
-      { type: 'crumble_platform', x: 35, y: 10, collapseDelay: 280, respawnDelay: 1800 },
-      // Enemies,
-      { type: 'brute', x: 12, y: f },
-      { type: 'brute', x: 36, y: f },
-      { type: 'flyer', x: 39, y: 5 },
-      { type: 'flyer', x: 15, y: 9 },
-      { type: 'flyer', x: 35, y: 9 },
-      { type: 'flyer', x: 25, y: 11 },
-      // Health,
-      // Decorations,
+      { type: 'door', targetRoom: 'room9', x: Math.floor(W / 2), y: 2, spawnX: 3, spawnY: 17 },
+
+      // --- Lava pool visuals (over the open trench) ---
+      { type: 'magma_pool', x: 16, y: H - 2, width: 36 },
+
+      // --- Moving platforms over the pit (lifelines for stepping-island gaps) ---
+      { type: 'moving_platform', x: 21, y: 20, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 36, y: 20, axis: 'x', range: 96, speed: 1.2, phase: 1.5, spin: 0 },
+      { type: 'moving_platform', x: 46, y: 20, axis: 'x', range: 96, speed: 1.1, phase: 0.8, spin: 0 },
+      // Vertical movers climbing from stepping islands to row 15
+      { type: 'moving_platform', x: 22, y: 19, axis: 'y', range: 96, speed: 0.9, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 42, y: 19, axis: 'y', range: 96, speed: 0.9, phase: 1.5, spin: 0 },
+      // Mover connecting row 15 center to row 10 (short vertical hop)
+      { type: 'moving_platform', x: 34, y: 12, axis: 'y', range: 60, speed: 1.2, phase: 0.5, spin: 0 },
+
+      // --- Crushers: three overhead, staggered timing ---
+      { type: 'crusher', x: 27, y: 1, dropDist: 6, downTime: 500, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 39, y: 1, dropDist: 6, downTime: 500, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 33, y: 1, dropDist: 5, downTime: 450, upTime: 2400, phase: 'down' },
+
+      // --- Lasers crossing the upper section (horizontal beams to duck under) ---
+      { type: 'laser_beam', x: 16, y: 10, dir: 'right', length: 10, onTime: 1200, offTime: 1400, phase: 0 },
+      { type: 'laser_beam', x: 51, y: 7, dir: 'left', length: 10, onTime: 1200, offTime: 1400, phase: 700 },
+
+      // --- Crumble stepping stones to reach the top ledge (row 6) ---
+      { type: 'crumble_platform', x: 13, y: 8, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 17, y: 5, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 51, y: 8, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 55, y: 5, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 28, y: 12, collapseDelay: 400, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 39, y: 12, collapseDelay: 400, respawnDelay: 2400 },
+
+      // --- Flame jets from the lava below (vertical) ---
+      { type: 'flame_jet', x: 22, y: H - 2, dir: 'up', onTime: 1100, offTime: 1700, phase: 0 },
+      { type: 'flame_jet', x: 30, y: H - 2, dir: 'up', onTime: 1100, offTime: 1700, phase: 850 },
+      { type: 'flame_jet', x: 38, y: H - 2, dir: 'up', onTime: 1100, offTime: 1700, phase: 500 },
+      { type: 'flame_jet', x: 46, y: H - 2, dir: 'up', onTime: 1100, offTime: 1700, phase: 1200 },
+
+      // --- Pendulums sweeping the mid tier ---
+      { type: 'pendulum_trap', x: 23, y: 14, length: 100, swing: 44, speed: 1.5, phase: 0 },
+      { type: 'pendulum_trap', x: 45, y: 14, length: 100, swing: 44, speed: 1.5, phase: 1.2 },
+
+      // --- Enemies ---
+      { type: 'brute', x: 9, y: f },
+      { type: 'brute', x: 60, y: f },
+      { type: 'flyer', x: 20, y: 9 },
+      { type: 'flyer', x: 34, y: 6 },
+      { type: 'flyer', x: 48, y: 9 },
+      { type: 'flyer', x: 28, y: 14 },
+      { type: 'flyer', x: 40, y: 14 },
+
+      // --- Decorations ---
       { type: 'stalactite', x: 12, y: 1 },
       { type: 'stalactite', x: 25, y: 1 },
-      { type: 'stalactite', x: 38, y: 1 },
+      { type: 'stalactite', x: 42, y: 1 },
+      { type: 'stalactite', x: 58, y: 1 },
       { type: 'stalactite_sm', x: 6, y: 1 },
       { type: 'stalactite_sm', x: 18, y: 1 },
       { type: 'stalactite_sm', x: 32, y: 1 },
-      { type: 'stalactite_sm', x: 44, y: 1 },
+      { type: 'stalactite_sm', x: 50, y: 1 },
+      { type: 'stalactite_sm', x: 62, y: 1 },
       { type: 'chain', x: 10, y: 1 },
-      { type: 'chain', x: 20, y: 1 },
-      { type: 'chain', x: 30, y: 1 },
-      { type: 'chain', x: 40, y: 1 },
+      { type: 'chain', x: 24, y: 1 },
+      { type: 'chain', x: 44, y: 1 },
+      { type: 'chain', x: 58, y: 1 },
       { type: 'ruin_arch', x: 14, y: f },
-      { type: 'ruin_arch', x: 36, y: f },
+      { type: 'ruin_arch', x: 54, y: f },
       { type: 'glow_spore', x: 16, y: 6 },
-      { type: 'glow_spore', x: 25, y: 3 },
-      { type: 'glow_spore', x: 34, y: 6 },
-      { type: 'glow_spore', x: 10, y: 10 },
-      { type: 'glow_spore', x: 40, y: 10 },
+      { type: 'glow_spore', x: 34, y: 3 },
+      { type: 'glow_spore', x: 50, y: 6 },
       { type: 'hanging_moss', x: 14, y: 2 },
-      { type: 'hanging_moss', x: 25, y: 2 },
-      { type: 'hanging_moss', x: 36, y: 2 },
+      { type: 'hanging_moss', x: 34, y: 2 },
+      { type: 'hanging_moss', x: 52, y: 2 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -1116,7 +1206,7 @@ function buildRoom9() {
     tiles,
     playerSpawn: { x: 3, y: f },
     objects: [
-      { type: 'door', targetRoom: 'room8', x: 1, y: f, spawnX: 46, spawnY: 23 },
+      { type: 'door', targetRoom: 'room8', x: 1, y: f, spawnX: 34, spawnY: 5 },
       { type: 'door', targetRoom: 'room10', x: W - 2, y: f, spawnX: 3, spawnY: 19 },
       { type: 'boss', bossType: 'bone_tyrant', x: 27, y: 16 },
       { type: 'bench', x: 5, y: f },
@@ -1273,6 +1363,12 @@ function buildRoom10() {
       { type: 'ice_crystal_cluster', x: 8, y: 19 },
       { type: 'frozen_banner', x: 44, y: 4 },
       { type: 'item_pickup', itemId: 'ether_vial', amount: 1, x: 6, y: 19 },
+      // New hazards — ice tunnel needs timing pressure
+      { type: 'crusher', x: 16, y: 1, dropDist: 5, downTime: 420, upTime: 2200, phase: 'top' },
+      { type: 'crusher', x: 34, y: 1, dropDist: 5, downTime: 420, upTime: 2200, phase: 'up' },
+      { type: 'arrow_turret', x: 46, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'phase_platform', x: 14, y: 17, width: 3, onTime: 1300, offTime: 1000, phase: 0 },
+      { type: 'phase_platform', x: 31, y: 17, width: 3, onTime: 1300, offTime: 1000, phase: 600 },
     ],
     foreground: [
       { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
@@ -1348,7 +1444,7 @@ function buildRoom11() {
     playerSpawn: { x: 2, y: f },
     objects: [
       { type: 'door', targetRoom: 'room10', x: 1, y: f, spawnX: 47, spawnY: 19 },
-      { type: 'door', targetRoom: 'room12', x: W - 2, y: 3, spawnX: 2, spawnY: 19 },
+      { type: 'door', targetRoom: 'room12', x: W - 2, y: 3, spawnX: 2, spawnY: 22 },
       { type: 'coin', x: 18, y: 23 },
       { type: 'coin', x: 6, y: 17 },
       { type: 'coin', x: 18, y: 11 },
@@ -1412,41 +1508,55 @@ function buildRoom11() {
 }
 
 function buildRoom12() {
-  const W = 55, H = 22;
+  // Crystal Caverns — expanded ice hub. Ice patches ride across conveyor
+  // belts so stopping = sliding back; phase platforms chain together across
+  // the biggest gaps. Mandatory wall-jump chimney in the center.
+  const W = 68, H = 26;
   const tiles = makeRoom(W, H);
-  const f = H - 3;
+  const f = H - 3; // 23
 
-  // Floor terrain bumps
-  fillRect(tiles, 18, 8, 19, 11, 1);
-  fillRect(tiles, 17, 24, 19, 28, 1);
-  fillRect(tiles, 18, 40, 19, 43, 1);
+  // ----- Floor with three hard chasms -----
+  fillRect(tiles, H - 2, 1, H - 1, 10, 1);
+  clearRect(tiles, H - 2, 11, H - 2, 19);         // first chasm (conveyor run)
+  fillRow(tiles, H - 1, 11, 19, 1);
+  fillRect(tiles, H - 2, 20, H - 1, 28, 1);
+  clearRect(tiles, H - 2, 29, H - 2, 42);         // huge mid chasm (phase platform)
+  fillRow(tiles, H - 1, 29, 42, 1);
+  fillRect(tiles, H - 2, 43, H - 1, 52, 1);
+  clearRect(tiles, H - 2, 53, H - 2, 60);         // east chasm (moving platform)
+  fillRow(tiles, H - 1, 53, 60, 1);
+  fillRect(tiles, H - 2, 61, H - 1, W - 2, 1);
 
-  // Floor gaps
-  clearRect(tiles, H - 2, 16, H - 2, 20);
-  clearRect(tiles, H - 2, 34, H - 2, 38);
+  // ----- Conveyor deck (cols 11-19) — platform hanging over chasm -----
+  fillRow(tiles, H - 4, 11, 19, 2);
 
-  // Multi-tier platforms
-  fillRow(tiles, 16, 4, 8, 2);
-  fillRow(tiles, 14, 10, 15, 2);
-  fillRow(tiles, 12, 5, 9, 2);
-  fillRow(tiles, 16, 20, 25, 2);
-  fillRow(tiles, 14, 28, 33, 2);
-  fillRow(tiles, 12, 22, 27, 2);
-  fillRow(tiles, 10, 30, 35, 2);
-  fillRow(tiles, 16, 40, 45, 2);
-  fillRow(tiles, 14, 46, 51, 2);
+  // ----- Wall-jump chimney (mid) cols 30..36 -----
+  fillRect(tiles, 6, 30, 18, 30, 1);
+  fillRect(tiles, 6, 36, 18, 36, 1);
+  // Ledge caps for chimney top
+  fillRow(tiles, 6, 30, 38, 2);
+
+  // ----- Multi-tier platforms -----
+  fillRow(tiles, 18, 5, 9, 2);
+  fillRow(tiles, 14, 3, 7, 2);
+  fillRow(tiles, 10, 6, 10, 2);
+  fillRow(tiles, 18, 22, 27, 2);
+  fillRow(tiles, 14, 20, 24, 2);
+  fillRow(tiles, 10, 22, 26, 2);
+  fillRow(tiles, 18, 41, 46, 2);
+  fillRow(tiles, 14, 45, 50, 2);
   fillRow(tiles, 10, 42, 47, 2);
-  fillRow(tiles, 8, 16, 20, 2);
-  fillRow(tiles, 8, 36, 40, 2);
-  fillRow(tiles, 6, 26, 30, 2);
+  fillRow(tiles, 18, 56, 64, 2);
+  fillRow(tiles, 14, 58, 63, 2);
+  fillRow(tiles, 10, 62, 66, 2);
 
-  // Frozen pillars
-  fillRect(tiles, 5, 14, 12, 15, 1);
-  fillRect(tiles, 5, 40, 12, 41, 1);
+  // Ice pillars
+  fillRect(tiles, 5, 14, 16, 15, 1);
+  fillRect(tiles, 5, 48, 16, 49, 1);
 
-  // Ice ceiling
-  fillRect(tiles, 2, 6, 5, 22, 1);
-  fillRect(tiles, 2, 32, 5, 48, 1);
+  // Ice ceiling slabs
+  fillRect(tiles, 2, 6, 4, 22, 1);
+  fillRect(tiles, 2, 40, 4, 56, 1);
 
   // Door openings
   clearRect(tiles, f - 2, 0, f + 1, 0);
@@ -1461,60 +1571,95 @@ function buildRoom12() {
     objects: [
       { type: 'door', targetRoom: 'room11', x: 1, y: f, spawnX: 21, spawnY: 3 },
       { type: 'door', targetRoom: 'room13', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
-      { type: 'weapon_pickup', weaponId: 'throwing_daggers', x: 16, y: 14 },
-      { type: 'merchant_shop', x: 28, y: 5, items: [
+      { type: 'weapon_pickup', weaponId: 'throwing_daggers', x: 16, y: 19 },
+      { type: 'merchant_shop', x: 34, y: 5, items: [
         { name: 'Health Refill', cost: 5, type: 'heal' },
         { name: 'Max HP +1', cost: 15, type: 'maxhp' }
       ], dialogue: [
         'Brr... even my wares are starting to frost over down here.',
         'Take what you need — coin spends the same whether it\'s frozen or not.'
       ]},
-      { type: 'coin', x: 7, y: 11 },
-      { type: 'coin', x: 22, y: 11 },
+
+      // --- Conveyors (opposed directions across the first chasm deck) ---
+      { type: 'conveyor', x: 12, y: 18, width: 4, dir: 'right', speed: 140 },
+      { type: 'conveyor', x: 17, y: 18, width: 3, dir: 'left',  speed: 140 },
+
+      // --- Phase platform chain across the huge mid chasm ---
+      { type: 'phase_platform', x: 30, y: 20, width: 2, onTime: 1500, offTime: 1100, phase: 0 },
+      { type: 'phase_platform', x: 34, y: 20, width: 2, onTime: 1500, offTime: 1100, phase: 700 },
+      { type: 'phase_platform', x: 38, y: 20, width: 2, onTime: 1500, offTime: 1100, phase: 1400 },
+
+      // --- Moving platform across east chasm ---
+      { type: 'moving_platform', x: 56, y: 20, axis: 'x', range: 112, speed: 1.1, phase: 0, spin: 0 },
+
+      // --- Ice patches that make conveyor slides deadlier ---
+      { type: 'ice_patch', x: 12, y: H - 4, width: 4 },
+      { type: 'ice_patch', x: 45, y: 18, width: 4 },
+      { type: 'ice_patch', x: 24, y: 18, width: 3 },
+
+      // --- Icicle drops from ceiling (over chasms) ---
+      { type: 'icicle_drop', x: 15, y: 4 },
+      { type: 'icicle_drop', x: 34, y: 4 },
+      { type: 'icicle_drop', x: 56, y: 4 },
+
+      // --- Floor spikes on the few solid-floor sections (force jumping over) ---
+      { type: 'floor_spikes', x: 25, y: H - 2, onTime: 1100, offTime: 1800, phase: 0 },
+      { type: 'floor_spikes', x: 48, y: H - 2, onTime: 1100, offTime: 1800, phase: 900 },
+
+      // --- Arrow turret guarding the chimney top ---
+      { type: 'arrow_turret', x: 36, y: 7, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 130 },
+
+      // --- Laser beam across the east chasm (horizontal) ---
+      { type: 'laser_beam', x: 53, y: 15, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
+
+      // --- Crumble platforms on upper route (for coin reward) ---
+      { type: 'crumble_platform', x: 12, y: 12, collapseDelay: 400, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 54, y: 8, collapseDelay: 400, respawnDelay: 2400 },
+
+      // --- Coins (upper route rewards the skilled path) ---
+      { type: 'coin', x: 8, y: 9 },
+      { type: 'coin', x: 24, y: 9 },
+      { type: 'coin', x: 34, y: 5 },
       { type: 'coin', x: 44, y: 9 },
-      { type: 'coin', x: 18, y: 7 },
-      { type: 'coin', x: 38, y: 7 },
-      { type: 'crawler', x: 30, y: 13 },
+      { type: 'coin', x: 64, y: 9 },
+
+      // --- Enemies ---
+      { type: 'crawler', x: 22, y: f },
       { type: 'crawler', x: 48, y: f },
-      { type: 'armored_flyer', x: 25, y: 10 },
-      { type: 'flyer', x: 32, y: 6 },
-      { type: 'flyer', x: 46, y: 8 },
+      { type: 'armored_flyer', x: 32, y: 10 },
+      { type: 'flyer', x: 24, y: 6 },
+      { type: 'flyer', x: 44, y: 6 },
+      { type: 'flyer', x: 60, y: 8 },
       { type: 'flyer', x: 10, y: 10 },
-      { type: 'moving_platform', x: 18, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 36, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
-      { type: 'crumble_platform', x: 12, y: 14, collapseDelay: 420, respawnDelay: 2600 },
-      { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 380, respawnDelay: 2400 },
-      { type: 'crumble_platform', x: 48, y: 14, collapseDelay: 450, respawnDelay: 2800 },
+
+      // --- Decorations ---
       { type: 'crystal', x: 6, y: f },
-      { type: 'crystal', x: 22, y: f },
-      { type: 'crystal', x: 36, y: f },
-      { type: 'crystal', x: 50, y: f },
+      { type: 'crystal', x: 24, y: f },
+      { type: 'crystal', x: 46, y: f },
+      { type: 'crystal', x: 62, y: f },
       { type: 'crystal_cluster', x: 10, y: f },
-      { type: 'crystal_cluster', x: 30, y: f },
-      { type: 'crystal_cluster', x: 46, y: f },
+      { type: 'crystal_cluster', x: 48, y: f },
       { type: 'stalactite', x: 12, y: 1 },
       { type: 'stalactite', x: 28, y: 1 },
-      { type: 'stalactite', x: 44, y: 1 },
+      { type: 'stalactite', x: 50, y: 1 },
       { type: 'stalactite_sm', x: 6, y: 1 },
       { type: 'stalactite_sm', x: 20, y: 1 },
-      { type: 'stalactite_sm', x: 36, y: 1 },
-      { type: 'stalactite_sm', x: 50, y: 1 },
+      { type: 'stalactite_sm', x: 44, y: 1 },
+      { type: 'stalactite_sm', x: 62, y: 1 },
       { type: 'chain', x: 10, y: 1 },
-      { type: 'chain', x: 24, y: 1 },
-      { type: 'chain', x: 40, y: 1 },
+      { type: 'chain', x: 26, y: 1 },
+      { type: 'chain', x: 44, y: 1 },
+      { type: 'chain', x: 60, y: 1 },
       { type: 'light_beam', x: 16, y: 1 },
-      { type: 'light_beam', x: 32, y: 1 },
-      { type: 'light_beam', x: 48, y: 1 },
+      { type: 'light_beam', x: 40, y: 1 },
+      { type: 'light_beam', x: 56, y: 1 },
       { type: 'glow_spore', x: 14, y: 6 },
-      { type: 'glow_spore', x: 28, y: 4 },
-      { type: 'glow_spore', x: 42, y: 6 },
+      { type: 'glow_spore', x: 34, y: 4 },
+      { type: 'glow_spore', x: 50, y: 6 },
       { type: 'ruin_arch', x: 8, y: f },
-      { type: 'ruin_arch', x: 32, y: f },
+      { type: 'ruin_arch', x: 40, y: f },
       { type: 'hanging_moss', x: 18, y: 2 },
-      { type: 'hanging_moss', x: 38, y: 2 },
-      { type: 'floor_spikes', x: 44, y: 19, onTime: 1200, offTime: 1600, phase: 800 },
-      { type: 'ice_patch', x: 22, y: 18, width: 3 },
-      { type: 'icicle_drop', x: 28, y: 4 },
+      { type: 'hanging_moss', x: 48, y: 2 },
       { type: 'ice_crystal_cluster', x: 42, y: 18 },
     ],
     foreground: [
@@ -1590,7 +1735,7 @@ function buildRoom13() {
     tiles,
     playerSpawn: { x: 3, y: f },
     objects: [
-      { type: 'door', targetRoom: 'room12', x: 1, y: f, spawnX: 52, spawnY: 19 },
+      { type: 'door', targetRoom: 'room12', x: 1, y: f, spawnX: 66, spawnY: 22 },
       { type: 'door', targetRoom: 'room14', x: W - 2, y: f, spawnX: 2, spawnY: 23 },
       { type: 'brute', x: 20, y: f },
       { type: 'brute', x: 30, y: f },
@@ -1628,6 +1773,10 @@ function buildRoom13() {
       { type: 'ice_patch', x: 14, y: 20, width: 3 },
       { type: 'icicle_drop', x: 20, y: 4 },
       { type: 'frozen_banner', x: 30, y: 4 },
+      // New hazards — boss-prep room gets extra teeth
+      { type: 'crusher', x: 20, y: 2, dropDist: 4, downTime: 400, upTime: 2200, phase: 'top' },
+      { type: 'arrow_turret', x: 2, y: 11, dir: 'right', interval: 3000, burstSize: 3, burstSpacing: 130 },
+      { type: 'arrow_turret', x: 37, y: 11, dir: 'left', interval: 3000, burstSize: 3, burstSpacing: 130 },
     ],
     foreground: [
       { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
@@ -1756,6 +1905,14 @@ function buildRoom14() {
       { type: 'gravel_patch', x: 34, y: f },
       { type: 'gravel_patch', x: 46, y: f },
       { type: 'lore_fragment', x: 22, y: 23, text: "Ash-scorched scripture: \"The Crucible judges all who would descend.\"" },
+      // New hazards — magma descent teeth
+      { type: 'crusher', x: 13, y: 1, dropDist: 5, downTime: 420, upTime: 2100, phase: 'top' },
+      { type: 'crusher', x: 27, y: 1, dropDist: 5, downTime: 420, upTime: 2100, phase: 'up' },
+      { type: 'crusher', x: 41, y: 1, dropDist: 5, downTime: 420, upTime: 2100, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: 15, dir: 'right', length: 7, onTime: 1100, offTime: 1400, phase: 0 },
+      { type: 'conveyor', x: 4, y: H - 4, width: 5, dir: 'left', speed: 120 },
+      { type: 'phase_platform', x: 11, y: 21, width: 2, onTime: 1300, offTime: 1000, phase: 0 },
+      { type: 'phase_platform', x: 14, y: 21, width: 2, onTime: 1300, offTime: 1000, phase: 650 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -1829,7 +1986,7 @@ function buildRoom15() {
     playerSpawn: { x: 4, y: f },
     objects: [
       { type: 'door', targetRoom: 'room14', x: 1, y: f, spawnX: 47, spawnY: 23 },
-      { type: 'door', targetRoom: 'room16', x: W - 2, y: 3, spawnX: 2, spawnY: 19 },
+      { type: 'door', targetRoom: 'room16', x: W - 2, y: 3, spawnX: 3, spawnY: 22 },
       { type: 'coin', x: 16, y: 15 },
       { type: 'coin', x: 6, y: 9 },
       { type: 'coin', x: 20, y: 7 },
@@ -1890,43 +2047,44 @@ function buildRoom15() {
 }
 
 function buildRoom16() {
-  const W = 55, H = 22;
+  // Ember Halls — lava-filled gauntlet. The floor is mostly open lava; the
+  // only way across is alternating phase platforms, crushers, and
+  // conveyors that push AGAINST your direction of travel.
+  const W = 72, H = 26;
   const tiles = makeRoom(W, H);
-  const f = H - 3;
+  const f = H - 3; // 23
 
-  // Floor with hazard gaps
-  clearRect(tiles, H - 2, 12, H - 2, 16);
-  clearRect(tiles, H - 2, 24, H - 2, 28);
-  clearRect(tiles, H - 2, 38, H - 2, 42);
+  // ----- Massive lava floor (only the two ends have solid ground) -----
+  fillRect(tiles, H - 2, 1, H - 1, 8, 1);   // west landing
+  clearRect(tiles, H - 2, 9, H - 2, 62);
+  fillRow(tiles, H - 1, 9, 62, 1);
+  fillRect(tiles, H - 2, 63, H - 1, W - 2, 1);
 
-  // Terrain bumps
-  fillRect(tiles, 18, 6, 19, 9, 1);
-  fillRect(tiles, 17, 20, 19, 22, 1);
-  fillRect(tiles, 18, 44, 19, 47, 1);
+  // ----- Mid-tier staging slabs (row 20) for moving-platform hops -----
+  fillRow(tiles, 20, 10, 13, 2);
+  fillRow(tiles, 20, 58, 62, 2);
 
-  // Multi-tier platforms — horizontal gauntlet
-  fillRow(tiles, 16, 4, 9, 2);
-  fillRow(tiles, 14, 12, 17, 2);
-  fillRow(tiles, 12, 6, 10, 2);
-  fillRow(tiles, 16, 18, 23, 2);
-  fillRow(tiles, 14, 26, 31, 2);
-  fillRow(tiles, 12, 20, 25, 2);
-  fillRow(tiles, 10, 28, 34, 2);
-  fillRow(tiles, 16, 34, 39, 2);
-  fillRow(tiles, 14, 42, 47, 2);
-  fillRow(tiles, 10, 40, 44, 2);
-  fillRow(tiles, 8, 14, 18, 2);
-  fillRow(tiles, 8, 46, 51, 2);
-  fillRow(tiles, 6, 30, 34, 2);
-  fillRow(tiles, 16, 48, 52, 2);
+  // ----- Upper tier ledges (row 14) -----
+  fillRow(tiles, 14, 4, 9, 2);
+  fillRow(tiles, 14, 63, W - 2, 2);
 
-  // Lava pillars
-  fillRect(tiles, 5, 10, 12, 11, 1);
-  fillRect(tiles, 5, 36, 12, 37, 1);
+  // ----- Wall-jump columns framing the lava pit -----
+  fillRect(tiles, 8, 13, 18, 13, 1);
+  fillRect(tiles, 8, 58, 18, 58, 1);
 
-  // Cavern ceiling
-  fillRect(tiles, 2, 6, 5, 22, 1);
-  fillRect(tiles, 2, 28, 5, 48, 1);
+  // ----- Crusher anchor slabs (ceiling is thick here) -----
+  fillRect(tiles, 2, 15, 4, 22, 1);
+  fillRect(tiles, 2, 30, 4, 42, 1);
+  fillRect(tiles, 2, 50, 4, 57, 1);
+
+  // ----- Upper catwalk (row 8) reachable via wall-jumps -----
+  fillRow(tiles, 8, 4, 10, 2);
+  fillRow(tiles, 8, 64, W - 2, 2);
+  fillRow(tiles, 8, 30, 42, 2);  // mid catwalk with crushers overhead
+
+  // ----- Lava pillars (accent) -----
+  fillRect(tiles, 10, 22, 18, 23, 1);
+  fillRect(tiles, 10, 48, 18, 49, 1);
 
   // Door openings
   clearRect(tiles, f - 2, 0, f + 1, 0);
@@ -1941,25 +2099,71 @@ function buildRoom16() {
     objects: [
       { type: 'door', targetRoom: 'room15', x: 1, y: f, spawnX: 27, spawnY: 3 },
       { type: 'door', targetRoom: 'room17', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
-      { type: 'coin', x: 8, y: 11 },
-      { type: 'coin', x: 22, y: 11 },
-      { type: 'coin', x: 42, y: 9 },
-      { type: 'coin', x: 16, y: 7 },
-      { type: 'coin', x: 48, y: 7 },
-      { type: 'moving_platform', x: 14, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 26, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 1.0, spin: 0 },
-      { type: 'moving_platform', x: 40, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0.5, spin: 0 },
-      { type: 'pendulum_trap', x: 26, y: 8, length: 72, swing: 42, speed: 2.0, phase: 1.0 },
-      { type: 'pendulum_trap', x: 42, y: 10, length: 80, swing: 44, speed: 1.7, phase: 0.5 },
-      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 380, respawnDelay: 2400 },
-      { type: 'crumble_platform', x: 30, y: 10, collapseDelay: 350, respawnDelay: 2200 },
-      { type: 'crumble_platform', x: 44, y: 14, collapseDelay: 400, respawnDelay: 2600 },
-      { type: 'crawler', x: 44, y: 17 },
-      { type: 'flyer', x: 14, y: 6 },
-      { type: 'flyer', x: 27, y: 3 },
-      { type: 'flyer', x: 44, y: 6 },
-      { type: 'flyer', x: 20, y: 10 },
-      { type: 'flyer', x: 38, y: 8 },
+
+      // --- Lava pool visuals ---
+      { type: 'magma_pool', x: 10, y: H - 2, width: 52 },
+
+      // --- Phase platform chain across the mid-low lane ---
+      { type: 'phase_platform', x: 14, y: 20, width: 2, onTime: 1400, offTime: 1000, phase: 0 },
+      { type: 'phase_platform', x: 18, y: 20, width: 2, onTime: 1400, offTime: 1000, phase: 500 },
+      { type: 'phase_platform', x: 24, y: 20, width: 2, onTime: 1400, offTime: 1000, phase: 1000 },
+      { type: 'phase_platform', x: 28, y: 20, width: 2, onTime: 1400, offTime: 1000, phase: 0 },
+      { type: 'phase_platform', x: 48, y: 20, width: 2, onTime: 1400, offTime: 1000, phase: 700 },
+      { type: 'phase_platform', x: 52, y: 20, width: 2, onTime: 1400, offTime: 1000, phase: 200 },
+      { type: 'phase_platform', x: 56, y: 20, width: 2, onTime: 1400, offTime: 1000, phase: 1200 },
+
+      // --- Moving platforms to bridge the phase-platform gap (alternative route) ---
+      { type: 'moving_platform', x: 34, y: 20, axis: 'x', range: 128, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 42, y: 20, axis: 'x', range: 128, speed: 1.1, phase: 1.5, spin: 0 },
+
+      // --- Crushers (three timed from ceiling) ---
+      { type: 'crusher', x: 18, y: 1, dropDist: 6, downTime: 500, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 34, y: 1, dropDist: 6, downTime: 500, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 50, y: 1, dropDist: 6, downTime: 500, upTime: 2000, phase: 'down' },
+      { type: 'crusher', x: 40, y: 1, dropDist: 5, downTime: 400, upTime: 2600, phase: 'bottom' },
+
+      // --- Conveyors on the upper catwalk (PUSH west, making retreat easier / advance harder) ---
+      { type: 'conveyor', x: 30, y: 9, width: 6, dir: 'left', speed: 110 },
+      { type: 'conveyor', x: 36, y: 9, width: 6, dir: 'right', speed: 110 },
+
+      // --- Laser beams cutting the mid-upper area ---
+      { type: 'laser_beam', x: 14, y: 12, dir: 'right', length: 10, onTime: 1200, offTime: 1400, phase: 0 },
+      { type: 'laser_beam', x: 58, y: 12, dir: 'left',  length: 10, onTime: 1200, offTime: 1400, phase: 700 },
+
+      // --- Flame jets from lava ---
+      { type: 'flame_jet', x: 16, y: H - 2, dir: 'up', onTime: 1000, offTime: 1600, phase: 0 },
+      { type: 'flame_jet', x: 24, y: H - 2, dir: 'up', onTime: 1000, offTime: 1600, phase: 500 },
+      { type: 'flame_jet', x: 38, y: H - 2, dir: 'up', onTime: 1000, offTime: 1600, phase: 1000 },
+      { type: 'flame_jet', x: 46, y: H - 2, dir: 'up', onTime: 1000, offTime: 1600, phase: 250 },
+      { type: 'flame_jet', x: 56, y: H - 2, dir: 'up', onTime: 1000, offTime: 1600, phase: 800 },
+
+      // --- Pendulums sweeping the mid-tier -----
+      { type: 'pendulum_trap', x: 22, y: 14, length: 100, swing: 44, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 50, y: 14, length: 100, swing: 44, speed: 1.8, phase: 1.0 },
+
+      // --- Arrow turret on the upper catwalk ---
+      { type: 'arrow_turret', x: 34, y: 6, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 110 },
+
+      // --- Crumble platforms for coin detours ---
+      { type: 'crumble_platform', x: 15, y: 12, collapseDelay: 350, respawnDelay: 2000 },
+      { type: 'crumble_platform', x: 56, y: 12, collapseDelay: 350, respawnDelay: 2000 },
+
+      // --- Coins (rewards for the high route) ---
+      { type: 'coin', x: 8, y: 7 },
+      { type: 'coin', x: 34, y: 7 },
+      { type: 'coin', x: 40, y: 7 },
+      { type: 'coin', x: 66, y: 7 },
+      { type: 'coin', x: 22, y: 13 },
+      { type: 'coin', x: 50, y: 13 },
+
+      // --- Enemies ---
+      { type: 'flyer', x: 16, y: 6 },
+      { type: 'flyer', x: 32, y: 6 },
+      { type: 'flyer', x: 48, y: 6 },
+      { type: 'flyer', x: 60, y: 8 },
+      { type: 'flyer', x: 12, y: 10 },
+      { type: 'flyer', x: 54, y: 10 },
+      { type: 'armored_flyer', x: 35, y: 4 },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 26, y: 1 },
       { type: 'stalactite', x: 42, y: 1 },
@@ -2078,7 +2282,7 @@ function buildRoom17() {
     tiles,
     playerSpawn: { x: 3, y: f },
     objects: [
-      { type: 'door', targetRoom: 'room16', x: 1, y: f, spawnX: 52, spawnY: 19 },
+      { type: 'door', targetRoom: 'room16', x: 1, y: f, spawnX: 68, spawnY: 22 },
       { type: 'door', targetRoom: 'room18', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
       { type: 'bench', x: 22, y: 6 },
       { type: 'brute', x: 16, y: f },
@@ -2108,6 +2312,12 @@ function buildRoom17() {
       { type: 'glow_spore', x: 30, y: 6 },
       { type: 'hanging_moss', x: 20, y: 2 },
       { type: 'hanging_moss', x: 26, y: 2 },
+      // New hazards — Inferno Guardian climb demands precision
+      { type: 'crusher', x: 22, y: 1, dropDist: 4, downTime: 380, upTime: 2000, phase: 'top' },
+      { type: 'laser_beam', x: 2, y: 13, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: 9, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 650 },
+      { type: 'arrow_turret', x: 2, y: 16, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 16, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 120 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -2240,6 +2450,12 @@ function buildRoom18() {
       { type: 'floor_spikes', x: 14, y: 19, onTime: 900, offTime: 1400, phase: 0 },
       { type: 'floor_spikes', x: 28, y: 19, onTime: 900, offTime: 1400, phase: 350 },
       { type: 'floor_spikes', x: 42, y: 19, onTime: 900, offTime: 1400, phase: 700 },
+      // New hazards — Shadow Gate ambush
+      { type: 'crusher', x: 24, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'phase_platform', x: 14, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 32, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 600 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -2480,6 +2696,13 @@ function buildRoom20() {
       { type: 'lore_fragment', x: 22, y: 19, text: "A hymnal of the Spectral Order — their chants still echo in the vaults." },
       { type: 'health_pickup', x: 11, y: 19 },
       { type: 'health_pickup', x: 12, y: 19 },
+      // New hazards — Spectral Nave trials
+      { type: 'crusher', x: 22, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 38, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: 13, dir: 'right', length: 10, onTime: 1200, offTime: 1300, phase: 0 },
+      { type: 'phase_platform', x: 14, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 30, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 600 },
+      { type: 'arrow_turret', x: 2, y: 16, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -2590,6 +2813,12 @@ function buildRoom21() {
       { type: 'floor_spikes', x: 8, y: 21, onTime: 800, offTime: 1200, phase: 0 },
       { type: 'floor_spikes', x: 20, y: 21, onTime: 800, offTime: 1200, phase: 400 },
       { type: 'floor_spikes', x: 34, y: 21, onTime: 800, offTime: 1200, phase: 800 },
+      // New hazards — Shadow Warden trial
+      { type: 'crusher', x: 22, y: 1, dropDist: 5, downTime: 400, upTime: 1900, phase: 'top' },
+      { type: 'laser_beam', x: 2, y: 7, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: 11, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 650 },
+      { type: 'arrow_turret', x: 2, y: 17, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 17, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -2841,6 +3070,11 @@ function buildRoom23() {
       { type: 'glow_spore', x: 6, y: 10 },
       { type: 'glow_spore', x: 16, y: 6 },
       { type: 'glow_spore', x: 10, y: 18 },
+      // New hazards — Scholar's Tower climb
+      { type: 'crusher', x: 16, y: 4, dropDist: 4, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 6, y: 16, dropDist: 3, downTime: 380, upTime: 1900, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: 19, dir: 'right', length: 7, onTime: 1100, offTime: 1200, phase: 0 },
+      { type: 'arrow_turret', x: 2, y: 25, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
     ],
     foreground: [
       { type: 'fg_mushroom_large', x: 0, y: H - 1, flipX: false },
@@ -2983,6 +3217,14 @@ function buildRoom24() {
       { type: 'hanging_moss', x: 16, y: 2 },
       { type: 'hanging_moss', x: 36, y: 2 },
       { type: 'fungal_bloom_large', x: 40, y: 17 },
+      // New hazards — Forbidden Stacks
+      { type: 'crusher', x: 22, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 40, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: 11, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'arrow_turret', x: 2, y: 15, dir: 'right', interval: 2700, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 15, dir: 'left', interval: 2700, burstSize: 3, burstSpacing: 120 },
+      { type: 'phase_platform', x: 10, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 38, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 650 },
     ],
     foreground: [
       { type: 'fg_mushroom_large', x: 0, y: H - 1, flipX: false },
@@ -3235,6 +3477,15 @@ function buildRoom26() {
       { type: 'checkpoint_shrine', x: 6, y: 19 },
       { type: 'lore_fragment', x: 22, y: 19, text: "At the Void Threshold, reality thins. The King waits beyond." },
       { type: 'void_rift', x: 30, y: 12 },
+      // New hazards — Void Threshold
+      { type: 'crusher', x: 18, y: 1, dropDist: 5, downTime: 380, upTime: 1900, phase: 'top' },
+      { type: 'crusher', x: 32, y: 1, dropDist: 5, downTime: 380, upTime: 1900, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: 13, dir: 'right', length: 10, onTime: 1100, offTime: 1200, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: 9, dir: 'left', length: 10, onTime: 1100, offTime: 1200, phase: 650 },
+      { type: 'arrow_turret', x: 2, y: 17, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'phase_platform', x: 10, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 22, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 600 },
+      { type: 'phase_platform', x: 34, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 0 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -3463,6 +3714,16 @@ function buildRoom28() {
       { type: 'hanging_moss', x: 27, y: 2 },
       { type: 'hanging_moss', x: 40, y: 2 },
       { type: 'void_rift', x: 8, y: 14 },
+      // New hazards — Convergence approach
+      { type: 'crusher', x: 14, y: 2, dropDist: 5, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 27, y: 2, dropDist: 5, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 40, y: 2, dropDist: 5, downTime: 400, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: 17, dir: 'right', length: 13, onTime: 1100, offTime: 1200, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: 17, dir: 'left', length: 13, onTime: 1100, offTime: 1200, phase: 650 },
+      { type: 'phase_platform', x: 18, y: 22, width: 6, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 30, y: 22, width: 6, onTime: 1300, offTime: 900, phase: 650 },
+      { type: 'arrow_turret', x: 2, y: 21, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 21, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 120 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },

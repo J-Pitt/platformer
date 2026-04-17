@@ -3214,6 +3214,184 @@ function generateNewHazardTextures(scene) {
   ff.setAlpha(1);
   ff.generateTexture('flame_jet_flame', 16, 40);
   ff.destroy();
+
+  // ====================================================================
+  // Skill hazards (extra variety for chapter platforming)
+  // ====================================================================
+
+  // --- Crusher block 48x32: heavy iron slab with forged studs ---
+  const crush = scene.make.graphics({ add: false });
+  for (let yy = 0; yy < 32; yy++) {
+    crush.fillStyle(lerpRgb(0x3a3e4a, 0x141620, yy / 31));
+    crush.fillRect(0, yy, 48, 1);
+  }
+  // Top plate band (lighter)
+  crush.fillStyle(0x5a6070);
+  crush.fillRect(0, 0, 48, 2);
+  crush.fillStyle(0x7a8090);
+  crush.fillRect(0, 0, 48, 1);
+  // Bottom crushing teeth
+  crush.fillStyle(0x0a0c14);
+  for (let i = 0; i < 12; i++) {
+    const tx = 2 + i * 4;
+    crush.fillTriangle(tx, 28, tx + 4, 28, tx + 2, 32);
+  }
+  crush.fillStyle(0x50586a);
+  for (let i = 0; i < 12; i++) {
+    const tx = 2 + i * 4;
+    crush.fillTriangle(tx + 0.5, 28, tx + 3.5, 28, tx + 2, 31);
+  }
+  // Studs on the face
+  const studRows = [8, 16];
+  for (const sy of studRows) {
+    for (let i = 0; i < 5; i++) {
+      const sx = 6 + i * 9;
+      crush.fillStyle(0x1a1e28);
+      crush.fillCircle(sx, sy, 2);
+      crush.fillStyle(0x6a7080);
+      crush.fillCircle(sx, sy, 1.4);
+      crush.fillStyle(0xa0a8b8);
+      crush.fillCircle(sx - 0.4, sy - 0.4, 0.6);
+    }
+  }
+  // Rust streaks
+  crush.fillStyle(0x4a2612);
+  crush.setAlpha(0.35);
+  crush.fillRect(10, 4, 1, 22);
+  crush.fillRect(26, 6, 1, 20);
+  crush.fillRect(38, 4, 1, 22);
+  crush.setAlpha(1);
+  crush.lineStyle(1, 0x000000, 0.9);
+  crush.strokeRect(0, 0, 48, 32);
+  crush.generateTexture('crusher_block', 48, 32);
+  crush.destroy();
+
+  // --- Laser emitter (ceiling/wall mounted orb) 20x20 ---
+  const le = scene.make.graphics({ add: false });
+  le.fillStyle(0x2a2030);
+  le.fillRoundedRect(2, 2, 16, 16, 4);
+  le.fillStyle(0x443050);
+  le.fillRoundedRect(3, 3, 14, 14, 3);
+  le.fillStyle(0xff2266);
+  le.fillCircle(10, 10, 5);
+  le.fillStyle(0xff88bb);
+  le.setAlpha(0.7);
+  le.fillCircle(10, 10, 3);
+  le.fillStyle(0xffddee);
+  le.setAlpha(0.9);
+  le.fillCircle(9, 9, 1.4);
+  le.setAlpha(1);
+  le.lineStyle(1, 0x000000, 0.9);
+  le.strokeRoundedRect(2, 2, 16, 16, 4);
+  le.generateTexture('laser_emitter', 20, 20);
+  le.destroy();
+
+  // --- Laser beam segment 8x4 (tileable core) ---
+  const lb = scene.make.graphics({ add: false });
+  lb.fillStyle(0x660022);
+  lb.fillRect(0, 0, 8, 4);
+  lb.fillStyle(0xff3377);
+  lb.fillRect(0, 1, 8, 2);
+  lb.fillStyle(0xffccdd);
+  lb.setAlpha(0.9);
+  lb.fillRect(0, 1, 8, 1);
+  lb.setAlpha(1);
+  lb.generateTexture('laser_beam', 8, 4);
+  lb.destroy();
+
+  // --- Conveyor belt 32x16 (tileable treads) ---
+  const cv = scene.make.graphics({ add: false });
+  cv.fillStyle(0x2a2e38);
+  cv.fillRect(0, 0, 32, 16);
+  // Top surface
+  cv.fillStyle(0x50586a);
+  cv.fillRect(0, 0, 32, 4);
+  cv.fillStyle(0x707888);
+  cv.fillRect(0, 0, 32, 1);
+  // Tread segments (directional chevrons)
+  cv.fillStyle(0x1a1e28);
+  for (let i = 0; i < 4; i++) {
+    const tx = i * 8;
+    cv.fillTriangle(tx + 1, 6, tx + 5, 6, tx + 3, 10);
+  }
+  // Pulleys at ends
+  cv.fillStyle(0x3a4050);
+  cv.fillCircle(3, 12, 3);
+  cv.fillCircle(29, 12, 3);
+  cv.fillStyle(0x90a0b8);
+  cv.fillCircle(3, 12, 1.5);
+  cv.fillCircle(29, 12, 1.5);
+  cv.lineStyle(1, 0x000000, 0.9);
+  cv.strokeRect(0, 0, 32, 16);
+  cv.generateTexture('conveyor_belt', 32, 16);
+  cv.destroy();
+
+  // Arrow overlay for conveyor direction (drawn separately, tinted per dir)
+  const cva = scene.make.graphics({ add: false });
+  cva.fillStyle(0xffffff);
+  cva.fillTriangle(0, 0, 10, 5, 0, 10);
+  cva.generateTexture('conveyor_arrow', 10, 10);
+  cva.destroy();
+
+  // --- Phase platform 32x12 (ethereal blue slab) ---
+  const pp = scene.make.graphics({ add: false });
+  for (let yy = 0; yy < 12; yy++) {
+    pp.fillStyle(lerpRgb(0x4080ff, 0x1a3380, yy / 11));
+    pp.fillRect(0, yy, 32, 1);
+  }
+  pp.fillStyle(0x88ccff);
+  pp.setAlpha(0.8);
+  pp.fillRect(0, 0, 32, 2);
+  pp.setAlpha(1);
+  // Rune marks
+  pp.fillStyle(0xaaddff);
+  pp.setAlpha(0.85);
+  pp.fillCircle(6, 6, 1.3);
+  pp.fillCircle(16, 6, 1.3);
+  pp.fillCircle(26, 6, 1.3);
+  pp.setAlpha(1);
+  pp.lineStyle(1, 0x88ccff, 0.7);
+  pp.strokeRect(0, 0, 32, 12);
+  pp.generateTexture('phase_platform', 32, 12);
+  pp.destroy();
+
+  // --- Arrow turret (wall slit launcher) 24x24 ---
+  const at = scene.make.graphics({ add: false });
+  at.fillStyle(0x241a10);
+  at.fillRoundedRect(1, 1, 22, 22, 3);
+  at.fillStyle(0x3e2c18);
+  at.fillRoundedRect(2, 2, 20, 20, 3);
+  at.fillStyle(0x0a0604);
+  at.fillRect(12, 8, 10, 8);
+  at.fillStyle(0x60402a);
+  at.fillRect(13, 9, 9, 1);
+  at.fillRect(13, 14, 9, 1);
+  // Iron bolts
+  at.fillStyle(0x2a2a2a);
+  at.fillCircle(5, 5, 1.5);
+  at.fillCircle(5, 19, 1.5);
+  at.fillStyle(0x8a8a8a);
+  at.fillCircle(5, 5, 0.8);
+  at.fillCircle(5, 19, 0.8);
+  at.lineStyle(1, 0x000000, 0.9);
+  at.strokeRoundedRect(1, 1, 22, 22, 3);
+  at.generateTexture('arrow_turret', 24, 24);
+  at.destroy();
+
+  // --- Arrow dart projectile 14x4 ---
+  const ad = scene.make.graphics({ add: false });
+  ad.fillStyle(0x6a4020);
+  ad.fillRect(2, 1, 10, 2);
+  ad.fillStyle(0x8a5030);
+  ad.fillRect(2, 1, 10, 1);
+  ad.fillStyle(0xc0c8d4);
+  ad.fillTriangle(12, 0, 14, 2, 12, 4);
+  ad.fillStyle(0xe8ecf4);
+  ad.fillTriangle(12, 0.5, 13.4, 2, 12, 3.5);
+  ad.fillStyle(0xcc3333);
+  ad.fillTriangle(0, 0, 2, 2, 0, 4);
+  ad.generateTexture('arrow_dart', 14, 4);
+  ad.destroy();
 }
 
 /**

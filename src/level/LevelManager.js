@@ -144,6 +144,12 @@ export class LevelManager {
     this.icePatches = [];
     this.icicleDrops = [];
     this.activeIcicles = [];
+    this.crushers = [];
+    this.laserBeams = [];
+    this.conveyors = [];
+    this.phasePlatforms = [];
+    this.arrowTurrets = [];
+    this.activeArrowDarts = [];
     this.npcs = [];
     this.coins = [];
     this.teleports = [];
@@ -897,6 +903,11 @@ export class LevelManager {
         case 'flame_jet': this.createFlameJet(px, py, obj); break;
         case 'ice_patch': this.createIcePatch(px, py, obj); break;
         case 'icicle_drop': this.createIcicleDrop(px, py, obj); break;
+        case 'crusher': this.createCrusher(px, py, obj); break;
+        case 'laser_beam': this.createLaserBeam(px, py, obj); break;
+        case 'conveyor': this.createConveyor(px, py, obj); break;
+        case 'phase_platform': this.createPhasePlatform(px, py, obj); break;
+        case 'arrow_turret': this.createArrowTurret(px, py, obj); break;
         case 'checkpoint_shrine': this.createCheckpointShrine(px, py, obj); break;
         case 'lore_fragment': this.createLoreFragment(px, py, obj); break;
         case 'secret_wall': this.createSecretWall(px, py, obj); break;
@@ -2618,6 +2629,284 @@ export class LevelManager {
     this.decorations.push(sprite);
   }
 
+  /**
+   * Ceiling-mounted crusher. Slams down, pauses, retracts, pauses, repeats.
+   * obj fields: dropDist (tiles, default 4), dropSpeed (px/sec, default 620),
+   *             riseSpeed (default 140), downTime (ms at bottom, default 400),
+   *             upTime (ms at top, default 1500), phase ('up'|'down'|'top'|'bottom', default 'top')
+   * Sprite origin (0.5, 0) anchors from ceiling downward. `y` param is the
+   * top-row pixel center (from obj.y tile), so we store that as topY.
+   */
+  createCrusher(x, y, obj) {
+    const dropDistTiles = obj.dropDist || 4;
+    const dropDistPx = dropDistTiles * TILE_SIZE;
+
+    const sprite = this.scene.physics.add.image(x, y, 'crusher_block');
+    sprite.setDisplaySize(TILE_SIZE * 1.5, TILE_SIZE);
+    sprite.setOrigin(0.5, 0);
+    sprite.body.allowGravity = false;
+    sprite.body.setImmovable(true);
+    sprite.body.setSize(TILE_SIZE * 1.5, TILE_SIZE);
+    sprite.body.offset.set(0, 0);
+    sprite.body.checkCollision.down = false;
+    sprite.body.checkCollision.left = false;
+    sprite.body.checkCollision.right = false;
+    sprite.setDepth(4);
+
+    const zone = this.scene.physics.add.image(x, y + 4, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(TILE_SIZE * 1.3, 12);
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
+
+    this.crushers.push({
+      sprite,
+      zone,
+      originTopY: y,
+      dropDist: dropDistPx,
+      dropSpeed: obj.dropSpeed || 620,
+      riseSpeed: obj.riseSpeed || 140,
+      downTime: obj.downTime || 400,
+      upTime: obj.upTime || 1500,
+      state: obj.phase || 'top',
+      timer: 0,
+    });
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.collider(player, sprite);
+    }
+  }
+
+  /**
+   * Laser beam emitter. Static emitter + beam rectangle damage zone that
+   * toggles on/off. obj fields: dir ('up'|'down'|'left'|'right'),
+   * length (tiles, default 6), onTime, offTime, phase.
+   */
+  createLaserBeam(x, y, obj) {
+    const dir = obj.dir || 'right';
+    const lengthTiles = obj.length || 6;
+    const lengthPx = lengthTiles * TILE_SIZE;
+
+    const emitter = this.scene.add.image(x, y, 'laser_emitter').setDepth(4);
+    if (dir === 'left') emitter.setFlipX(true);
+    if (dir === 'up') emitter.setRotation(-Math.PI / 2);
+    if (dir === 'down') emitter.setRotation(Math.PI / 2);
+
+    // Beam sprite (tiled). Anchor to emitter edge.
+    let beamX = x, beamY = y, beamW = lengthPx, beamH = 4;
+    switch (dir) {
+      case 'right': beamX = x + 10 + lengthPx / 2; break;
+      case 'left':  beamX = x - 10 - lengthPx / 2; break;
+      case 'down':  beamY = y + 10 + lengthPx / 2; beamW = 4; beamH = lengthPx; break;
+      case 'up':    beamY = y - 10 - lengthPx / 2; beamW = 4; beamH = lengthPx; break;
+    }
+
+    const beam = this.scene.add.tileSprite(beamX, beamY, beamW, beamH, 'laser_beam');
+    beam.setDepth(5);
+    beam.setBlendMode(Phaser.BlendModes.ADD);
+    beam.setVisible(false);
+
+    const zone = this.scene.physics.add.image(beamX, beamY, 'particle_dust');
+    zone.setVisible(false);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(beamW - 2, Math.max(2, beamH - 1));
+    zone.body.enable = false;
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        this.applyHazardDamage(player, zone.x);
+      });
+    }
+
+    this.laserBeams.push({
+      emitter,
+      beam,
+      zone,
+      active: false,
+      onTime: obj.onTime || 1400,
+      offTime: obj.offTime || 1600,
+      timer: obj.phase || 0,
+    });
+  }
+
+  /**
+   * Conveyor belt surface. Creates a platform-like strip that pushes the
+   * player horizontally while standing on top.
+   * obj fields: width (tiles, default 3), dir ('left'|'right'), speed (px/sec, default 120)
+   */
+  createConveyor(x, y, obj) {
+    const widthTiles = Math.max(1, obj.width || 3);
+    const widthPx = widthTiles * TILE_SIZE;
+    const dir = obj.dir === 'left' ? -1 : 1;
+    const speed = (obj.speed || 120) * dir;
+
+    // x here is the center of the leftmost tile (from spawnObjects). We want
+    // the conveyor centered on its full width, so shift right by half the
+    // extra tiles (widthTiles - 1) * TILE_SIZE / 2.
+    const cx = x + (widthTiles - 1) * (TILE_SIZE / 2);
+    const cy = y;
+
+    const surface = this.scene.physics.add.image(cx, cy, 'conveyor_belt');
+    surface.setDisplaySize(widthPx, 16);
+    surface.body.allowGravity = false;
+    surface.body.setImmovable(true);
+    surface.body.setSize(widthPx, 16);
+    surface.body.checkCollision.down = false;
+    surface.body.checkCollision.left = false;
+    surface.body.checkCollision.right = false;
+    surface.setDepth(3);
+
+    // Scroll the treads for visual feedback
+    surface._scrollRate = dir * 2;
+
+    // Arrow hint
+    const arrow = this.scene.add.image(cx, cy - 14, 'conveyor_arrow').setDepth(3);
+    arrow.setTint(dir > 0 ? 0xffdd88 : 0x88ddff);
+    arrow.setAlpha(0.7);
+    if (dir < 0) arrow.setFlipX(true);
+
+    // Top overlap zone to nudge player
+    const topZone = this.scene.physics.add.image(cx, cy - 8, 'particle_dust');
+    topZone.setVisible(false);
+    topZone.body.allowGravity = false;
+    topZone.body.setImmovable(true);
+    topZone.body.setSize(widthPx - 4, 6);
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.collider(player, surface);
+      this.scene.physics.add.overlap(player, topZone, () => {
+        const body = player.body;
+        if (body && body.blocked.down) {
+          // Drag the player along the belt by shifting position each frame.
+          // This stays independent of velocity so running with or against the
+          // belt still feels like a smooth modifier rather than a hard cap.
+          const delta = this.scene.game.loop.delta / 1000;
+          player.x += speed * delta;
+        }
+      });
+    }
+
+    this.conveyors.push({ surface, arrow, topZone, speed });
+    this.decorations.push(arrow);
+  }
+
+  /**
+   * Phase platform — appears and disappears on a timer (no player-stand trigger).
+   * obj fields: width (tiles, default 3), onTime (default 1600), offTime (default 1200),
+   *             phase (default 0)
+   */
+  createPhasePlatform(x, y, obj) {
+    const widthTiles = Math.max(1, obj.width || 3);
+    const widthPx = widthTiles * TILE_SIZE;
+    const cx = x + (widthTiles - 1) * (TILE_SIZE / 2);
+    const cy = y;
+
+    const sprite = this.scene.physics.add.image(cx, cy, 'phase_platform');
+    sprite.setDisplaySize(widthPx, 12);
+    sprite.body.allowGravity = false;
+    sprite.body.setImmovable(true);
+    sprite.body.setSize(widthPx, 12);
+    sprite.body.checkCollision.down = false;
+    sprite.body.checkCollision.left = false;
+    sprite.body.checkCollision.right = false;
+    sprite.setDepth(3);
+    sprite.setBlendMode(Phaser.BlendModes.ADD);
+    sprite.setAlpha(0.9);
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.collider(player, sprite);
+    }
+
+    this.phasePlatforms.push({
+      sprite,
+      active: true,
+      onTime: obj.onTime || 1600,
+      offTime: obj.offTime || 1200,
+      timer: obj.phase || 0,
+    });
+  }
+
+  /**
+   * Arrow turret — wall-mounted trap that fires a quick volley of darts.
+   * obj fields: dir ('left'|'right'|'up'|'down'),
+   *             interval (ms between volleys, default 2600),
+   *             burstSize (darts per volley, default 3),
+   *             burstSpacing (ms between darts in a volley, default 120),
+   *             phase (initial timer offset, default 0)
+   */
+  createArrowTurret(x, y, obj) {
+    const dir = obj.dir || 'left';
+    const sprite = this.scene.add.image(x, y, 'arrow_turret').setDepth(4);
+    if (dir === 'right') sprite.setFlipX(true);
+    if (dir === 'up') sprite.setRotation(-Math.PI / 2);
+    if (dir === 'down') sprite.setRotation(Math.PI / 2);
+
+    this.arrowTurrets.push({
+      sprite,
+      dir,
+      interval: obj.interval || 2600,
+      burstSize: obj.burstSize || 3,
+      burstSpacing: obj.burstSpacing || 120,
+      phase: obj.phase || 0,
+      timer: 0,
+      burstsPending: 0,
+      burstTimer: 0,
+      originX: x,
+      originY: y,
+    });
+  }
+
+  spawnArrowDart(turret) {
+    const speed = 360;
+    let vx = 0, vy = 0, rot = 0;
+    switch (turret.dir) {
+      case 'left':  vx = -speed; rot = Math.PI; break;
+      case 'right': vx = speed;  rot = 0; break;
+      case 'up':    vy = -speed; rot = -Math.PI / 2; break;
+      case 'down':  vy = speed;  rot = Math.PI / 2; break;
+    }
+
+    const dart = this.scene.physics.add.image(turret.originX, turret.originY, 'arrow_dart');
+    dart.body.allowGravity = false;
+    dart.body.setSize(10, 3);
+    dart.setDepth(6);
+    dart.setRotation(rot);
+    dart.body.velocity.x = vx;
+    dart.body.velocity.y = vy;
+
+    const overlaps = [];
+    for (const player of this.allPlayers) {
+      overlaps.push(this.scene.physics.add.overlap(player, dart, () => {
+        if (!dart.active) return;
+        this.applyHazardDamage(player, dart.x);
+        this._destroyArrowDart(dart);
+      }));
+    }
+    const wc = this.scene.physics.add.collider(dart, this.wallLayer, () => {
+      this._destroyArrowDart(dart);
+    });
+    dart._overlaps = overlaps;
+    dart._wallCollider = wc;
+    dart._life = 2400;
+    this.activeArrowDarts.push(dart);
+  }
+
+  _destroyArrowDart(dart) {
+    if (!dart.active) return;
+    if (dart._overlaps) {
+      for (const ov of dart._overlaps) this.scene.physics.world.removeCollider(ov);
+    }
+    if (dart._wallCollider) this.scene.physics.world.removeCollider(dart._wallCollider);
+    dart.destroy();
+  }
+
   /** Dynamically drops an active hitbox that damages player & despawns on wall hit. */
   _dropIcicle(entry) {
     entry.state = 'falling';
@@ -3332,6 +3621,143 @@ export class LevelManager {
         }
       }
     }
+
+    // Crushers: four-phase cycle (top -> down -> bottom -> up)
+    for (const cr of this.crushers) {
+      if (!cr.sprite?.active) continue;
+      cr.timer += dt;
+      const topY = cr.originTopY;
+      const bottomY = topY + cr.dropDist;
+      if (cr.state === 'top') {
+        // Anticipatory wobble near the end
+        if (cr.timer >= cr.upTime) {
+          cr.state = 'down';
+          cr.timer = 0;
+        } else if (cr.timer >= cr.upTime - 260) {
+          cr.sprite.y = topY + Math.sin(t * 40) * 1.2;
+        } else {
+          cr.sprite.y = topY;
+        }
+      } else if (cr.state === 'down') {
+        const newY = Math.min(bottomY, cr.sprite.y + cr.dropSpeed * dtSec);
+        cr.sprite.y = newY;
+        if (newY >= bottomY - 0.5) {
+          cr.sprite.y = bottomY;
+          cr.state = 'bottom';
+          cr.timer = 0;
+          // Tiny screen impact feel
+          this.scene.cameras.main.shake?.(90, 0.003);
+        }
+      } else if (cr.state === 'bottom') {
+        cr.sprite.y = bottomY;
+        if (cr.timer >= cr.downTime) {
+          cr.state = 'up';
+          cr.timer = 0;
+        }
+      } else if (cr.state === 'up') {
+        const newY = Math.max(topY, cr.sprite.y - cr.riseSpeed * dtSec);
+        cr.sprite.y = newY;
+        if (newY <= topY + 0.5) {
+          cr.sprite.y = topY;
+          cr.state = 'top';
+          cr.timer = 0;
+        }
+      }
+      if (cr.sprite.body) cr.sprite.body.updateFromGameObject();
+      // Move damage zone to bottom teeth edge
+      cr.zone.setPosition(cr.sprite.x, cr.sprite.y + cr.sprite.displayHeight - 4);
+      cr.zone.body.updateFromGameObject();
+    }
+
+    // Laser beams: cycle on/off with warm-up pulse
+    for (const lz of this.laserBeams) {
+      lz.timer += dt;
+      if (lz.active) {
+        lz.beam.setAlpha(0.85 + Math.sin(t * 30) * 0.15);
+        if (lz.timer >= lz.onTime) {
+          lz.timer = 0;
+          lz.active = false;
+          lz.beam.setVisible(false);
+          lz.zone.body.enable = false;
+        }
+      } else {
+        if (lz.timer >= lz.offTime) {
+          lz.timer = 0;
+          lz.active = true;
+          lz.beam.setVisible(true);
+          lz.zone.body.enable = true;
+        } else if (lz.timer >= lz.offTime - 320) {
+          // Warning flicker right before firing
+          lz.beam.setVisible(true);
+          lz.beam.setAlpha(0.2 + Math.sin(t * 40) * 0.2);
+          lz.zone.body.enable = false;
+        }
+      }
+    }
+
+    // Conveyors: scroll visuals
+    for (const cv of this.conveyors) {
+      if (!cv.surface?.active) continue;
+      cv.surface.tilePositionX = (cv.surface.tilePositionX || 0) + cv.surface._scrollRate;
+    }
+
+    // Phase platforms: cycle visible/collidable with fade warning
+    for (const pp of this.phasePlatforms) {
+      if (!pp.sprite?.active) continue;
+      pp.timer += dt;
+      if (pp.active) {
+        if (pp.timer >= pp.onTime - 400) {
+          // Warning fade
+          pp.sprite.setAlpha(0.4 + Math.sin(t * 18) * 0.2);
+        } else {
+          pp.sprite.setAlpha(0.9);
+        }
+        if (pp.timer >= pp.onTime) {
+          pp.timer = 0;
+          pp.active = false;
+          pp.sprite.setVisible(false);
+          pp.sprite.body.enable = false;
+        }
+      } else {
+        if (pp.timer >= pp.offTime) {
+          pp.timer = 0;
+          pp.active = true;
+          pp.sprite.setVisible(true);
+          pp.sprite.setAlpha(0.9);
+          pp.sprite.body.enable = true;
+        }
+      }
+    }
+
+    // Arrow turrets: fire volleys of darts
+    for (const at of this.arrowTurrets) {
+      at.timer += dt;
+      // Offset initial fire by phase
+      if (at.burstsPending > 0) {
+        at.burstTimer -= dt;
+        if (at.burstTimer <= 0) {
+          this.spawnArrowDart(at);
+          at.burstsPending--;
+          at.burstTimer = at.burstSpacing;
+        }
+      } else if (at.timer >= at.interval + at.phase) {
+        at.timer = 0;
+        at.phase = 0;
+        at.burstsPending = at.burstSize;
+        at.burstTimer = 0;
+      }
+    }
+
+    // Active arrow darts: life decrement / cleanup
+    for (let i = this.activeArrowDarts.length - 1; i >= 0; i--) {
+      const d = this.activeArrowDarts[i];
+      if (!d.active) { this.activeArrowDarts.splice(i, 1); continue; }
+      d._life -= dt;
+      if (d._life <= 0) {
+        this._destroyArrowDart(d);
+        this.activeArrowDarts.splice(i, 1);
+      }
+    }
   }
 
   setupAmbience(type) {
@@ -3547,6 +3973,40 @@ export class LevelManager {
       if (ic.fallBody && ic.fallBody.active) ic.fallBody.destroy();
     }
     this.activeIcicles = [];
+
+    for (const cr of this.crushers) {
+      if (cr.sprite && cr.sprite.active) cr.sprite.destroy();
+      if (cr.zone && cr.zone.active) cr.zone.destroy();
+    }
+    this.crushers = [];
+
+    for (const lz of this.laserBeams) {
+      if (lz.emitter && lz.emitter.active) lz.emitter.destroy();
+      if (lz.beam && lz.beam.active) lz.beam.destroy();
+      if (lz.zone && lz.zone.active) lz.zone.destroy();
+    }
+    this.laserBeams = [];
+
+    for (const cv of this.conveyors) {
+      if (cv.surface && cv.surface.active) cv.surface.destroy();
+      if (cv.topZone && cv.topZone.active) cv.topZone.destroy();
+    }
+    this.conveyors = [];
+
+    for (const pp of this.phasePlatforms) {
+      if (pp.sprite && pp.sprite.active) pp.sprite.destroy();
+    }
+    this.phasePlatforms = [];
+
+    for (const at of this.arrowTurrets) {
+      if (at.sprite && at.sprite.active) at.sprite.destroy();
+    }
+    this.arrowTurrets = [];
+
+    for (const d of this.activeArrowDarts) {
+      this._destroyArrowDart(d);
+    }
+    this.activeArrowDarts = [];
 
     for (const s of this.checkpointShrines) {
       if (s.base && s.base.active) s.base.destroy();

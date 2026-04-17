@@ -99,6 +99,9 @@ function buildRoom31() {
       { type: 'pine_tree', x: 38, y: f - 11 },
       { type: 'snow_rock', x: 24, y: f - 7 },
       { type: 'crystal', x: 36, y: f - 11 },
+      // New hazards — cragstep is meant to punish a careless climb
+      { type: 'crusher', x: 16, y: 1, dropDist: 4, downTime: 380, upTime: 2100, phase: 'top' },
+      { type: 'arrow_turret', x: 2, y: f - 3, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 130 },
     ],
     ambience: 'mountain_pass',
   };
@@ -226,6 +229,10 @@ function buildRoom35() {
       { type: 'mountain_flag', x: 6, y: f - 13 },
       { type: 'lore_fragment', id: 'gale_note', x: 3, y: f,
         text: 'Pilgrim shrine: "Leave the ground. Trust the air. The Warden respects only those who do."' },
+      // New hazards — spires tested by falling teeth
+      { type: 'crusher', x: 10, y: 1, dropDist: 3, downTime: 380, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 26, y: 1, dropDist: 3, downTime: 380, upTime: 2000, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: 9, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
     ],
     ambience: 'mountain_peak',
   };
@@ -346,6 +353,9 @@ function buildRoom39() {
       { type: 'oak_tree', x: 6, y: f },
       { type: 'ivy_drape', x: 18, y: 4 },
       { type: 'ivy_drape', x: 30, y: 4 },
+      // New hazards — canopy dangers
+      { type: 'arrow_turret', x: 2, y: f - 5, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 130 },
+      { type: 'arrow_turret', x: W - 3, y: f - 5, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 130 },
     ],
     ambience: 'forest_deep',
   };
@@ -436,6 +446,10 @@ function buildRoom42() {
       { type: 'lightwraith', x: 18, y: 12 },
       { type: 'oak_tree', x: 4, y: f },
       { type: 'oak_tree', x: 36, y: f },
+      // New hazards — hollows hide old siege engines
+      { type: 'phase_platform', x: 18, y: f - 2, width: 4, onTime: 1200, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 24, y: f - 4, width: 4, onTime: 1200, offTime: 900, phase: 600 },
+      { type: 'laser_beam', x: 2, y: 10, dir: 'right', length: 9, onTime: 1100, offTime: 1300, phase: 0 },
     ],
     ambience: 'forest_deep',
   };
@@ -748,6 +762,11 @@ function buildRoom52() {
       { type: 'crossbowman', x: 20, y: 8 },
       { type: 'banner_red', x: 6, y: 2 },
       { type: 'castle_window', x: 14, y: 4 },
+      // New hazards — rampart defences
+      { type: 'crusher', x: 14, y: 1, dropDist: 4, downTime: 380, upTime: 1900, phase: 'top' },
+      { type: 'arrow_turret', x: 2, y: 12, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 16, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'phase_platform', x: 6, y: 12, width: 3, onTime: 1300, offTime: 900, phase: 0 },
     ],
     ambience: 'castle_interior',
   };
@@ -806,6 +825,11 @@ function buildRoom54() {
       { type: 'banner_red', x: 6, y: 2 },
       { type: 'castle_window', x: 20, y: 4 },
       { type: 'ivy_drape', x: 30, y: 2 },
+      // New hazards — keep spires trial
+      { type: 'crusher', x: 12, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 24, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: 15, dir: 'right', length: 9, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'phase_platform', x: 22, y: 12, width: 4, onTime: 1300, offTime: 900, phase: 0 },
     ],
     ambience: 'castle_interior',
   };
@@ -837,6 +861,12 @@ function buildRoom55() {
       { type: 'banner_gold', x: 34, y: 2 },
       { type: 'castle_window', x: 14, y: 4 },
       { type: 'castle_window', x: 30, y: 4 },
+      // New hazards — feasting hall defences turn on the intruder
+      { type: 'crusher', x: 14, y: 1, dropDist: 5, downTime: 400, upTime: 1900, phase: 'top' },
+      { type: 'crusher', x: 28, y: 1, dropDist: 5, downTime: 400, upTime: 1900, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: 9, dir: 'right', length: 9, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'arrow_turret', x: 2, y: 14, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: 39, y: 14, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
     ],
     ambience: 'castle_interior',
   };

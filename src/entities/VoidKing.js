@@ -43,6 +43,11 @@ export class VoidKing extends Phaser.Physics.Arcade.Sprite {
     this.setScale(1.6);
     this.setDepth(5);
 
+    // Remember spawn so we can yank him back if he ever falls out of the
+    // arena (teleport quirks / voidSlam tunneling through the floor).
+    this.spawnX = x;
+    this.spawnY = y;
+
     this.hp = HP;
     this.maxHp = HP;
     this.damage = DAMAGE;
@@ -119,6 +124,19 @@ export class VoidKing extends Phaser.Physics.Arcade.Sprite {
       this.updateProjectiles(dt);
       this.updateVoidPuddles(dt);
       return;
+    }
+
+    // Safety net: if the king has fallen/clipped out of the arena, yank
+    // him back to his spawn so the fight can actually finish. Without this
+    // he can get lost below the floor during voidSlam or after a teleport
+    // and stay "alive" forever, blocking the chapter-2 unlock.
+    const lm = this.scene.levelManager;
+    if (lm) {
+      const rpw = lm.roomPixelW || 0;
+      const rph = lm.roomPixelH || 0;
+      if (this.y > rph + 40 || this.y < -200 || this.x < -200 || this.x > rpw + 200) {
+        this.rescueToSpawn();
+      }
     }
 
     this.knockbackTimer = Math.max(0, this.knockbackTimer - dt);
@@ -239,6 +257,25 @@ export class VoidKing extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  /**
+   * Emergency rescue — called when the boss has somehow escaped the arena
+   * (fell off the bottom of the screen, got clipped out by physics). Pops
+   * him back to his spawn with a brief invulnerability/blink so the fight
+   * can continue instead of getting soft-locked.
+   */
+  rescueToSpawn() {
+    this.body.velocity.set(0, 0);
+    this.setPosition(this.spawnX, this.spawnY);
+    this.intangible = true;
+    this.attackTimer = 0;
+    this.attackPhase = null;
+    this.setAlpha(0.2);
+    this.scene.tweens.add({
+      targets: this, alpha: 1, duration: 400, ease: 'Sine.easeOut',
+      onComplete: () => { this.intangible = false; },
+    });
+  }
+
   teleportAway(player) {
     this.attackTimer = 420;
     this.attackPhase = 'teleport';
@@ -340,6 +377,10 @@ export class VoidKing extends Phaser.Physics.Arcade.Sprite {
     this.body.velocity.x = 0;
     this.slamCooldown = this.phase >= 3 ? SLAM_COOLDOWN * 0.6 : SLAM_COOLDOWN;
 
+    // Cap fall speed so the slam can't tunnel through the arena floor.
+    if (this.body.maxVelocity) {
+      this.body.maxVelocity.y = 520;
+    }
     this.body.velocity.y = -240;
     this.scene.time.delayedCall(300, () => {
       if (this.isDead || !this.active) return;
