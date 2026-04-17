@@ -204,6 +204,16 @@ export class LevelManager {
     this.scene.physics.world.setBounds(0, 0, this.roomPixelW, this.roomPixelH);
 
     this.scene.cameraRig?.applyRoom(room);
+
+    // Belt-and-suspenders: hard-snap the camera onto the player right now.
+    // startFollow inside applyRoom is supposed to center instantly, but if
+    // anything (a lingering follow target, a zoom change, a deadzone, etc.)
+    // leaves the camera looking at stale coordinates, the player ends up
+    // off-screen behind the fade-in. centerOn ignores follow state.
+    const p = this.scene.player;
+    if (p) {
+      this.scene.cameras.main.centerOn(p.x, p.y);
+    }
   }
 
   createParallaxBackground(room) {
@@ -1028,6 +1038,36 @@ export class LevelManager {
         }
       }
       break;
+    }
+
+    // Drop the player onto the nearest floor below the spawn point. Prevents
+    // portals from dumping the player into a bottomless pit / void when a
+    // redesigned room shifts its floor rows. If no floor is found within
+    // ~10 tiles we log and leave the spawn alone (caller will see them fall
+    // and hit a hazard / room edge instead of vanishing silently).
+    {
+      const col = Math.floor(sx / TILE_SIZE);
+      const startRow = Math.floor(sy / TILE_SIZE);
+      const tiles = room.tiles;
+      let floorRow = -1;
+      if (col >= 0 && col < tiles[0].length) {
+        for (let r = Math.max(0, startRow); r < Math.min(tiles.length, startRow + 10); r++) {
+          const t = tiles[r]?.[col];
+          if (t === 1 || t === 2 || t === 3) {
+            floorRow = r;
+            break;
+          }
+        }
+      }
+      if (floorRow >= 0) {
+        const groundedSy = floorRow * TILE_SIZE - TILE_SIZE / 2;
+        if (groundedSy > sy) sy = groundedSy;
+      } else {
+        console.warn(
+          `[LevelManager] No floor below spawn (${spawnX},${spawnY}) in ${this.currentRoomId}; `
+          + 'player may fall off-screen.',
+        );
+      }
     }
 
     const p = this.scene.player;

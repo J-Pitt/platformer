@@ -372,17 +372,19 @@ export class GameScene extends Phaser.Scene {
     this.transitioning = true;
     if (this.hud && this.hud.mapOverlay) this.hud.mapOverlay.hide();
 
-    // Phaser invokes the fade callback on every effect tick, so guard
-    // against the load/fade-in running twice on the final tick.
-    let loaded = false;
-    this.cameras.main.fade(300, 0, 0, 0, false, (cam, progress) => {
-      if (loaded || progress < 1) return;
-      loaded = true;
+    // Use the FADE_OUT_COMPLETE event rather than polling the per-frame
+    // progress callback: the event fires exactly once, after the effect
+    // has marked itself complete, so we can't accidentally load the room
+    // while the Fade.update loop is still executing (which would make
+    // fadeIn reset state mid-tick).
+    const cam = this.cameras.main;
+    cam.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
       this.levelManager.loadRoom(roomId, spawnX, spawnY);
-      this.cameras.main.fadeIn(400, 0, 0, 0);
+      cam.fadeIn(400, 0, 0, 0);
       this.transitioning = false;
       this.saveGameIfEligible(false);
     });
+    cam.fade(300, 0, 0, 0, true);
   }
 
   setupSoloAutosave() {
