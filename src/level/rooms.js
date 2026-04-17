@@ -2921,7 +2921,7 @@ function buildRoom24() {
     tiles,
     playerSpawn: { x: 3, y: f },
     objects: [
-      { type: 'door', targetRoom: 'room23', x: 1, y: f, spawnX: 21, spawnY: 4 },
+      { type: 'door', targetRoom: 'room23', x: 1, y: f, spawnX: 18, spawnY: 4 },
       { type: 'door', targetRoom: 'room25', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
       { type: 'merchant_shop', x: 28, y: 5, items: [
         { name: 'Health Refill', cost: 5, type: 'heal' },

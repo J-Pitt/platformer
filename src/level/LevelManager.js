@@ -887,21 +887,31 @@ export class LevelManager {
 
     const p = this.scene.player;
 
-    // Kill any in-flight tweens on the player (e.g. the door-entry
-    // shrink/dim) so we don't fight their final values.
+    // Kill any in-flight tweens on the player (juice squash, hurt flash,
+    // etc) so their final values don't clobber the restored state below.
     if (this.scene.tweens) this.scene.tweens.killTweensOf(p);
 
     p.setPosition(sx, sy);
     p.setScale(1);
     p.setAlpha(1);
+    p.setVisible(true);
     p.setAngle(0);
     p.setRotation(0);
+    if (typeof p.clearTint === 'function') p.clearTint();
     if (p.body) {
       p.body.enable = true;
       p.body.allowGravity = true;
       p.body.velocity.set(0, 0);
     }
     delete p._enteringDoor;
+
+    // Block door-portal re-triggering for a short window after a room
+    // load. This prevents ping-pong when a spawn point lands next to the
+    // return portal (the door's overlap body intentionally reaches one
+    // tile into the room), and gives the player a moment to read the
+    // layout before any door can fire.
+    const now = this.scene.time?.now ?? 0;
+    p._doorCooldownUntil = now + 600;
 
     p.spawnX = sx;
     p.spawnY = sy;
@@ -983,46 +993,23 @@ export class LevelManager {
     });
 
     const onDoor = (player) => {
-      // Hard guards: don't re-enter this handler while the player is
-      // already walking through a door OR while the scene is mid-fade.
-      // Without these guards, physics overlap can fire multiple ticks in
-      // a row (player is tween-parked on top of the door), which used to
-      // (a) apply the portal-burst scale tween repeatedly — causing the
-      // portal to visibly grow to screen-size — and (b) re-shrink the
-      // player to scale 0.25 / alpha 0.2 right before loadRoom moved it
-      // to the new spawn, leaving the player invisible in the new room.
-      if (player._enteringDoor) return;
+      // The scene-wide `transitioning` flag is set synchronously inside
+      // transitionToRoom, so it guards against the physics engine firing
+      // this overlap a second time before the fade begins.
       if (this.scene.transitioning) return;
+      // Post-load cooldown: keep the player from getting ping-ponged
+      // right back to the previous room when the spawn lands inside the
+      // return portal's enlarged trigger body.
+      const now = this.scene.time?.now ?? 0;
+      if (player._doorCooldownUntil && now < player._doorCooldownUntil) return;
       if (!meetsAbilityRequirements(player, door.requiresAbilities)) return;
 
-      player._enteringDoor = true;
-
-      // Freeze the player and play an entry flourish: pull toward the
-      // portal center, shrink, and dim while the portal itself flashes
-      // white-teal. The existing camera fade starts once the tween
-      // completes so the transition reads as "walking through" rather
-      // than a blind cut.
-      if (player.body) {
-        player.body.setVelocity(0, 0);
-        player.body.allowGravity = false;
-        player.body.enable = false;
-      }
-      if (this.scene.tweens) this.scene.tweens.killTweensOf(player);
-
-      this.scene.tweens.add({
-        targets: player,
-        x: door.x,
-        y: door.y,
-        scaleX: 0.25,
-        scaleY: 0.25,
-        alpha: 0.2,
-        angle: (player.angle || 0) + 30,
-        duration: 220,
-        ease: 'Cubic.easeIn',
-      });
-
-      // Portal burst: halo + core pulse open, then collapse as the fade
-      // takes over.
+      // Brief portal flash — purely a visual on the door itself, never on
+      // the player. We must not tween the player's scale / alpha / angle
+      // here; if the player is still in a transformed state when
+      // positionPlayer runs (due to timing between the tween and the
+      // camera fade), the player ends up shrunken and almost invisible
+      // in the new room.
       this.scene.tweens.killTweensOf(portalHalo);
       this.scene.tweens.killTweensOf(portalGlow);
       this.scene.tweens.killTweensOf(door);
@@ -1045,7 +1032,6 @@ export class LevelManager {
         ease: 'Cubic.easeOut',
       });
 
-      // Short flash ring spark
       const spark = this.scene.add.image(door.x, door.y, 'particle_teal');
       spark.setBlendMode(Phaser.BlendModes.ADD);
       spark.setDepth(6);
@@ -1060,12 +1046,7 @@ export class LevelManager {
         onComplete: () => spark.destroy(),
       });
 
-      // Kick off the scene fade/load. The player stays shrunk, dimmed,
-      // and physics-disabled until positionPlayer runs in the new room,
-      // which clears _enteringDoor and resets scale/alpha/angle.
-      this.scene.time.delayedCall(210, () => {
-        this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
-      });
+      this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
     };
 
     for (const player of this.allPlayers) {
@@ -2547,7 +2528,10 @@ export class LevelManager {
       door.requiresAbilities = [];
       door.setAlpha(0.96);
       for (const player of this.allPlayers) {
-        this.scene.physics.add.overlap(player, door, () => {
+        this.scene.physics.add.overlap(player, door, (pl) => {
+          if (this.scene.transitioning) return;
+          const now = this.scene.time?.now ?? 0;
+          if (pl._doorCooldownUntil && now < pl._doorCooldownUntil) return;
           this.scene.transitionToRoom(door.targetRoom, door.spawnX, door.spawnY);
         });
       }
