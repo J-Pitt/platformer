@@ -42,6 +42,18 @@ function clearRect(tiles, r1, c1, r2, c2) {
   fillRect(tiles, r1, c1, r2, c2, 0);
 }
 
+// Maze-building primitives (shared with rooms_ch2.js). `climbWall` is a
+// short solid pillar rising from the floor — the player has to jump
+// over it, usually using adjacent platforms. `duckWall` hangs from the
+// ceiling and leaves a crawlspace above the floor. Use them in sequence
+// to close the direct sprint through a room.
+function climbWall(tiles, col, floorRow, height) {
+  for (let r = floorRow - height + 1; r <= floorRow; r++) setTile(tiles, r, col, 1);
+}
+function duckWall(tiles, col, floorRow, gapFromFloor) {
+  for (let r = 1; r <= floorRow - gapFromFloor; r++) setTile(tiles, r, col, 1);
+}
+
 function buildRoom1() {
   const W = 56;
   const H = 24;
@@ -1262,49 +1274,60 @@ function buildRoom9() {
 }
 
 function buildRoom10() {
+  // Frozen Threshold — rebuilt as an ice crucible in the spirit of room 8:
+  // narrow side platforms either side of a big frozen chasm, wall-jump ice
+  // pillars framing it, multi-tier routes overhead, and dense timing hazards.
   const W = 50, H = 22;
   const tiles = makeRoom(W, H);
-  const f = H - 3;
+  const f = H - 3; // 19
 
-  // Icy terrain bumps on floor
-  fillRect(tiles, 18, 8, 19, 11, 1);
-  fillRect(tiles, 17, 22, 19, 25, 1);
-  fillRect(tiles, 18, 36, 19, 39, 1);
+  // ----- Arena floor: two narrow side platforms separated by a 22-wide
+  //       frozen chasm down the middle. -----
+  fillRect(tiles, H - 2, 1, H - 1, 10, 1);
+  clearRect(tiles, H - 2, 11, H - 2, 38);
+  fillRect(tiles, H - 2, 39, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 11, 38, 1);
 
-  // Frozen chasms in the floor
-  clearRect(tiles, H - 2, 14, H - 2, 18);
-  clearRect(tiles, H - 2, 30, H - 2, 34);
+  // ----- Stepping islands over the chasm (low tier, row 17) -----
+  fillRow(tiles, 17, 13, 14, 2);
+  fillRow(tiles, 17, 19, 20, 2);
+  fillRow(tiles, 17, 28, 29, 2);
+  fillRow(tiles, 17, 35, 36, 2);
 
-  // Zigzag ice platforms — horizontal traversal
-  fillRow(tiles, 16, 4, 8, 2);
-  fillRow(tiles, 14, 10, 15, 2);
-  fillRow(tiles, 12, 6, 10, 2);
-  fillRow(tiles, 16, 18, 23, 2);
-  fillRow(tiles, 14, 26, 30, 2);
-  fillRow(tiles, 12, 22, 26, 2);
-  fillRow(tiles, 10, 28, 33, 2);
-  fillRow(tiles, 16, 36, 40, 2);
-  fillRow(tiles, 14, 42, 46, 2);
-  fillRow(tiles, 10, 40, 44, 2);
-  fillRow(tiles, 8, 14, 18, 2);
-  fillRow(tiles, 8, 34, 38, 2);
+  // ----- Wall-jump ice pillars framing the chasm -----
+  fillRect(tiles, 8, 11, 18, 11, 1);
+  fillRect(tiles, 8, 38, 18, 38, 1);
+  // Outer ascending shafts near each edge
+  fillRect(tiles, 6, 5, 16, 5, 1);
+  fillRect(tiles, 6, 44, 16, 44, 1);
 
-  // Stair blocks near climb start
-  setTile(tiles, f, 4, 3);
-  setTile(tiles, 18, 5, 3);
-  setTile(tiles, 17, 6, 3);
+  // ----- Mid tier platforms (row 13) -----
+  fillRow(tiles, 13, 3, 4, 2);
+  fillRow(tiles, 13, 45, 46, 2);
+  fillRow(tiles, 13, 15, 18, 2);
+  fillRow(tiles, 13, 31, 34, 2);
+  fillRow(tiles, 13, 23, 26, 2);
 
-  // Frozen pillars
-  fillRect(tiles, 6, 12, 12, 13, 1);
-  fillRect(tiles, 6, 34, 12, 35, 1);
+  // ----- Upper tier platforms (row 9) — narrow beams over the chasm -----
+  fillRow(tiles, 9, 7, 10, 2);
+  fillRow(tiles, 9, 39, 42, 2);
+  fillRow(tiles, 9, 20, 23, 2);
+  fillRow(tiles, 9, 26, 29, 2);
 
-  // Ice tunnel ceiling
-  fillRect(tiles, 2, 6, 5, 20, 1);
-  fillRect(tiles, 2, 28, 5, 44, 1);
+  // ----- Top route (row 6) with crumble links -----
+  fillRow(tiles, 6, 13, 16, 2);
+  fillRow(tiles, 6, 33, 36, 2);
 
-  // Door openings
+  // Vaulted ice ceiling
+  fillRect(tiles, 2, 6, 4, 20, 1);
+  fillRect(tiles, 2, 29, 4, 44, 1);
+
+  // ----- Door openings ----- left to room9, right to room11, plus a
+  // top landing accessible only via upper route.
   clearRect(tiles, f - 2, 0, f + 1, 0);
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+  clearRect(tiles, 0, 24, 0, 26);
+  fillRow(tiles, 4, 23, 27, 2);
 
   return {
     name: 'Frozen Threshold',
@@ -1315,27 +1338,82 @@ function buildRoom10() {
     objects: [
       { type: 'door', targetRoom: 'room9', x: 1, y: f, spawnX: 40, spawnY: 17 },
       { type: 'door', targetRoom: 'room11', x: W - 2, y: f, spawnX: 2, spawnY: 27 },
-      { type: 'bench', x: 24, y: 11 },
-      { type: 'coin', x: 8, y: 11 },
-      { type: 'coin', x: 28, y: 9 },
-      { type: 'coin', x: 44, y: 9 },
-      { type: 'coin', x: 16, y: 7 },
-      { type: 'crawler', x: 9, y: 17 },
-      { type: 'crawler', x: 30, y: 16 },
+      // Optional top exit loops you back to room9 (secret skip for skilled players)
+      { type: 'door', targetRoom: 'room9', x: 25, y: 2, spawnX: 3, spawnY: 17 },
+
+      // --- Moving platforms: lifelines over the chasm ---
+      { type: 'moving_platform', x: 16, y: 16, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 33, y: 16, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 24, y: 15, axis: 'y', range: 96, speed: 0.9, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 13, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 36, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 1.2, spin: 0 },
+
+      // --- Crushers overhead, staggered like the Crucible ---
+      { type: 'crusher', x: 15, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 25, y: 1, dropDist: 6, downTime: 450, upTime: 2200, phase: 'down' },
+      { type: 'crusher', x: 34, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'up' },
+
+      // --- Horizontal lasers across the mid tier ---
+      { type: 'laser_beam', x: 12, y: 11, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: 37, y: 11, dir: 'left', length: 8, onTime: 1100, offTime: 1300, phase: 650 },
+
+      // --- Icicles dropping over the chasm (ice-themed flame-jet analog) ---
+      { type: 'icicle_drop', x: 17, y: 4 },
+      { type: 'icicle_drop', x: 22, y: 4 },
+      { type: 'icicle_drop', x: 28, y: 4 },
+      { type: 'icicle_drop', x: 32, y: 4 },
+
+      // --- Crumble stepping stones leading to the top door ---
+      { type: 'crumble_platform', x: 18, y: 5, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 22, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 28, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 32, y: 5, collapseDelay: 380, respawnDelay: 2400 },
+
+      // --- Pendulum ice picks sweeping the mid tier ---
+      { type: 'pendulum_trap', x: 18, y: 9, length: 80, swing: 42, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 31, y: 9, length: 80, swing: 42, speed: 1.7, phase: 1.2 },
+
+      // --- Saw blades drilling up from the chasm ---
+      { type: 'saw_blade', x: 20, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 29, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0.8 },
+
+      // --- Arrow turrets from opposite walls ---
+      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+
+      // --- Ice patches for slip hazard on the few safe platforms ---
+      { type: 'ice_patch', x: 3, y: 13, width: 2 },
+      { type: 'ice_patch', x: 45, y: 13, width: 2 },
+      { type: 'ice_patch', x: 7, y: f - 1, width: 3 },
+      { type: 'ice_patch', x: 39, y: f - 1, width: 3 },
+
+      // --- Phase platforms bridging the worst gaps when they're on ---
+      { type: 'phase_platform', x: 15, y: 17, width: 3, onTime: 1300, offTime: 1000, phase: 0 },
+      { type: 'phase_platform', x: 31, y: 17, width: 3, onTime: 1300, offTime: 1000, phase: 600 },
+
+      // --- Rewards ---
+      { type: 'bench', x: 4, y: f },
+      { type: 'coin', x: 22, y: 8 },
+      { type: 'coin', x: 27, y: 8 },
+      { type: 'coin', x: 8, y: 8 },
+      { type: 'coin', x: 41, y: 8 },
+      { type: 'coin', x: 14, y: 5 },
+      { type: 'coin', x: 35, y: 5 },
+      { type: 'item_pickup', itemId: 'ether_vial', amount: 1, x: 6, y: 19 },
+
+      // --- Enemies ---
+      { type: 'crawler', x: 7, y: f },
       { type: 'crawler', x: 42, y: f },
-      { type: 'flyer', x: 16, y: 6 },
-      { type: 'flyer', x: 28, y: 8 },
-      { type: 'flyer', x: 40, y: 6 },
-      { type: 'moving_platform', x: 16, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 32, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.5, spin: 0 },
-      { type: 'wood_bridge', x: 15, y: f },
-      { type: 'wood_bridge', x: 31, y: f },
+      { type: 'flyer', x: 16, y: 8 },
+      { type: 'flyer', x: 33, y: 8 },
+      { type: 'flyer', x: 24, y: 12 },
+      { type: 'armored_flyer', x: 24, y: 5 },
+
+      // --- Decorations ---
       { type: 'crystal', x: 6, y: f },
-      { type: 'crystal', x: 20, y: f },
-      { type: 'crystal', x: 38, y: f },
-      { type: 'crystal_cluster', x: 12, y: f },
-      { type: 'crystal_cluster', x: 32, y: f },
-      { type: 'crystal_cluster', x: 46, y: f },
+      { type: 'crystal', x: 43, y: f },
+      { type: 'crystal_cluster', x: 9, y: f },
+      { type: 'crystal_cluster', x: 40, y: f },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 24, y: 1 },
       { type: 'stalactite', x: 40, y: 1 },
@@ -1349,26 +1427,11 @@ function buildRoom10() {
       { type: 'glow_spore', x: 14, y: 6 },
       { type: 'glow_spore', x: 30, y: 4 },
       { type: 'glow_spore', x: 42, y: 6 },
-      { type: 'ruin_arch', x: 16, y: f },
-      { type: 'ruin_arch', x: 34, y: f },
-      { type: 'gravel_patch', x: 8, y: f },
-      { type: 'gravel_patch', x: 28, y: f },
-      { type: 'gravel_patch', x: 44, y: f },
-      { type: 'floor_spikes', x: 24, y: 19, onTime: 1200, offTime: 1800, phase: 0 },
-      { type: 'floor_spikes', x: 40, y: 19, onTime: 1200, offTime: 1800, phase: 600 },
-      { type: 'ice_patch', x: 20, y: 18, width: 3 },
-      { type: 'ice_patch', x: 32, y: 18, width: 2 },
-      { type: 'icicle_drop', x: 15, y: 4 },
-      { type: 'icicle_drop', x: 38, y: 4 },
-      { type: 'ice_crystal_cluster', x: 8, y: 19 },
+      { type: 'ruin_arch', x: 8, y: f },
+      { type: 'ruin_arch', x: 42, y: f },
+      { type: 'ice_crystal_cluster', x: 20, y: 17 },
+      { type: 'ice_crystal_cluster', x: 29, y: 17 },
       { type: 'frozen_banner', x: 44, y: 4 },
-      { type: 'item_pickup', itemId: 'ether_vial', amount: 1, x: 6, y: 19 },
-      // New hazards — ice tunnel needs timing pressure
-      { type: 'crusher', x: 16, y: 1, dropDist: 5, downTime: 420, upTime: 2200, phase: 'top' },
-      { type: 'crusher', x: 34, y: 1, dropDist: 5, downTime: 420, upTime: 2200, phase: 'up' },
-      { type: 'arrow_turret', x: 46, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
-      { type: 'phase_platform', x: 14, y: 17, width: 3, onTime: 1300, offTime: 1000, phase: 0 },
-      { type: 'phase_platform', x: 31, y: 17, width: 3, onTime: 1300, offTime: 1000, phase: 600 },
     ],
     foreground: [
       { type: 'fg_crystal_large', x: 0, y: H - 1, flipX: false },
@@ -1724,6 +1787,12 @@ function buildRoom13() {
   fillRect(tiles, f, 10, f + 1, 12, 1);
   fillRect(tiles, f, W - 13, f + 1, W - 11, 1);
 
+  // Maze barriers — the trial chamber. No sprinting between the pillars
+  // to the boss; climb, duck, climb.
+  climbWall(tiles, 18, f, 3);
+  duckWall(tiles, 22, f, 3);
+  climbWall(tiles, 26, f, 3);
+
   // Door openings
   clearRect(tiles, f - 2, 0, f + 1, 0);
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
@@ -1998,6 +2067,18 @@ function buildRoom15() {
       { type: 'crumble_platform', x: 14, y: 18, collapseDelay: 380, respawnDelay: 2400 },
       { type: 'crumble_platform', x: 6, y: 12, collapseDelay: 350, respawnDelay: 2200 },
       { type: 'crumble_platform', x: 18, y: 10, collapseDelay: 320, respawnDelay: 2000 },
+      // Crucible-tier additions: flame jets rising from the lava below,
+      // staggered crushers from the ceiling, lasers across, saw blades.
+      { type: 'magma_pool', x: 7, y: H - 2, width: 16 },
+      { type: 'flame_jet', x: 10, y: H - 2, dir: 'up', onTime: 1100, offTime: 1700, phase: 0 },
+      { type: 'flame_jet', x: 16, y: H - 2, dir: 'up', onTime: 1100, offTime: 1700, phase: 700 },
+      { type: 'flame_jet', x: 20, y: H - 2, dir: 'up', onTime: 1100, offTime: 1700, phase: 350 },
+      { type: 'crusher', x: 9, y: 1, dropDist: 5, downTime: 440, upTime: 2100, phase: 'top' },
+      { type: 'crusher', x: 20, y: 1, dropDist: 5, downTime: 440, upTime: 2100, phase: 'up' },
+      { type: 'laser_beam', x: 3, y: 11, dir: 'right', length: 8, onTime: 1100, offTime: 1400, phase: 0 },
+      { type: 'laser_beam', x: 24, y: 15, dir: 'left', length: 8, onTime: 1100, offTime: 1400, phase: 650 },
+      { type: 'saw_blade', x: 14, y: 20, axis: 'y', range: 80, speed: 1.3, phase: 0 },
+      { type: 'arrow_turret', x: 2, y: 17, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 130 },
       { type: 'crawler', x: 16, y: 21 },
       { type: 'crawler', x: 6, y: 15 },
       { type: 'flyer', x: 14, y: 16 },
@@ -2354,42 +2435,57 @@ function buildRoom18() {
   const tiles = makeRoom(W, H);
   const f = H - 3;
 
-  // Shadow terrain bumps
-  fillRect(tiles, 18, 8, 19, 11, 1);
-  fillRect(tiles, 17, 24, 19, 27, 1);
-  fillRect(tiles, 18, 38, 19, 41, 1);
+  // Shadow Gate — rebuilt as a shadow crucible. A central void pit dominates
+  // the room; stepping islands, crumble stones, and moving platforms provide
+  // the only routes across. Wall-jump pillars frame the pit; the exits shift
+  // so the top route is the fast path if you have the skill.
 
-  // Shadow pits in floor
-  clearRect(tiles, H - 2, 14, H - 2, 18);
-  clearRect(tiles, H - 2, 32, H - 2, 36);
+  // ----- Floor: narrow side platforms separated by a 22-tile shadow pit -----
+  fillRect(tiles, H - 2, 1, H - 1, 10, 1);
+  clearRect(tiles, H - 2, 11, H - 2, 38);
+  fillRect(tiles, H - 2, 39, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 11, 38, 1);
 
-  // Horizontal traversal platforms
-  fillRow(tiles, 16, 4, 9, 2);
-  fillRow(tiles, 14, 12, 17, 2);
-  fillRow(tiles, 12, 6, 10, 2);
-  fillRow(tiles, 16, 20, 26, 2);
-  fillRow(tiles, 14, 28, 33, 2);
-  fillRow(tiles, 12, 22, 27, 2);
-  fillRow(tiles, 10, 30, 35, 2);
-  fillRow(tiles, 16, 38, 43, 2);
-  fillRow(tiles, 14, 44, 47, 2);
-  fillRow(tiles, 8, 16, 20, 2);
-  fillRow(tiles, 8, 36, 40, 2);
+  // Stepping islands over the pit (low tier, row 17)
+  fillRow(tiles, 17, 14, 15, 2);
+  fillRow(tiles, 17, 20, 21, 2);
+  fillRow(tiles, 17, 28, 29, 2);
+  fillRow(tiles, 17, 34, 35, 2);
 
-  setTile(tiles, f, 4, 3);
-  setTile(tiles, 18, 5, 3);
+  // Wall-jump shadow pillars framing the pit
+  fillRect(tiles, 7, 11, 18, 11, 1);
+  fillRect(tiles, 7, 38, 18, 38, 1);
+  // Outer wall-jump shafts
+  fillRect(tiles, 6, 5, 15, 5, 1);
+  fillRect(tiles, 6, 44, 15, 44, 1);
 
-  // Shadow pillars
-  fillRect(tiles, 5, 14, 12, 15, 1);
-  fillRect(tiles, 5, 34, 12, 35, 1);
+  // Mid tier platforms (row 13)
+  fillRow(tiles, 13, 3, 4, 2);
+  fillRow(tiles, 13, 45, 46, 2);
+  fillRow(tiles, 13, 14, 17, 2);
+  fillRow(tiles, 13, 32, 35, 2);
+  fillRow(tiles, 13, 22, 27, 2);
 
-  // Ceiling bands
-  fillRect(tiles, 2, 6, 5, 22, 1);
-  fillRect(tiles, 2, 28, 5, 46, 1);
+  // Upper tier (row 9) — narrow beams
+  fillRow(tiles, 9, 7, 10, 2);
+  fillRow(tiles, 9, 39, 42, 2);
+  fillRow(tiles, 9, 19, 22, 2);
+  fillRow(tiles, 9, 27, 30, 2);
 
-  // Door openings
+  // Top route (row 5)
+  fillRow(tiles, 5, 11, 14, 2);
+  fillRow(tiles, 5, 35, 38, 2);
+
+  // Vaulted ceiling
+  fillRect(tiles, 2, 6, 4, 20, 1);
+  fillRect(tiles, 2, 29, 4, 44, 1);
+
+  // Door openings — keep the side doors but add a top exit to room 19
+  // for skilled players who want a fast path.
   clearRect(tiles, f - 2, 0, f + 1, 0);
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+  clearRect(tiles, 0, 24, 0, 26);
+  fillRow(tiles, 4, 23, 27, 2);
 
   return {
     name: 'Shadow Gate',
@@ -2398,64 +2494,94 @@ function buildRoom18() {
     tiles,
     playerSpawn: { x: 3, y: f },
     objects: [
-      { type: 'weapon_pickup', weaponId: 'warden_greatsword', x: 12, y: 16 },
-      { type: 'item_pickup', itemId: 'soul_crystal', x: 42, y: 10 },
+      { type: 'weapon_pickup', weaponId: 'warden_greatsword', x: 7, y: 12 },
+      { type: 'item_pickup', itemId: 'soul_crystal', x: 42, y: 8 },
       { type: 'door', targetRoom: 'room17', x: 1, y: f, spawnX: 41, spawnY: 21 },
       { type: 'door', targetRoom: 'room19', x: W - 2, y: f, spawnX: 2, spawnY: 4 },
-      { type: 'bench', x: 24, y: 11 },
-      { type: 'npc', npcType: 'spirit', x: 10, y: 17, dialogue: [
+      { type: 'door', targetRoom: 'room19', x: 25, y: 2, spawnX: 2, spawnY: 4 },
+      { type: 'bench', x: 4, y: f },
+      { type: 'npc', npcType: 'spirit', x: 8, y: f, dialogue: [
         'You have crossed from the burning halls into the Shadow Sanctum. Few mortals tread this far.',
         'This place exists between worlds — not quite alive, not quite dead. The shadows here remember the kingdom that was.',
         'The Bone Tyrant\'s reach extends even here, but his grip is weaker. The shadows obey older laws.',
         'Be wary of the Phantom Corridors ahead. They shift and twist. Trust your instincts over your eyes.',
         'If you survive the Sanctum, you will find paths to older, stranger places. Places even the Tyrant fears.'
       ]},
-      { type: 'coin', x: 8, y: 11 },
-      { type: 'coin', x: 26, y: 11 },
-      { type: 'coin', x: 42, y: 13 },
-      { type: 'coin', x: 18, y: 7 },
-      { type: 'crawler', x: 12, y: f },
-      { type: 'crawler', x: 30, y: f },
-      { type: 'crawler', x: 44, y: f },
-      { type: 'flyer', x: 16, y: 6 },
-      { type: 'flyer', x: 28, y: 6 },
-      { type: 'flyer', x: 42, y: 6 },
-      { type: 'moving_platform', x: 16, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 34, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
-      { type: 'pendulum_trap', x: 22, y: 10, length: 72, swing: 42, speed: 1.6, phase: 0 },
-      { type: 'crumble_platform', x: 20, y: 14, collapseDelay: 400, respawnDelay: 2600 },
-      { type: 'crumble_platform', x: 40, y: 16, collapseDelay: 380, respawnDelay: 2400 },
+
+      // --- Moving platforms: lifelines over the shadow pit ---
+      { type: 'moving_platform', x: 17, y: 16, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 32, y: 16, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 24, y: 15, axis: 'y', range: 96, speed: 0.9, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 13, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 36, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 1.2, spin: 0 },
+
+      // --- Staggered crushers above the pit ---
+      { type: 'crusher', x: 16, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 25, y: 1, dropDist: 6, downTime: 450, upTime: 2200, phase: 'down' },
+      { type: 'crusher', x: 33, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'up' },
+
+      // --- Lasers across mid tier ---
+      { type: 'laser_beam', x: 12, y: 11, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: 37, y: 11, dir: 'left', length: 8, onTime: 1100, offTime: 1300, phase: 650 },
+
+      // --- Pendulum wardens sweep the mid tier ---
+      { type: 'pendulum_trap', x: 19, y: 8, length: 88, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 30, y: 8, length: 88, swing: 48, speed: 1.7, phase: 1.2 },
+
+      // --- Crumble path to the top door ---
+      { type: 'crumble_platform', x: 16, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 20, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 29, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 33, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 24, y: 7, collapseDelay: 380, respawnDelay: 2400 },
+
+      // --- Arrow turrets from both walls ---
+      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+
+      // --- Phase platforms bridging the pit when active ---
+      { type: 'phase_platform', x: 17, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 30, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 650 },
+
+      // --- Saw blades drilling from the pit floor ---
+      { type: 'saw_blade', x: 19, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 30, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0.8 },
+
+      // --- Rewards ---
+      { type: 'coin', x: 12, y: 12 },
+      { type: 'coin', x: 24, y: 12 },
+      { type: 'coin', x: 37, y: 12 },
+      { type: 'coin', x: 13, y: 4 },
+      { type: 'coin', x: 36, y: 4 },
+
+      // --- Enemies ---
+      { type: 'crawler', x: 7, y: f },
+      { type: 'crawler', x: 42, y: f },
+      { type: 'flyer', x: 16, y: 7 },
+      { type: 'flyer', x: 33, y: 7 },
+      { type: 'flyer', x: 24, y: 4 },
+      { type: 'armored_flyer', x: 24, y: 11 },
+
+      // --- Decorations ---
       { type: 'stalactite', x: 10, y: 1 },
-      { type: 'stalactite', x: 26, y: 1 },
-      { type: 'stalactite', x: 42, y: 1 },
+      { type: 'stalactite', x: 24, y: 1 },
+      { type: 'stalactite', x: 40, y: 1 },
       { type: 'stalactite_sm', x: 4, y: 1 },
       { type: 'stalactite_sm', x: 18, y: 1 },
-      { type: 'stalactite_sm', x: 34, y: 1 },
+      { type: 'stalactite_sm', x: 32, y: 1 },
       { type: 'stalactite_sm', x: 46, y: 1 },
       { type: 'chain', x: 8, y: 1 },
       { type: 'chain', x: 22, y: 1 },
-      { type: 'chain', x: 38, y: 1 },
+      { type: 'chain', x: 36, y: 1 },
       { type: 'chain', x: 48, y: 1 },
       { type: 'glow_spore', x: 14, y: 6 },
       { type: 'glow_spore', x: 30, y: 4 },
       { type: 'glow_spore', x: 44, y: 6 },
-      { type: 'ruin_arch', x: 12, y: f },
-      { type: 'ruin_arch', x: 32, y: f },
+      { type: 'ruin_arch', x: 6, y: f },
+      { type: 'ruin_arch', x: 43, y: f },
       { type: 'hanging_moss', x: 20, y: 2 },
       { type: 'hanging_moss', x: 36, y: 2 },
-      { type: 'gravel_patch', x: 6, y: f },
-      { type: 'gravel_patch', x: 28, y: f },
-      { type: 'mud_patch', x: 20, y: f },
-      { type: 'mud_patch', x: 44, y: f },
-      { type: 'floor_spikes', x: 14, y: 19, onTime: 900, offTime: 1400, phase: 0 },
-      { type: 'floor_spikes', x: 28, y: 19, onTime: 900, offTime: 1400, phase: 350 },
-      { type: 'floor_spikes', x: 42, y: 19, onTime: 900, offTime: 1400, phase: 700 },
-      // New hazards — Shadow Gate ambush
-      { type: 'crusher', x: 24, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
-      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
-      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
-      { type: 'phase_platform', x: 14, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 0 },
-      { type: 'phase_platform', x: 32, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 600 },
+      { type: 'void_rift', x: 24, y: 19 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -2590,46 +2716,58 @@ function buildRoom19() {
 }
 
 function buildRoom20() {
+  // Spectral Nave — rebuilt as a shadow-cathedral crucible. A wide nave with
+  // a deep void pit down the center, flanking wall-jump pillars, five tiers,
+  // and an upper gallery reachable only via a crumble path to a top door.
   const W = 55, H = 22;
   const tiles = makeRoom(W, H);
-  const f = H - 3;
+  const f = H - 3; // 19
 
-  // Floor with spectral gaps
-  clearRect(tiles, H - 2, 14, H - 2, 18);
-  clearRect(tiles, H - 2, 30, H - 2, 34);
-  clearRect(tiles, H - 2, 42, H - 2, 46);
+  // Two side platforms with a 24-wide void pit down the middle
+  fillRect(tiles, H - 2, 1, H - 1, 11, 1);
+  clearRect(tiles, H - 2, 12, H - 2, 42);
+  fillRect(tiles, H - 2, 43, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 12, 42, 1);
 
-  // Terrain bumps
-  fillRect(tiles, 18, 6, 19, 9, 1);
-  fillRect(tiles, 17, 22, 19, 24, 1);
-  fillRect(tiles, 18, 48, 19, 51, 1);
+  // Stepping islands across the nave
+  fillRow(tiles, 17, 15, 16, 2);
+  fillRow(tiles, 17, 22, 23, 2);
+  fillRow(tiles, 17, 31, 32, 2);
+  fillRow(tiles, 17, 38, 39, 2);
 
-  // Multi-tier platforms — wide nave layout
-  fillRow(tiles, 16, 4, 9, 2);
-  fillRow(tiles, 14, 12, 17, 2);
-  fillRow(tiles, 12, 6, 10, 2);
-  fillRow(tiles, 16, 20, 26, 2);
-  fillRow(tiles, 14, 28, 33, 2);
-  fillRow(tiles, 12, 22, 28, 2);
-  fillRow(tiles, 10, 32, 38, 2);
-  fillRow(tiles, 16, 36, 41, 2);
-  fillRow(tiles, 14, 44, 50, 2);
-  fillRow(tiles, 10, 44, 48, 2);
-  fillRow(tiles, 8, 16, 20, 2);
-  fillRow(tiles, 8, 38, 42, 2);
-  fillRow(tiles, 6, 26, 30, 2);
+  // Wall-jump pillars framing the pit
+  fillRect(tiles, 7, 12, 18, 12, 1);
+  fillRect(tiles, 7, 42, 18, 42, 1);
+  // Outer ascending shafts
+  fillRect(tiles, 6, 5, 16, 5, 1);
+  fillRect(tiles, 6, 49, 16, 49, 1);
 
-  // Spectral pillars
-  fillRect(tiles, 5, 12, 12, 13, 1);
-  fillRect(tiles, 5, 40, 12, 41, 1);
+  // Mid tier choir stalls (row 13)
+  fillRow(tiles, 13, 3, 4, 2);
+  fillRow(tiles, 13, 50, 51, 2);
+  fillRow(tiles, 13, 15, 19, 2);
+  fillRow(tiles, 13, 35, 39, 2);
+  fillRow(tiles, 13, 24, 30, 2);
 
-  // Nave ceiling arches
-  fillRect(tiles, 2, 6, 5, 22, 1);
-  fillRect(tiles, 2, 28, 5, 48, 1);
+  // Upper tier (row 9)
+  fillRow(tiles, 9, 7, 11, 2);
+  fillRow(tiles, 9, 43, 47, 2);
+  fillRow(tiles, 9, 21, 25, 2);
+  fillRow(tiles, 9, 29, 33, 2);
 
-  // Door openings
+  // Top gallery (row 5)
+  fillRow(tiles, 5, 12, 16, 2);
+  fillRow(tiles, 5, 38, 42, 2);
+
+  // Vaulted ceiling arches
+  fillRect(tiles, 2, 6, 4, 22, 1);
+  fillRect(tiles, 2, 32, 4, 48, 1);
+
+  // Door openings — left to room19, right to room21, plus a top exit
   clearRect(tiles, f - 2, 0, f + 1, 0);
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+  clearRect(tiles, 0, 26, 0, 28);
+  fillRow(tiles, 4, 25, 29, 2);
 
   return {
     name: 'Spectral Nave',
@@ -2640,31 +2778,72 @@ function buildRoom20() {
     objects: [
       { type: 'door', targetRoom: 'room19', x: 1, y: f, spawnX: 21, spawnY: 27 },
       { type: 'door', targetRoom: 'room21', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
-      { type: 'merchant_shop', x: 36, y: 9, items: [
+      { type: 'door', targetRoom: 'room21', x: 27, y: 2, spawnX: 2, spawnY: 21 },
+      { type: 'merchant_shop', x: 5, y: 12, items: [
         { name: 'Health Refill', cost: 5, type: 'heal' },
         { name: 'Max HP +1', cost: 20, type: 'maxhp' }
       ], dialogue: [
         'Shadows make fine customers — they never haggle. You, however, look like the haggling type.',
         'Coin for health, coin for power. Spend wisely — the Shadow Warden ahead does not forgive mistakes.'
       ]},
-      { type: 'coin', x: 8, y: 11 },
-      { type: 'coin', x: 18, y: 7 },
-      { type: 'coin', x: 34, y: 9 },
-      { type: 'coin', x: 46, y: 9 },
-      { type: 'coin', x: 28, y: 5 },
-      { type: 'crawler', x: 10, y: f },
-      { type: 'crawler', x: 30, y: 13 },
-      { type: 'crawler', x: 47, y: 18 },
-      { type: 'flyer', x: 16, y: 6 },
-      { type: 'flyer', x: 31, y: 6 },
-      { type: 'flyer', x: 46, y: 8 },
-      { type: 'moving_platform', x: 16, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 32, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 1.0, spin: 0 },
-      { type: 'moving_platform', x: 44, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 0.5, spin: 0 },
-      { type: 'pendulum_trap', x: 22, y: 10, length: 72, swing: 42, speed: 1.6, phase: 0 },
-      { type: 'pendulum_trap', x: 38, y: 8, length: 64, swing: 38, speed: 1.8, phase: 1.2 },
-      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 420, respawnDelay: 2600 },
-      { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 380, respawnDelay: 2400 },
+
+      // Lifelines over the void pit
+      { type: 'moving_platform', x: 19, y: 16, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 35, y: 16, axis: 'x', range: 96, speed: 1.0, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 27, y: 15, axis: 'y', range: 96, speed: 0.9, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 14, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 40, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 1.2, spin: 0 },
+
+      // Staggered crushers above the nave
+      { type: 'crusher', x: 18, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 27, y: 1, dropDist: 6, downTime: 450, upTime: 2200, phase: 'down' },
+      { type: 'crusher', x: 36, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'up' },
+
+      // Lasers crossing the mid tier
+      { type: 'laser_beam', x: 13, y: 11, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: 41, y: 11, dir: 'left', length: 8, onTime: 1100, offTime: 1300, phase: 650 },
+
+      // Spectral pendulums sweeping the mid tier
+      { type: 'pendulum_trap', x: 21, y: 8, length: 88, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 33, y: 8, length: 88, swing: 48, speed: 1.7, phase: 1.2 },
+
+      // Crumble path up to the top gallery
+      { type: 'crumble_platform', x: 17, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 21, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 33, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 37, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 27, y: 7, collapseDelay: 380, respawnDelay: 2400 },
+
+      // Arrow turrets from both walls
+      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+
+      // Saw blades drilling from the pit
+      { type: 'saw_blade', x: 21, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 33, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0.8 },
+
+      // Phase platforms bridging the pit
+      { type: 'phase_platform', x: 18, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 33, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 650 },
+
+      { type: 'lore_fragment', x: 8, y: 19, text: "A hymnal of the Spectral Order — their chants still echo in the vaults." },
+      { type: 'health_pickup', x: 46, y: 19 },
+      { type: 'health_pickup', x: 47, y: 19 },
+
+      { type: 'coin', x: 14, y: 12 },
+      { type: 'coin', x: 27, y: 12 },
+      { type: 'coin', x: 40, y: 12 },
+      { type: 'coin', x: 14, y: 4 },
+      { type: 'coin', x: 40, y: 4 },
+      { type: 'coin', x: 27, y: 6 },
+
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 46, y: f },
+      { type: 'flyer', x: 19, y: 7 },
+      { type: 'flyer', x: 35, y: 7 },
+      { type: 'flyer', x: 27, y: 4 },
+      { type: 'armored_flyer', x: 27, y: 11 },
+
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 26, y: 1 },
       { type: 'stalactite', x: 44, y: 1 },
@@ -2677,32 +2856,20 @@ function buildRoom20() {
       { type: 'chain', x: 38, y: 1 },
       { type: 'chain', x: 50, y: 1 },
       { type: 'crystal', x: 6, y: f },
-      { type: 'crystal', x: 22, y: f },
-      { type: 'crystal', x: 38, y: f },
-      { type: 'crystal_cluster', x: 12, y: f },
-      { type: 'crystal_cluster', x: 34, y: f },
-      { type: 'crystal_cluster', x: 50, y: f },
+      { type: 'crystal', x: 48, y: f },
+      { type: 'crystal_cluster', x: 9, y: f },
+      { type: 'crystal_cluster', x: 46, y: f },
       { type: 'light_beam', x: 16, y: 1 },
       { type: 'light_beam', x: 32, y: 1 },
       { type: 'light_beam', x: 48, y: 1 },
       { type: 'glow_spore', x: 14, y: 6 },
       { type: 'glow_spore', x: 30, y: 4 },
       { type: 'glow_spore', x: 46, y: 6 },
-      { type: 'ruin_arch', x: 10, y: f },
-      { type: 'ruin_arch', x: 34, y: f },
+      { type: 'ruin_arch', x: 4, y: f },
+      { type: 'ruin_arch', x: 49, y: f },
       { type: 'hanging_moss', x: 18, y: 2 },
       { type: 'hanging_moss', x: 38, y: 2 },
-      { type: 'floor_spikes', x: 50, y: 19, onTime: 800, offTime: 1200, phase: 900 },
-      { type: 'lore_fragment', x: 22, y: 19, text: "A hymnal of the Spectral Order — their chants still echo in the vaults." },
-      { type: 'health_pickup', x: 11, y: 19 },
-      { type: 'health_pickup', x: 12, y: 19 },
-      // New hazards — Spectral Nave trials
-      { type: 'crusher', x: 22, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'top' },
-      { type: 'crusher', x: 38, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'up' },
-      { type: 'laser_beam', x: 2, y: 13, dir: 'right', length: 10, onTime: 1200, offTime: 1300, phase: 0 },
-      { type: 'phase_platform', x: 14, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 0 },
-      { type: 'phase_platform', x: 30, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 600 },
-      { type: 'arrow_turret', x: 2, y: 16, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'void_rift', x: 27, y: 19 },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -2769,6 +2936,11 @@ function buildRoom21() {
   // Terrain bumps
   fillRect(tiles, f, 10, f + 1, 11, 1);
   fillRect(tiles, f, W - 12, f + 1, W - 11, 1);
+
+  // Maze barriers — warden's arena forces a measured approach.
+  climbWall(tiles, 19, f, 3);
+  climbWall(tiles, 26, f, 3);
+  climbWall(tiles, 35, f, 3);
 
   // Door openings
   clearRect(tiles, f - 2, 0, f + 1, 0);
@@ -2851,47 +3023,59 @@ function buildRoom21() {
 // ═══════════════════════════════════════════════════════════════
 
 function buildRoom22() {
+  // Ruined Archives — rebuilt as a library crucible. The central aisle has
+  // collapsed into a deep pit; toppled shelves frame it as wall-jump columns;
+  // falling books, pendulum censers, and arrow traps from the old scholars'
+  // wards make the crossing a gauntlet.
   const W = 50, H = 22;
   const tiles = makeRoom(W, H);
-  const f = H - 3;
+  const f = H - 3; // 19
 
-  // Broken bridge gaps in floor
-  clearRect(tiles, H - 2, 12, H - 2, 16);
-  clearRect(tiles, H - 2, 28, H - 2, 32);
+  // ----- Floor: two side platforms around a 22-wide collapse pit -----
+  fillRect(tiles, H - 2, 1, H - 1, 10, 1);
+  clearRect(tiles, H - 2, 11, H - 2, 38);
+  fillRect(tiles, H - 2, 39, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 11, 38, 1);
 
-  // Terrain bumps — rubble piles
-  fillRect(tiles, 18, 6, 19, 9, 1);
-  fillRect(tiles, 17, 20, 19, 23, 1);
-  fillRect(tiles, 18, 36, 19, 39, 1);
+  // ----- Stepping islands over the pit (low tier, row 17) -----
+  fillRow(tiles, 17, 14, 15, 2);
+  fillRow(tiles, 17, 21, 22, 2);
+  fillRow(tiles, 17, 28, 29, 2);
+  fillRow(tiles, 17, 34, 35, 2);
 
-  // Horizontal platforms — archive shelves
-  fillRow(tiles, 16, 4, 9, 2);
-  fillRow(tiles, 14, 12, 16, 2);
-  fillRow(tiles, 12, 4, 8, 2);
-  fillRow(tiles, 16, 18, 24, 2);
-  fillRow(tiles, 14, 26, 32, 2);
-  fillRow(tiles, 12, 20, 26, 2);
-  fillRow(tiles, 10, 28, 34, 2);
-  fillRow(tiles, 16, 34, 40, 2);
-  fillRow(tiles, 14, 42, 47, 2);
-  fillRow(tiles, 10, 40, 44, 2);
-  fillRow(tiles, 8, 14, 18, 2);
-  fillRow(tiles, 8, 34, 38, 2);
+  // ----- Toppled-shelf wall-jump pillars -----
+  fillRect(tiles, 7, 11, 18, 11, 1);
+  fillRect(tiles, 7, 38, 18, 38, 1);
+  // Outer ascending shafts
+  fillRect(tiles, 6, 5, 16, 5, 1);
+  fillRect(tiles, 6, 44, 16, 44, 1);
 
-  setTile(tiles, f, 4, 3);
-  setTile(tiles, 18, 5, 3);
+  // ----- Mid tier shelves (row 13) -----
+  fillRow(tiles, 13, 3, 4, 2);
+  fillRow(tiles, 13, 45, 46, 2);
+  fillRow(tiles, 13, 14, 18, 2);
+  fillRow(tiles, 13, 31, 35, 2);
+  fillRow(tiles, 13, 22, 27, 2);
 
-  // Archive pillars
-  fillRect(tiles, 5, 10, 12, 11, 1);
-  fillRect(tiles, 5, 34, 12, 35, 1);
+  // ----- Upper tier shelves (row 9) -----
+  fillRow(tiles, 9, 7, 10, 2);
+  fillRow(tiles, 9, 39, 42, 2);
+  fillRow(tiles, 9, 20, 23, 2);
+  fillRow(tiles, 9, 26, 29, 2);
 
-  // Ceiling — crumbling stone
-  fillRect(tiles, 2, 6, 5, 20, 1);
-  fillRect(tiles, 2, 26, 5, 44, 1);
+  // ----- Top gallery (row 5) -----
+  fillRow(tiles, 5, 11, 15, 2);
+  fillRow(tiles, 5, 34, 38, 2);
 
-  // Door openings
+  // Crumbling ceiling
+  fillRect(tiles, 2, 6, 4, 20, 1);
+  fillRect(tiles, 2, 29, 4, 44, 1);
+
+  // ----- Door openings: side doors + top tower door (scholar's tower) -----
   clearRect(tiles, f - 2, 0, f + 1, 0);
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+  clearRect(tiles, 0, 24, 0, 26);
+  fillRow(tiles, 4, 23, 27, 2);
 
   return {
     name: 'Ruined Archives',
@@ -2902,35 +3086,74 @@ function buildRoom22() {
     objects: [
       { type: 'door', targetRoom: 'room21', x: 1, y: f, spawnX: 41, spawnY: 21 },
       { type: 'door', targetRoom: 'room23', x: W - 2, y: f, spawnX: 2, spawnY: 29 },
-      { type: 'npc', npcType: 'hermit', x: 10, y: 17, dialogue: [
+      { type: 'door', targetRoom: 'room23', x: 25, y: 2, spawnX: 21, spawnY: 3 },
+      { type: 'npc', npcType: 'hermit', x: 7, y: f, dialogue: [
         'Welcome to the Ruined Archives. Or what remains of them.',
         'These shelves once held every text ever written in the kingdom of Ur-Karath. Treaties, poems, histories — all of it.',
         'When the Bone Tyrant turned, the scholars tried to preserve what they could. They failed. The knowledge rotted with the rest.',
         'But fragments remain. The walls themselves hold echoes of what was written here. If you listen closely, you can almost hear the words.',
         'The Scholar\'s Tower above still stands, mostly. If you can reach the top, you may find something worth the climb.'
       ]},
-      { type: 'coin', x: 8, y: 11 },
-      { type: 'coin', x: 22, y: 11 },
-      { type: 'coin', x: 38, y: 7 },
-      { type: 'coin', x: 16, y: 7 },
-      { type: 'spitter', x: 14, y: 17 },
-      { type: 'crawler', x: 30, y: 13 },
-      { type: 'crawler', x: 44, y: f },
-      { type: 'flyer', x: 16, y: 6 },
-      { type: 'flyer', x: 28, y: 6 },
-      { type: 'flyer', x: 44, y: 8 },
-      { type: 'moving_platform', x: 14, y: 18, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 30, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
-      { type: 'pendulum_trap', x: 20, y: 10, length: 72, swing: 40, speed: 1.5, phase: 0 },
-      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 450, respawnDelay: 2800 },
-      { type: 'crumble_platform', x: 36, y: 10, collapseDelay: 400, respawnDelay: 2600 },
-      { type: 'fungus', x: 3, y: f },
-      { type: 'fungus', x: 18, y: f },
-      { type: 'fungus', x: 34, y: f },
-      { type: 'fungus', x: 46, y: f },
-      { type: 'fungus_small', x: 10, y: f },
-      { type: 'fungus_small', x: 26, y: f },
-      { type: 'fungus_small', x: 42, y: f },
+
+      // --- Moving shelves: lifelines over the collapse pit ---
+      { type: 'moving_platform', x: 17, y: 16, axis: 'x', range: 96, speed: 1.0, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 32, y: 16, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 24, y: 15, axis: 'y', range: 96, speed: 0.9, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 13, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 36, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 1.2, spin: 0 },
+
+      // --- Falling masonry from the collapsing ceiling ---
+      { type: 'falling_rocks', x: 17, y: 4, interval: 2400, phase: 0 },
+      { type: 'falling_rocks', x: 24, y: 4, interval: 2400, phase: 1200 },
+      { type: 'falling_rocks', x: 31, y: 4, interval: 2400, phase: 600 },
+
+      // --- Ancient crusher wards above the pit ---
+      { type: 'crusher', x: 16, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 33, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'up' },
+
+      // --- Warding lasers across the mid aisle ---
+      { type: 'laser_beam', x: 12, y: 11, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: 37, y: 11, dir: 'left', length: 8, onTime: 1100, offTime: 1300, phase: 650 },
+
+      // --- Censer pendulums swinging over the mid tier ---
+      { type: 'pendulum_trap', x: 19, y: 8, length: 88, swing: 48, speed: 1.6, phase: 0 },
+      { type: 'pendulum_trap', x: 30, y: 8, length: 88, swing: 48, speed: 1.6, phase: 1.2 },
+
+      // --- Crumbling shelves to the top gallery ---
+      { type: 'crumble_platform', x: 16, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 20, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 30, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 33, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 24, y: 7, collapseDelay: 380, respawnDelay: 2400 },
+
+      // --- Arrow turrets from the old wards ---
+      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+
+      // --- Phase platforms bridging the worst gaps ---
+      { type: 'phase_platform', x: 17, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 30, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 650 },
+
+      // --- Rewards ---
+      { type: 'coin', x: 12, y: 12 },
+      { type: 'coin', x: 24, y: 12 },
+      { type: 'coin', x: 37, y: 12 },
+      { type: 'coin', x: 13, y: 4 },
+      { type: 'coin', x: 36, y: 4 },
+      { type: 'coin', x: 25, y: 6 },
+      { type: 'secret_wall', x: 44, y: 17, hitsToBreak: 2, targetRoom: 'sanctuary2', spawnX: 3, spawnY: 14 },
+      { type: 'lore_fragment', x: 45, y: 17, text: 'A scholar\'s confession: "We called it Void. It called us first." ' },
+      { type: 'health_pickup', x: 46, y: 17 },
+
+      // --- Enemies ---
+      { type: 'spitter', x: 7, y: f },
+      { type: 'crawler', x: 42, y: f },
+      { type: 'flyer', x: 16, y: 7 },
+      { type: 'flyer', x: 33, y: 7 },
+      { type: 'flyer', x: 24, y: 4 },
+      { type: 'armored_flyer', x: 24, y: 11 },
+
+      // --- Decorations ---
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 24, y: 1 },
       { type: 'stalactite', x: 40, y: 1 },
@@ -2947,21 +3170,12 @@ function buildRoom22() {
       { type: 'glow_spore', x: 12, y: 6 },
       { type: 'glow_spore', x: 28, y: 4 },
       { type: 'glow_spore', x: 42, y: 6 },
-      { type: 'ruin_arch', x: 10, y: f },
-      { type: 'ruin_arch', x: 30, y: f },
-      { type: 'hanging_moss', x: 16, y: 2 },
-      { type: 'hanging_moss', x: 34, y: 2 },
-      { type: 'gravel_patch', x: 6, y: f },
-      { type: 'gravel_patch', x: 26, y: f },
-      { type: 'mud_patch', x: 16, y: f },
-      { type: 'mud_patch', x: 40, y: f },
-      { type: 'floor_spikes', x: 12, y: 19, onTime: 700, offTime: 1200, phase: 0 },
-      { type: 'floor_spikes', x: 26, y: 19, onTime: 700, offTime: 1200, phase: 350 },
-      { type: 'floor_spikes', x: 42, y: 19, onTime: 700, offTime: 1200, phase: 700 },
-      { type: 'secret_wall', x: 44, y: 17, hitsToBreak: 2, targetRoom: 'sanctuary2', spawnX: 3, spawnY: 14 },
-      { type: 'lore_fragment', x: 45, y: 17, text: 'A scholar\'s confession: "We called it Void. It called us first." ' },
-      { type: 'health_pickup', x: 46, y: 17 },
-      { type: 'fungal_bloom_large', x: 8, y: 17 },
+      { type: 'ruin_arch', x: 6, y: f },
+      { type: 'ruin_arch', x: 43, y: f },
+      { type: 'hanging_moss', x: 20, y: 2 },
+      { type: 'hanging_moss', x: 36, y: 2 },
+      { type: 'fungal_bloom_large', x: 3, y: f },
+      { type: 'fungus', x: 46, y: f },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -3103,52 +3317,57 @@ function buildRoom23() {
 }
 
 function buildRoom24() {
+  // Forbidden Stacks — deep-archive crucible. A central collapse pit with
+  // toppled-shelf wall-jump columns, five tiers, and crumble stones leading
+  // to a top exit to the Scholar's Tower.
   const W = 55, H = 22;
   const tiles = makeRoom(W, H);
   const f = H - 3;
 
-  // Floor with gaps — collapsed stacks
-  clearRect(tiles, H - 2, 10, H - 2, 14);
-  clearRect(tiles, H - 2, 24, H - 2, 28);
-  clearRect(tiles, H - 2, 38, H - 2, 42);
+  // Two side platforms with a 24-wide central pit
+  fillRect(tiles, H - 2, 1, H - 1, 11, 1);
+  clearRect(tiles, H - 2, 12, H - 2, 42);
+  fillRect(tiles, H - 2, 43, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 12, 42, 1);
 
-  // Terrain bumps
-  fillRect(tiles, 18, 4, 19, 7, 1);
-  fillRect(tiles, 17, 18, 19, 21, 1);
-  fillRect(tiles, 18, 44, 19, 47, 1);
+  // Stepping islands
+  fillRow(tiles, 17, 15, 16, 2);
+  fillRow(tiles, 17, 22, 23, 2);
+  fillRow(tiles, 17, 31, 32, 2);
+  fillRow(tiles, 17, 38, 39, 2);
 
-  // Dense platform layout — heavy platforming challenge
-  fillRow(tiles, 16, 4, 8, 2);
-  fillRow(tiles, 14, 10, 14, 2);
-  fillRow(tiles, 12, 4, 8, 2);
-  fillRow(tiles, 10, 10, 14, 2);
-  fillRow(tiles, 16, 16, 22, 2);
-  fillRow(tiles, 14, 24, 28, 2);
-  fillRow(tiles, 12, 18, 24, 2);
-  fillRow(tiles, 10, 26, 32, 2);
-  fillRow(tiles, 8, 20, 24, 2);
-  fillRow(tiles, 16, 30, 36, 2);
-  fillRow(tiles, 14, 38, 42, 2);
-  fillRow(tiles, 12, 32, 38, 2);
-  fillRow(tiles, 10, 40, 46, 2);
-  fillRow(tiles, 8, 34, 38, 2);
-  fillRow(tiles, 16, 44, 50, 2);
-  fillRow(tiles, 6, 26, 30, 2);
-  fillRow(tiles, 8, 46, 50, 2);
+  // Wall-jump pillars
+  fillRect(tiles, 7, 12, 18, 12, 1);
+  fillRect(tiles, 7, 42, 18, 42, 1);
+  fillRect(tiles, 6, 5, 16, 5, 1);
+  fillRect(tiles, 6, 49, 16, 49, 1);
 
-  // Library pillars
-  fillRect(tiles, 4, 8, 12, 9, 1);
-  fillRect(tiles, 4, 30, 12, 31, 1);
-  fillRect(tiles, 4, 46, 12, 47, 1);
+  // Mid tier (row 13)
+  fillRow(tiles, 13, 3, 4, 2);
+  fillRow(tiles, 13, 50, 51, 2);
+  fillRow(tiles, 13, 15, 19, 2);
+  fillRow(tiles, 13, 35, 39, 2);
+  fillRow(tiles, 13, 24, 30, 2);
 
-  // Ceiling — vaulted archive roof
-  fillRect(tiles, 2, 4, 5, 18, 1);
-  fillRect(tiles, 2, 22, 5, 40, 1);
-  fillRect(tiles, 2, 44, 5, 52, 1);
+  // Upper tier (row 9)
+  fillRow(tiles, 9, 7, 11, 2);
+  fillRow(tiles, 9, 43, 47, 2);
+  fillRow(tiles, 9, 21, 25, 2);
+  fillRow(tiles, 9, 29, 33, 2);
 
-  // Door openings
+  // Top gallery (row 5)
+  fillRow(tiles, 5, 12, 16, 2);
+  fillRow(tiles, 5, 38, 42, 2);
+
+  // Ceiling
+  fillRect(tiles, 2, 6, 4, 22, 1);
+  fillRect(tiles, 2, 32, 4, 48, 1);
+
+  // Doors — sides + top exit
   clearRect(tiles, f - 2, 0, f + 1, 0);
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+  clearRect(tiles, 0, 26, 0, 28);
+  fillRow(tiles, 4, 25, 29, 2);
 
   return {
     name: 'Forbidden Stacks',
@@ -3159,38 +3378,78 @@ function buildRoom24() {
     objects: [
       { type: 'door', targetRoom: 'room23', x: 1, y: f, spawnX: 18, spawnY: 4 },
       { type: 'door', targetRoom: 'room25', x: W - 2, y: f, spawnX: 2, spawnY: 21 },
-      { type: 'merchant_shop', x: 28, y: 5, items: [
+      { type: 'door', targetRoom: 'room25', x: 27, y: 2, spawnX: 2, spawnY: 21 },
+      { type: 'merchant_shop', x: 5, y: 12, items: [
         { name: 'Health Refill', cost: 5, type: 'heal' },
         { name: 'Max HP +1', cost: 25, type: 'maxhp' }
       ], dialogue: [
         'They say forbidden knowledge has a price. So does forbidden merchandise, apparently.',
         'Stock up while you can. The Archive Sentinel does not appreciate browsing without buying.'
       ]},
-      { type: 'coin', x: 6, y: 11 },
-      { type: 'coin', x: 22, y: 7 },
-      { type: 'coin', x: 36, y: 7 },
-      { type: 'coin', x: 48, y: 7 },
-      { type: 'coin', x: 14, y: 9 },
-      { type: 'crawler', x: 50, y: f },
-      { type: 'armored_flyer', x: 28, y: 9 },
-      { type: 'flyer', x: 25, y: 6 },
-      { type: 'flyer', x: 42, y: 6 },
-      { type: 'flyer', x: 18, y: 10 },
-      { type: 'flyer', x: 37, y: 7 },
-      { type: 'moving_platform', x: 12, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 26, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
-      { type: 'moving_platform', x: 40, y: 18, axis: 'x', range: 96, speed: 1.3, phase: 0.5, spin: 0 },
-      { type: 'pendulum_trap', x: 48, y: 6, length: 64, swing: 38, speed: 1.9, phase: 0.5 },
-      { type: 'crumble_platform', x: 12, y: 14, collapseDelay: 380, respawnDelay: 2400 },
-      { type: 'crumble_platform', x: 26, y: 12, collapseDelay: 350, respawnDelay: 2200 },
-      { type: 'crumble_platform', x: 42, y: 14, collapseDelay: 400, respawnDelay: 2600 },
-      { type: 'crumble_platform', x: 34, y: 10, collapseDelay: 320, respawnDelay: 2000 },
+
+      // Lifelines
+      { type: 'moving_platform', x: 19, y: 16, axis: 'x', range: 96, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 35, y: 16, axis: 'x', range: 96, speed: 1.1, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 27, y: 15, axis: 'y', range: 96, speed: 0.9, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 14, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 40, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 1.2, spin: 0 },
+
+      // Crushers
+      { type: 'crusher', x: 18, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 27, y: 1, dropDist: 6, downTime: 450, upTime: 2200, phase: 'down' },
+      { type: 'crusher', x: 36, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'up' },
+
+      // Lasers + arrow turrets (scholars' wards)
+      { type: 'laser_beam', x: 13, y: 11, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: 41, y: 11, dir: 'left', length: 8, onTime: 1100, offTime: 1300, phase: 650 },
+      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+
+      // Falling masonry from the ceiling
+      { type: 'falling_rocks', x: 19, y: 4, interval: 2400, phase: 0 },
+      { type: 'falling_rocks', x: 27, y: 4, interval: 2400, phase: 1200 },
+      { type: 'falling_rocks', x: 35, y: 4, interval: 2400, phase: 600 },
+
+      // Pendulum censers
+      { type: 'pendulum_trap', x: 21, y: 8, length: 88, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 33, y: 8, length: 88, swing: 48, speed: 1.7, phase: 1.2 },
+
+      // Crumble path to the tower
+      { type: 'crumble_platform', x: 17, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 21, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 33, y: 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 37, y: 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 27, y: 7, collapseDelay: 380, respawnDelay: 2400 },
+
+      // Saw blades drilling from the pit
+      { type: 'saw_blade', x: 21, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 33, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0.8 },
+
+      // Phase platforms bridging the pit
+      { type: 'phase_platform', x: 18, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 33, y: 19, width: 4, onTime: 1300, offTime: 900, phase: 650 },
+
+      // Coins rewarding all three tiers
+      { type: 'coin', x: 14, y: 12 },
+      { type: 'coin', x: 27, y: 12 },
+      { type: 'coin', x: 40, y: 12 },
+      { type: 'coin', x: 14, y: 4 },
+      { type: 'coin', x: 40, y: 4 },
+      { type: 'coin', x: 27, y: 6 },
+      { type: 'coin', x: 6, y: 12 },
+      { type: 'coin', x: 48, y: 12 },
+
+      // Enemies
+      { type: 'crawler', x: 8, y: f },
+      { type: 'crawler', x: 46, y: f },
+      { type: 'armored_flyer', x: 27, y: 11 },
+      { type: 'flyer', x: 19, y: 7 },
+      { type: 'flyer', x: 35, y: 7 },
+      { type: 'flyer', x: 27, y: 4 },
+
       { type: 'fungus', x: 4, y: f },
-      { type: 'fungus', x: 22, y: f },
-      { type: 'fungus', x: 36, y: f },
-      { type: 'fungus', x: 50, y: f },
+      { type: 'fungus', x: 48, y: f },
       { type: 'fungus_small', x: 10, y: f },
-      { type: 'fungus_small', x: 30, y: f },
       { type: 'fungus_small', x: 46, y: f },
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 26, y: 1 },
@@ -3212,19 +3471,11 @@ function buildRoom24() {
       { type: 'glow_spore', x: 14, y: 6 },
       { type: 'glow_spore', x: 30, y: 4 },
       { type: 'glow_spore', x: 46, y: 6 },
-      { type: 'ruin_arch', x: 10, y: f },
-      { type: 'ruin_arch', x: 32, y: f },
+      { type: 'ruin_arch', x: 6, y: f },
+      { type: 'ruin_arch', x: 48, y: f },
       { type: 'hanging_moss', x: 16, y: 2 },
       { type: 'hanging_moss', x: 36, y: 2 },
-      { type: 'fungal_bloom_large', x: 40, y: 17 },
-      // New hazards — Forbidden Stacks
-      { type: 'crusher', x: 22, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'top' },
-      { type: 'crusher', x: 40, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'up' },
-      { type: 'laser_beam', x: 2, y: 11, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
-      { type: 'arrow_turret', x: 2, y: 15, dir: 'right', interval: 2700, burstSize: 3, burstSpacing: 120 },
-      { type: 'arrow_turret', x: W - 3, y: 15, dir: 'left', interval: 2700, burstSize: 3, burstSpacing: 120 },
-      { type: 'phase_platform', x: 10, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 0 },
-      { type: 'phase_platform', x: 38, y: 19, width: 5, onTime: 1300, offTime: 900, phase: 650 },
+      { type: 'fungal_bloom_large', x: 46, y: 19 },
     ],
     foreground: [
       { type: 'fg_mushroom_large', x: 0, y: H - 1, flipX: false },
@@ -3291,6 +3542,11 @@ function buildRoom25() {
   // Terrain bumps
   fillRect(tiles, f, 10, f + 1, 11, 1);
   fillRect(tiles, f, W - 12, f + 1, W - 11, 1);
+
+  // Maze barriers — rubble blocks the aisle to the sentinel.
+  climbWall(tiles, 19, f, 3);
+  climbWall(tiles, 25, f, 3);
+  climbWall(tiles, 35, f, 3);
 
   // Door openings
   clearRect(tiles, f - 2, 0, f + 1, 0);
@@ -3372,47 +3628,49 @@ function buildRoom25() {
 // ═══════════════════════════════════════════════════════════════
 
 function buildRoom26() {
+  // Void Threshold — the final approach. A yawning void pit dominates the
+  // center. Wall-jump pillars, multi-tier platforms, and a crumble path to a
+  // top exit for the bravest.
   const W = 50, H = 22;
   const tiles = makeRoom(W, H);
   const f = H - 3;
 
-  // Hazardous floor — multiple gaps
-  clearRect(tiles, H - 2, 10, H - 2, 14);
-  clearRect(tiles, H - 2, 22, H - 2, 26);
-  clearRect(tiles, H - 2, 34, H - 2, 38);
+  fillRect(tiles, H - 2, 1, H - 1, 10, 1);
+  clearRect(tiles, H - 2, 11, H - 2, 38);
+  fillRect(tiles, H - 2, 39, H - 1, W - 2, 1);
+  fillRow(tiles, H - 1, 11, 38, 1);
 
-  // Terrain bumps
-  fillRect(tiles, 18, 4, 19, 7, 1);
-  fillRect(tiles, 17, 16, 19, 19, 1);
-  fillRect(tiles, 18, 40, 19, 43, 1);
+  fillRow(tiles, 17, 14, 15, 2);
+  fillRow(tiles, 17, 20, 21, 2);
+  fillRow(tiles, 17, 28, 29, 2);
+  fillRow(tiles, 17, 34, 35, 2);
 
-  // Horizontal gauntlet platforms
-  fillRow(tiles, 16, 3, 8, 2);
-  fillRow(tiles, 14, 10, 14, 2);
-  fillRow(tiles, 12, 4, 8, 2);
-  fillRow(tiles, 16, 16, 21, 2);
-  fillRow(tiles, 14, 22, 26, 2);
-  fillRow(tiles, 12, 16, 20, 2);
-  fillRow(tiles, 10, 24, 30, 2);
-  fillRow(tiles, 16, 28, 33, 2);
-  fillRow(tiles, 14, 34, 38, 2);
-  fillRow(tiles, 12, 30, 36, 2);
-  fillRow(tiles, 16, 40, 46, 2);
-  fillRow(tiles, 8, 12, 16, 2);
-  fillRow(tiles, 8, 36, 40, 2);
-  fillRow(tiles, 6, 22, 26, 2);
+  fillRect(tiles, 7, 11, 18, 11, 1);
+  fillRect(tiles, 7, 38, 18, 38, 1);
+  fillRect(tiles, 6, 5, 15, 5, 1);
+  fillRect(tiles, 6, 44, 15, 44, 1);
 
-  // Void pillars
-  fillRect(tiles, 4, 10, 12, 11, 1);
-  fillRect(tiles, 4, 32, 12, 33, 1);
+  fillRow(tiles, 13, 3, 4, 2);
+  fillRow(tiles, 13, 45, 46, 2);
+  fillRow(tiles, 13, 14, 17, 2);
+  fillRow(tiles, 13, 32, 35, 2);
+  fillRow(tiles, 13, 22, 27, 2);
 
-  // Ceiling
-  fillRect(tiles, 2, 4, 5, 20, 1);
-  fillRect(tiles, 2, 26, 5, 44, 1);
+  fillRow(tiles, 9, 7, 10, 2);
+  fillRow(tiles, 9, 39, 42, 2);
+  fillRow(tiles, 9, 19, 22, 2);
+  fillRow(tiles, 9, 27, 30, 2);
 
-  // Door openings
+  fillRow(tiles, 5, 11, 14, 2);
+  fillRow(tiles, 5, 35, 38, 2);
+
+  fillRect(tiles, 2, 6, 4, 20, 1);
+  fillRect(tiles, 2, 29, 4, 44, 1);
+
   clearRect(tiles, f - 2, 0, f + 1, 0);
   clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+  clearRect(tiles, 0, 24, 0, 26);
+  fillRow(tiles, 4, 23, 27, 2);
 
   return {
     name: 'Void Threshold',
@@ -3423,7 +3681,8 @@ function buildRoom26() {
     objects: [
       { type: 'door', targetRoom: 'room25', x: 1, y: f, spawnX: 41, spawnY: 21 },
       { type: 'door', targetRoom: 'room27', x: W - 2, y: f, spawnX: 2, spawnY: 29 },
-      { type: 'npc', npcType: 'knight', x: 8, y: f, dialogue: [
+      { type: 'door', targetRoom: 'room27', x: 25, y: 2, spawnX: 4, spawnY: 29 },
+      { type: 'npc', npcType: 'knight', x: 5, y: f, dialogue: [
         'Halt. I know that look — the look of someone who has come too far to turn back.',
         'Beyond this threshold lies the Void Nexus. It is not a place that belongs to our world.',
         'The Bone Tyrant tried to harness the Void\'s power. Instead, it consumed the deepest parts of his kingdom.',
@@ -3431,24 +3690,59 @@ function buildRoom26() {
         'I have stood watch here for... I cannot remember how long. If you enter the Nexus, there may be no return.',
         'But if you are strong enough to reach the Void King, you may end this curse once and for all. Go with whatever courage you have left.'
       ]},
-      { type: 'coin', x: 6, y: 11 },
-      { type: 'coin', x: 24, y: 5 },
-      { type: 'coin', x: 38, y: 7 },
-      { type: 'coin', x: 14, y: 7 },
-      { type: 'crawler', x: 30, y: f },
-      { type: 'crawler', x: 44, y: f },
-      { type: 'flyer', x: 14, y: 6 },
-      { type: 'flyer', x: 27, y: 6 },
-      { type: 'flyer', x: 40, y: 6 },
-      { type: 'flyer', x: 20, y: 10 },
-      { type: 'pendulum_trap', x: 30, y: 8, length: 72, swing: 42, speed: 2.0, phase: 1.0 },
-      { type: 'pendulum_trap', x: 42, y: 10, length: 80, swing: 44, speed: 1.8, phase: 0.5 },
-      { type: 'moving_platform', x: 12, y: 18, axis: 'x', range: 96, speed: 1.2, phase: 0, spin: 0 },
-      { type: 'moving_platform', x: 24, y: 18, axis: 'x', range: 96, speed: 1.3, phase: 1.0, spin: 0 },
-      { type: 'moving_platform', x: 36, y: 18, axis: 'x', range: 96, speed: 1.1, phase: 0.5, spin: 0 },
-      { type: 'crumble_platform', x: 14, y: 14, collapseDelay: 350, respawnDelay: 2200 },
-      { type: 'crumble_platform', x: 30, y: 12, collapseDelay: 320, respawnDelay: 2000 },
-      { type: 'crumble_platform', x: 42, y: 14, collapseDelay: 350, respawnDelay: 2200 },
+
+      { type: 'moving_platform', x: 17, y: 16, axis: 'x', range: 96, speed: 1.2, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 32, y: 16, axis: 'x', range: 96, speed: 1.3, phase: 1.0, spin: 0 },
+      { type: 'moving_platform', x: 24, y: 15, axis: 'y', range: 96, speed: 0.9, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 13, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 36, y: 11, axis: 'y', range: 64, speed: 1.1, phase: 1.2, spin: 0 },
+
+      { type: 'crusher', x: 16, y: 1, dropDist: 5, downTime: 380, upTime: 1900, phase: 'top' },
+      { type: 'crusher', x: 25, y: 1, dropDist: 6, downTime: 420, upTime: 2100, phase: 'down' },
+      { type: 'crusher', x: 33, y: 1, dropDist: 5, downTime: 380, upTime: 1900, phase: 'up' },
+
+      { type: 'laser_beam', x: 12, y: 11, dir: 'right', length: 8, onTime: 1100, offTime: 1200, phase: 0 },
+      { type: 'laser_beam', x: 37, y: 11, dir: 'left', length: 8, onTime: 1100, offTime: 1200, phase: 650 },
+
+      { type: 'pendulum_trap', x: 19, y: 8, length: 88, swing: 48, speed: 2.0, phase: 1.0 },
+      { type: 'pendulum_trap', x: 30, y: 8, length: 88, swing: 48, speed: 1.8, phase: 0.5 },
+
+      { type: 'crumble_platform', x: 16, y: 4, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 20, y: 3, collapseDelay: 320, respawnDelay: 2000 },
+      { type: 'crumble_platform', x: 29, y: 3, collapseDelay: 320, respawnDelay: 2000 },
+      { type: 'crumble_platform', x: 33, y: 4, collapseDelay: 350, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 24, y: 7, collapseDelay: 320, respawnDelay: 2000 },
+
+      { type: 'saw_blade', x: 19, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 30, y: 17, axis: 'y', range: 80, speed: 1.3, phase: 0.8 },
+
+      { type: 'arrow_turret', x: 2, y: 13, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: 13, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+
+      { type: 'phase_platform', x: 17, y: 19, width: 4, onTime: 1200, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 30, y: 19, width: 4, onTime: 1200, offTime: 900, phase: 600 },
+
+      { type: 'void_rift', x: 24, y: 19 },
+      { type: 'void_rift', x: 17, y: 17 },
+      { type: 'void_rift', x: 32, y: 17 },
+
+      { type: 'checkpoint_shrine', x: 4, y: 19 },
+      { type: 'lore_fragment', x: 45, y: 19, text: "At the Void Threshold, reality thins. The King waits beyond." },
+
+      { type: 'coin', x: 13, y: 12 },
+      { type: 'coin', x: 24, y: 12 },
+      { type: 'coin', x: 37, y: 12 },
+      { type: 'coin', x: 13, y: 4 },
+      { type: 'coin', x: 37, y: 4 },
+      { type: 'coin', x: 24, y: 6 },
+
+      { type: 'crawler', x: 7, y: f },
+      { type: 'crawler', x: 42, y: f },
+      { type: 'flyer', x: 17, y: 7 },
+      { type: 'flyer', x: 33, y: 7 },
+      { type: 'flyer', x: 24, y: 4 },
+      { type: 'armored_flyer', x: 24, y: 11 },
+
       { type: 'stalactite', x: 10, y: 1 },
       { type: 'stalactite', x: 24, y: 1 },
       { type: 'stalactite', x: 40, y: 1 },
@@ -3461,31 +3755,16 @@ function buildRoom26() {
       { type: 'chain', x: 36, y: 1 },
       { type: 'chain', x: 46, y: 1 },
       { type: 'crystal', x: 6, y: f },
-      { type: 'crystal', x: 20, y: f },
       { type: 'crystal', x: 42, y: f },
-      { type: 'crystal_cluster', x: 14, y: f },
-      { type: 'crystal_cluster', x: 30, y: f },
+      { type: 'crystal_cluster', x: 9, y: f },
+      { type: 'crystal_cluster', x: 45, y: f },
       { type: 'glow_spore', x: 14, y: 6 },
       { type: 'glow_spore', x: 28, y: 4 },
       { type: 'glow_spore', x: 42, y: 6 },
-      { type: 'ruin_arch', x: 12, y: f },
-      { type: 'ruin_arch', x: 34, y: f },
-      { type: 'gravel_patch', x: 8, y: f },
-      { type: 'gravel_patch', x: 28, y: f },
-      { type: 'mud_patch', x: 18, y: f },
-      { type: 'mud_patch', x: 44, y: f },
-      { type: 'checkpoint_shrine', x: 6, y: 19 },
-      { type: 'lore_fragment', x: 22, y: 19, text: "At the Void Threshold, reality thins. The King waits beyond." },
-      { type: 'void_rift', x: 30, y: 12 },
-      // New hazards — Void Threshold
-      { type: 'crusher', x: 18, y: 1, dropDist: 5, downTime: 380, upTime: 1900, phase: 'top' },
-      { type: 'crusher', x: 32, y: 1, dropDist: 5, downTime: 380, upTime: 1900, phase: 'up' },
-      { type: 'laser_beam', x: 2, y: 13, dir: 'right', length: 10, onTime: 1100, offTime: 1200, phase: 0 },
-      { type: 'laser_beam', x: W - 3, y: 9, dir: 'left', length: 10, onTime: 1100, offTime: 1200, phase: 650 },
-      { type: 'arrow_turret', x: 2, y: 17, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120 },
-      { type: 'phase_platform', x: 10, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 0 },
-      { type: 'phase_platform', x: 22, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 600 },
-      { type: 'phase_platform', x: 34, y: 19, width: 5, onTime: 1200, offTime: 900, phase: 0 },
+      { type: 'ruin_arch', x: 8, y: f },
+      { type: 'ruin_arch', x: 43, y: f },
+      { type: 'gravel_patch', x: 3, y: f },
+      { type: 'mud_patch', x: 48, y: f },
     ],
     foreground: [
       { type: 'fg_rock_formation', x: 0, y: H - 1, flipX: false },
@@ -3658,6 +3937,11 @@ function buildRoom28() {
   // Vaulted ceiling
   fillRect(tiles, 2, 6, 4, 22, 1);
   fillRect(tiles, 2, 32, 4, 48, 1);
+
+  // Maze barriers — the final approach. Both banks of the lava pit
+  // require climbing over rubble, not a clean sprint to the platforms.
+  climbWall(tiles, 10, f, 3);
+  climbWall(tiles, 48, f, 3);
 
   // Door openings
   clearRect(tiles, f - 2, 0, f + 1, 0);

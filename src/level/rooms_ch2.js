@@ -31,6 +31,18 @@ function fillRect(tiles, r1, c1, r2, c2, val) {
 function fillRow(tiles, row, c1, c2, val) { fillRect(tiles, row, c1, row, c2, val); }
 function clearRect(tiles, r1, c1, r2, c2) { fillRect(tiles, r1, c1, r2, c2, 0); }
 
+// Maze-building primitives. A `climbWall` is a short solid pillar rising
+// from the floor that the player has to jump over (usually with help from
+// nearby platforms). A `duckWall` hangs from the ceiling and leaves a
+// crawlspace above the floor that the player must drop under. Use both
+// in sequence to force a zig-zag routing through a room.
+function climbWall(tiles, col, floorRow, height) {
+  for (let r = floorRow - height + 1; r <= floorRow; r++) setTile(tiles, r, col, 1);
+}
+function duckWall(tiles, col, floorRow, gapFromFloor) {
+  for (let r = 1; r <= floorRow - gapFromFloor; r++) setTile(tiles, r, col, 1);
+}
+
 // ================ MOUNTAIN BIOME (30-36) ==================================
 
 function buildRoom30() {
@@ -52,6 +64,12 @@ function buildRoom30() {
   // Hidden low alcove behind the eastern pillar — slash the secret wall
   // at (47, f) to pop it, alcove carved below
   clearRect(tiles, f, 46, f, 50);
+  // Maze barriers: force the player to actually use the stepped ledges
+  // instead of sprinting the floor. A low crag, a low overhang, another
+  // crag — the direct path is closed.
+  climbWall(tiles, 13, f, 3);
+  duckWall(tiles, 21, f, 3);
+  climbWall(tiles, 29, f, 4);
   return {
     name: 'Mouth of the Mountain',
     width: W, height: H, tiles,
@@ -147,6 +165,19 @@ function buildRoom31() {
       { type: 'arrow_turret', x: 2, y: f - 3, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 130 },
       { type: 'lore_fragment', id: 'cragstep_lore', x: 8, y: f,
         text: 'Cairn-carved: "Count the stones you leave behind. Count the stones that remain. One counts you back."' },
+      // Crucible pack — turn cragstep into a proper climbing gauntlet.
+      { type: 'pendulum_trap', x: 24, y: f - 9, length: 96, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 38, y: f - 11, length: 72, swing: 44, speed: 1.8, phase: 1.0 },
+      { type: 'saw_blade', x: 20, y: f - 1, axis: 'x', range: 96, speed: 1.2, phase: 0 },
+      { type: 'saw_blade', x: 28, y: f - 3, axis: 'y', range: 80, speed: 1.3, phase: 0.8 },
+      { type: 'moving_platform', x: 18, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 32, y: f - 5, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'crumble_platform', x: 22, y: f - 4, collapseDelay: 360, respawnDelay: 2200 },
+      { type: 'crumble_platform', x: 38, y: f - 9, collapseDelay: 360, respawnDelay: 2200 },
+      { type: 'arrow_turret', x: W - 3, y: f - 10, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
+      { type: 'icicle_drop', x: 20, y: 3, interval: 2500, phase: 0 },
+      { type: 'icicle_drop', x: 36, y: 3, interval: 2500, phase: 800 },
+      { type: 'wind_gust_zone', x: 22, y: f - 2, w: 4, h: 3, dir: 'right', strength: 180 },
     ],
     ambience: 'mountain_pass',
   };
@@ -205,6 +236,17 @@ function buildRoom32() {
         text: 'The hermit left a wind-tattered letter: "The Warden fell long ago. Carry on. The peaks still need crossing."' },
       { type: 'lore_fragment', id: 'glide_hermit_2', x: 32, y: 3,
         text: 'A sparrow\'s skeleton in a stone nest — and a scrap: "To fall is to learn. To fall twice is to remember."' },
+      // Crucible pack — the hermitage tests the glide with live hazards.
+      { type: 'crusher', x: 14, y: 1, dropDist: 5, downTime: 420, upTime: 2100, phase: 'top' },
+      { type: 'crusher', x: 28, y: 1, dropDist: 5, downTime: 420, upTime: 2100, phase: 'up' },
+      { type: 'laser_beam', x: 2, y: f - 6, dir: 'right', length: 8, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: f - 4, dir: 'left', length: 8, onTime: 1100, offTime: 1300, phase: 600 },
+      { type: 'arrow_turret', x: 2, y: f - 3, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 130 },
+      { type: 'saw_blade', x: 26, y: f - 1, axis: 'y', range: 80, speed: 1.3, phase: 0 },
+      { type: 'pendulum_trap', x: 22, y: f - 11, length: 88, swing: 48, speed: 1.8, phase: 0 },
+      { type: 'moving_platform', x: 30, y: f - 6, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'icicle_drop', x: 20, y: 3, interval: 2400, phase: 0 },
+      { type: 'icicle_drop', x: 34, y: 3, interval: 2400, phase: 900 },
     ],
     ambience: 'mountain_peak',
   };
@@ -285,6 +327,10 @@ function buildRoom34() {
   fillRect(tiles, H - 2, 36, H - 2, 40, 1);
   // Hidden sub-floor alcove under the east ridge
   clearRect(tiles, H - 2, 42, H - 2, 44);
+  // Maze barriers — the plateau makes you work for the exit, not jog it.
+  duckWall(tiles, 13, f, 3);
+  climbWall(tiles, 23, f, 3);
+  duckWall(tiles, 33, f, 3);
   return {
     name: 'Windbite Plateau',
     width: W, height: H, tiles,
@@ -319,6 +365,23 @@ function buildRoom34() {
       { type: 'mountain_banner', x: 32, y: f - 7 },
       { type: 'lore_fragment', id: 'windbite_lore', x: 12, y: f - 3,
         text: 'A rusted crampon, anchor-stones long gone: "The Warden watched us from the slick. We never turned our backs."' },
+      // Crucible pack — windbite gets teeth.
+      { type: 'crusher', x: 12, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 26, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 38, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: f - 5, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: f - 7, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 600 },
+      { type: 'saw_blade', x: 22, y: f - 1, axis: 'x', range: 96, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 36, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.6 },
+      { type: 'pendulum_trap', x: 18, y: f - 9, length: 96, swing: 48, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 32, y: f - 7, length: 88, swing: 44, speed: 1.7, phase: 1.0 },
+      { type: 'moving_platform', x: 8, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 34, y: f - 5, axis: 'y', range: 64, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'icicle_drop', x: 10, y: 3, interval: 2400, phase: 0 },
+      { type: 'icicle_drop', x: 26, y: 3, interval: 2400, phase: 600 },
+      { type: 'icicle_drop', x: 40, y: 3, interval: 2400, phase: 1200 },
+      { type: 'arrow_turret', x: W - 3, y: f - 3, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 130 },
+      { type: 'wind_gust_zone', x: 14, y: f - 6, w: 6, h: 3, dir: 'right', strength: 180 },
     ],
     ambience: 'mountain_peak',
   };
@@ -413,6 +476,17 @@ function buildRoom36() {
       { type: 'snow_rock', x: 16, y: f },
       { type: 'snow_rock', x: 26, y: f },
       { type: 'fog_bank', x: 22, y: 3 },
+      // Pre-boss gauntlet — the approach is lined with the Warden's defenses,
+      // hidden until the boss itself falls so the hiddenIfBoss objects read
+      // as a final trial and the post-victory arena stays clean.
+      { type: 'crusher', x: 14, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'top', hiddenIfBoss: 'boss_room36' },
+      { type: 'crusher', x: 30, y: 1, dropDist: 5, downTime: 420, upTime: 2000, phase: 'up', hiddenIfBoss: 'boss_room36' },
+      { type: 'laser_beam', x: 2, y: f - 4, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0, hiddenIfBoss: 'boss_room36' },
+      { type: 'laser_beam', x: W - 3, y: f - 4, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 600, hiddenIfBoss: 'boss_room36' },
+      { type: 'arrow_turret', x: 2, y: f - 7, dir: 'right', interval: 2600, burstSize: 3, burstSpacing: 120, hiddenIfBoss: 'boss_room36' },
+      { type: 'arrow_turret', x: W - 3, y: f - 7, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120, hiddenIfBoss: 'boss_room36' },
+      { type: 'icicle_drop', x: 18, y: 3, interval: 2400, phase: 0, hiddenIfBoss: 'boss_room36' },
+      { type: 'icicle_drop', x: 26, y: 3, interval: 2400, phase: 600, hiddenIfBoss: 'boss_room36' },
     ],
     ambience: 'mountain_peak',
   };
@@ -435,6 +509,11 @@ function buildRoom37() {
   fillRow(tiles, f - 6, 36, 44, 2);
   // Hidden stump-cave on the ground level, west of the first tree
   clearRect(tiles, f, 3, f, 5);
+  // Thicket barriers — the road is choked. Climb a bramble, then duck a
+  // branch, then climb another. No more straight-line strolls.
+  climbWall(tiles, 16, f, 3);
+  duckWall(tiles, 26, f, 3);
+  climbWall(tiles, 35, f, 3);
   return {
     name: 'Greenroad',
     width: W, height: H, tiles,
@@ -487,6 +566,11 @@ function buildRoom38() {
   fillRow(tiles, f - 7, 38, 44, 2);
   // Secret wall entrance to sanctuary3, plus a second small alcove
   clearRect(tiles, f, 40, f, 42);
+  // Thornwood barriers — forcing the canopy-and-branch routing instead
+  // of a flat run. The thornwood is not a footpath.
+  climbWall(tiles, 10, f, 3);
+  duckWall(tiles, 18, f, 3);
+  climbWall(tiles, 28, f, 3);
   return {
     name: 'Thornwood Paths',
     width: W, height: H, tiles,
@@ -526,6 +610,23 @@ function buildRoom38() {
       { type: 'wild_flower', x: 36, y: f },
       { type: 'lore_fragment', id: 'thornwood_lore', x: 17, y: f,
         text: 'A knot in the oak reads, in old charcoal: "Cross the thorns. The spiders remember your grandmother."' },
+      // Crucible pack — the thornwood closes around you.
+      { type: 'crusher', x: 14, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 26, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 38, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: f - 6, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: f - 4, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 500 },
+      { type: 'saw_blade', x: 24, y: f - 1, axis: 'x', range: 96, speed: 1.2, phase: 0 },
+      { type: 'saw_blade', x: 36, y: f - 1, axis: 'y', range: 80, speed: 1.3, phase: 0.7 },
+      { type: 'pendulum_trap', x: 22, y: f - 7, length: 88, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 34, y: f - 5, length: 80, swing: 44, speed: 1.8, phase: 1.0 },
+      { type: 'moving_platform', x: 10, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 30, y: f - 5, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'arrow_turret', x: W - 3, y: f - 7, dir: 'left', interval: 2700, burstSize: 3, burstSpacing: 120 },
+      { type: 'crumble_platform', x: 18, y: f - 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 32, y: f - 5, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'phase_platform', x: 16, y: f - 2, width: 3, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 28, y: f - 2, width: 3, onTime: 1300, offTime: 900, phase: 500 },
     ],
     ambience: 'forest',
   };
@@ -545,6 +646,11 @@ function buildRoom39() {
   fillRow(tiles, 16, 28, 32, 2);
   // High canopy secret — past the tallest ivy
   clearRect(tiles, 3, 32, 4, 34);
+  // Old Canopy barriers — the forest floor is a maze of roots. The
+  // canopy above is the real path.
+  climbWall(tiles, 15, f, 3);
+  duckWall(tiles, 25, f, 3);
+  climbWall(tiles, 33, f, 4);
   return {
     name: 'Old Canopy',
     width: W, height: H, tiles,
@@ -586,6 +692,22 @@ function buildRoom39() {
       { type: 'arrow_turret', x: 2, y: 10, dir: 'right', interval: 3200, burstSize: 2, burstSpacing: 150 },
       { type: 'lore_fragment', id: 'canopy_lore', x: 30, y: 5,
         text: 'Bound with sinew to the branch: "The high places were never safe. Only quiet. A different thing."' },
+      // Crucible pack — the canopy is alive and predatory.
+      { type: 'crusher', x: 10, y: 1, dropDist: 4, downTime: 380, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 20, y: 1, dropDist: 4, downTime: 380, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 30, y: 1, dropDist: 4, downTime: 380, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: f - 9, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: f - 13, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 600 },
+      { type: 'saw_blade', x: 14, y: f - 1, axis: 'x', range: 96, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 28, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.5 },
+      { type: 'pendulum_trap', x: 16, y: 9, length: 80, swing: 48, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 26, y: 5, length: 72, swing: 42, speed: 1.7, phase: 1.0 },
+      { type: 'moving_platform', x: 18, y: 13, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 30, y: 8, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'crumble_platform', x: 8, y: 13, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 26, y: 5, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'phase_platform', x: 18, y: 9, width: 3, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 28, y: 5, width: 3, onTime: 1300, offTime: 900, phase: 500 },
     ],
     ambience: 'forest_deep',
   };
@@ -717,6 +839,11 @@ function buildRoom42() {
   fillRow(tiles, f - 4, 16, 24, 2);
   fillRow(tiles, f - 2, 26, 34, 2);
   fillRow(tiles, f - 6, 34, 42, 2);
+  // Hollows maze — player drops from the high entrance and then has to
+  // thread between root walls and low branches to reach the floor door.
+  climbWall(tiles, 18, f, 3);
+  duckWall(tiles, 28, f, 3);
+  climbWall(tiles, 36, f, 3);
   return {
     name: 'Whispering Hollows',
     width: W, height: H, tiles,
@@ -757,6 +884,19 @@ function buildRoom42() {
       { type: 'arrow_turret', x: W - 3, y: 7, dir: 'left', interval: 3200, burstSize: 3, burstSpacing: 140 },
       { type: 'lore_fragment', id: 'hollows_lore', x: 9, y: 7,
         text: 'Scrawled where the hollow collapsed: "The trees here stopped counting. The roots did not."' },
+      // Crucible pack — the hollows swallow the careless.
+      { type: 'crusher', x: 12, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 24, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 36, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'down' },
+      { type: 'saw_blade', x: 20, y: f - 1, axis: 'x', range: 96, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 32, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.5 },
+      { type: 'pendulum_trap', x: 16, y: f - 8, length: 96, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 30, y: f - 6, length: 88, swing: 44, speed: 1.8, phase: 1.0 },
+      { type: 'moving_platform', x: 18, y: f - 1, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 28, y: f - 3, axis: 'y', range: 64, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'crumble_platform', x: 10, y: 8, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 38, y: f - 6, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'arrow_turret', x: 2, y: 7, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 130 },
     ],
     ambience: 'forest_deep',
   };
@@ -852,6 +992,12 @@ function buildRoom44() {
   fillRow(tiles, f - 3, 16, 20, 2);
   fillRow(tiles, f - 2, 28, 32, 2);
   fillRow(tiles, f - 4, 40, 46, 2);
+  // Hedgerow barriers — the open plains aren't actually open. Fencelines
+  // and haystacks block the straight sprint to the east door.
+  climbWall(tiles, 13, f, 3);
+  duckWall(tiles, 25, f, 3);
+  climbWall(tiles, 37, f, 3);
+  duckWall(tiles, 49, f, 3);
   return {
     name: 'The Open Plains',
     width: W, height: H, tiles,
@@ -893,6 +1039,23 @@ function buildRoom44() {
         text: 'A scarecrow stands in fields long harvested. The wind turns its face to you.' },
       { type: 'lore_fragment', id: 'plains_note_2', x: 44, y: f - 5,
         text: 'A sun-bleached ledger page: "Last harvest: none. Reason: everyone left. Signed, the fields."' },
+      // Crucible pack — even open plains have teeth.
+      { type: 'crusher', x: 16, y: 1, dropDist: 4, downTime: 420, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 30, y: 1, dropDist: 4, downTime: 420, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 44, y: 1, dropDist: 4, downTime: 420, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: f - 6, dir: 'right', length: 12, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: f - 4, dir: 'left', length: 12, onTime: 1100, offTime: 1300, phase: 600 },
+      { type: 'arrow_turret', x: 2, y: f - 3, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: f - 3, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 120 },
+      { type: 'saw_blade', x: 22, y: f - 1, axis: 'x', range: 128, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 42, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.5 },
+      { type: 'pendulum_trap', x: 18, y: f - 8, length: 96, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 34, y: f - 7, length: 88, swing: 44, speed: 1.8, phase: 1.0 },
+      { type: 'moving_platform', x: 10, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 34, y: f - 5, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 50, y: f - 4, axis: 'x', range: 64, speed: 1.2, phase: 1.2, spin: 0 },
+      { type: 'phase_platform', x: 20, y: f - 2, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 34, y: f - 3, width: 4, onTime: 1300, offTime: 900, phase: 500 },
     ],
     ambience: 'plains',
   };
@@ -909,6 +1072,11 @@ function buildRoom45() {
   fillRow(tiles, f - 3, 34, 40, 2);
   fillRow(tiles, f - 7, 26, 32, 2);
   fillRow(tiles, f - 6, 42, 48, 2);
+  // Windmill maze — broken wagon walls and sagging rails block the
+  // sprint. Use the rising tiers to cross.
+  climbWall(tiles, 20, f, 3);
+  duckWall(tiles, 32, f, 3);
+  climbWall(tiles, 41, f, 3);
   return {
     name: 'Windmill Rise',
     width: W, height: H, tiles,
@@ -944,6 +1112,20 @@ function buildRoom45() {
       { type: 'wheat_tuft', x: 36, y: f },
       { type: 'lore_fragment', id: 'windmill_lore', x: 6, y: f,
         text: 'The windmill\'s stones are cracked. Someone carved on the base: "It turned for my grandfather. It will turn again."' },
+      // Crucible pack — the mill's sails are deadly.
+      { type: 'crusher', x: 14, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 26, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 38, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: f - 7, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'saw_blade', x: 16, y: f - 1, axis: 'x', range: 96, speed: 1.4, phase: 0 },
+      { type: 'saw_blade', x: 32, y: f - 1, axis: 'x', range: 128, speed: 1.3, phase: 0.7 },
+      { type: 'pendulum_trap', x: 20, y: f - 9, length: 88, swing: 48, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 36, y: f - 6, length: 80, swing: 44, speed: 1.7, phase: 1.0 },
+      { type: 'moving_platform', x: 14, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 38, y: f - 5, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'crumble_platform', x: 22, y: f - 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'crumble_platform', x: 36, y: f - 3, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'phase_platform', x: 16, y: f - 2, width: 3, onTime: 1300, offTime: 900, phase: 0 },
     ],
     ambience: 'plains',
   };
@@ -961,6 +1143,11 @@ function buildRoom46() {
   fillRow(tiles, f - 10, 30, 36, 2);
   fillRow(tiles, f - 14, 18, 26, 2);
   fillRow(tiles, f - 6, 38, 44, 2);
+  // Storm-shattered fencewalls on the ground — you cannot run the
+  // gauntlet, you have to ride the gusts up and route around.
+  climbWall(tiles, 12, f, 3);
+  climbWall(tiles, 22, f, 3);
+  climbWall(tiles, 36, f, 3);
   return {
     name: 'Stormgate',
     width: W, height: H, tiles,
@@ -1014,6 +1201,11 @@ function buildRoom47() {
   fillRow(tiles, f - 7, 38, 46, 2);
   // Snare pit mid-room for the unwary runner
   fillRect(tiles, H - 2, 16, H - 2, 20, 1);
+  // Flats maze — a broken riverwall and a collapsed levee force the
+  // player up onto the ledges. The snare pit funnels the detour.
+  climbWall(tiles, 16, f, 3);
+  duckWall(tiles, 30, f, 3);
+  climbWall(tiles, 42, f, 3);
   return {
     name: 'Riverwind Flats',
     width: W, height: H, tiles,
@@ -1049,6 +1241,23 @@ function buildRoom47() {
       { type: 'wild_flower', x: 30, y: f },
       { type: 'lore_fragment', id: 'riverwind_lore', x: 7, y: f,
         text: 'Riverstone, wind-smoothed: "The river here is called Leavetaking. Nothing that crosses it comes back whole."' },
+      // Crucible pack — the river runs with edges.
+      { type: 'crusher', x: 14, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 26, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 38, y: 1, dropDist: 4, downTime: 400, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: f - 6, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: f - 8, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 600 },
+      { type: 'arrow_turret', x: 2, y: f - 3, dir: 'right', interval: 2800, burstSize: 3, burstSpacing: 130 },
+      { type: 'arrow_turret', x: W - 3, y: f - 3, dir: 'left', interval: 2800, burstSize: 3, burstSpacing: 130 },
+      { type: 'saw_blade', x: 24, y: f - 1, axis: 'x', range: 96, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 38, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.5 },
+      { type: 'pendulum_trap', x: 14, y: f - 7, length: 96, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 36, y: f - 8, length: 88, swing: 44, speed: 1.8, phase: 1.0 },
+      { type: 'moving_platform', x: 18, y: f - 2, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 34, y: f - 4, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 44, y: f - 5, axis: 'x', range: 64, speed: 1.2, phase: 1.2, spin: 0 },
+      { type: 'phase_platform', x: 14, y: f - 2, width: 3, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 32, y: f - 2, width: 3, onTime: 1300, offTime: 900, phase: 500 },
     ],
     ambience: 'plains',
   };
@@ -1065,6 +1274,10 @@ function buildRoom48() {
   fillRow(tiles, f - 6, 30, 36, 2);
   fillRow(tiles, f - 14, 14, 22, 2);
   fillRow(tiles, f - 8, 38, 42, 2);
+  // Weathervane maze — the ground is a scatter of lightning-fused
+  // stone walls. Up you must go, riding the gusts between them.
+  climbWall(tiles, 18, f, 3);
+  climbWall(tiles, 30, f, 3);
   return {
     name: 'Weathervane',
     width: W, height: H, tiles,
@@ -1158,6 +1371,11 @@ function buildRoom50() {
   fillRow(tiles, f - 6, 36, 44, 2);
   // Hidden barracks beneath the western platform
   clearRect(tiles, f, 4, f, 5);
+  // Castle Gate maze — inner wall columns and a low archway divide
+  // the approach. Use the garrison's own tiers to climb over.
+  climbWall(tiles, 16, f, 3);
+  duckWall(tiles, 26, f, 3);
+  climbWall(tiles, 35, f, 4);
   return {
     name: 'Castle Gate',
     width: W, height: H, tiles,
@@ -1209,6 +1427,11 @@ function buildRoom51() {
   fillRow(tiles, f - 6, 26, 34, 2);
   fillRow(tiles, f - 4, 36, 42, 2);
   fillRow(tiles, f - 8, 18, 28, 2);
+  // Outer Ward maze — partition walls between platforms mean the
+  // courtyard becomes a gauntlet, not a racetrack.
+  climbWall(tiles, 12, f, 3);
+  duckWall(tiles, 24, f, 3);
+  climbWall(tiles, 35, f, 3);
   return {
     name: 'Outer Ward',
     width: W, height: H, tiles,
@@ -1246,6 +1469,24 @@ function buildRoom51() {
       { type: 'castle_window', x: 36, y: 4 },
       { type: 'lore_fragment', id: 'ward_lore', x: 9, y: f - 3,
         text: 'Mural fragment: a queen crowned in shadow, her subjects kneeling with empty chests. Someone scratched: "LIAR."' },
+      // Crucible pack — the Ward's garrison wakes up.
+      { type: 'crusher', x: 12, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'top' },
+      { type: 'crusher', x: 24, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'up' },
+      { type: 'crusher', x: 36, y: 1, dropDist: 5, downTime: 400, upTime: 2000, phase: 'down' },
+      { type: 'laser_beam', x: 2, y: f - 5, dir: 'right', length: 10, onTime: 1100, offTime: 1300, phase: 0 },
+      { type: 'laser_beam', x: W - 3, y: f - 7, dir: 'left', length: 10, onTime: 1100, offTime: 1300, phase: 600 },
+      { type: 'arrow_turret', x: 2, y: f - 3, dir: 'right', interval: 2700, burstSize: 3, burstSpacing: 120 },
+      { type: 'arrow_turret', x: W - 3, y: f - 3, dir: 'left', interval: 2700, burstSize: 3, burstSpacing: 120 },
+      { type: 'saw_blade', x: 22, y: f - 1, axis: 'x', range: 96, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 38, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.5 },
+      { type: 'pendulum_trap', x: 20, y: f - 9, length: 96, swing: 48, speed: 1.7, phase: 0 },
+      { type: 'pendulum_trap', x: 32, y: f - 7, length: 88, swing: 44, speed: 1.8, phase: 1.0 },
+      { type: 'moving_platform', x: 16, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 38, y: f - 5, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'portcullis_drop', x: 18 * 32, y: 13 * 32, dropDist: 4 },
+      { type: 'portcullis_drop', x: 32 * 32, y: 13 * 32, dropDist: 4 },
+      { type: 'phase_platform', x: 16, y: f - 3, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 30, y: f - 5, width: 4, onTime: 1300, offTime: 900, phase: 500 },
     ],
     ambience: 'castle_interior',
   };
@@ -1320,6 +1561,11 @@ function buildRoom53() {
   fillRow(tiles, f - 4, 16, 22, 2);
   fillRow(tiles, f - 3, 28, 36, 2);
   fillRow(tiles, f - 6, 38, 44, 2);
+  // Highwalk maze — banner-columns and a low stone lintel. Between the
+  // portcullises and the swinging chandeliers, there is no clean run.
+  climbWall(tiles, 14, f, 3);
+  duckWall(tiles, 26, f, 3);
+  climbWall(tiles, 37, f, 3);
   return {
     name: 'Highwalk',
     width: W, height: H, tiles,
@@ -1360,6 +1606,19 @@ function buildRoom53() {
       { type: 'banner_gold', x: 40, y: 2 },
       { type: 'lore_fragment', id: 'highwalk_lore', x: 4, y: 5,
         text: 'A soldier\'s hash-marks, counting down to zero. Then, scrawled beside: "ALL DONE. ALL FORGIVEN."' },
+      // Crucible pack — the highwalk becomes a murder-hole.
+      { type: 'crusher', x: 10, y: 1, dropDist: 4, downTime: 380, upTime: 1900, phase: 'top' },
+      { type: 'crusher', x: 22, y: 1, dropDist: 4, downTime: 380, upTime: 1900, phase: 'up' },
+      { type: 'crusher', x: 34, y: 1, dropDist: 4, downTime: 380, upTime: 1900, phase: 'down' },
+      { type: 'saw_blade', x: 18, y: f - 1, axis: 'x', range: 96, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 32, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.5 },
+      { type: 'pendulum_trap', x: 20, y: f - 7, length: 96, swing: 48, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 34, y: f - 6, length: 88, swing: 44, speed: 1.7, phase: 1.0 },
+      { type: 'moving_platform', x: 14, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 30, y: f - 5, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'crumble_platform', x: 24, y: f - 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'phase_platform', x: 22, y: f - 2, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 32, y: f - 2, width: 4, onTime: 1300, offTime: 900, phase: 500 },
     ],
     ambience: 'castle_interior',
   };
@@ -1437,6 +1696,11 @@ function buildRoom55() {
   fillRow(tiles, f - 3, 18, 26, 2);
   fillRow(tiles, f - 2, 30, 38, 2);
   fillRow(tiles, f - 6, 38, 44, 2);
+  // Throne Approach maze — heavy oak doors and broken pillars in the
+  // hall. The garrison's last-line walls force the pilgrim's route.
+  climbWall(tiles, 17, f, 3);
+  duckWall(tiles, 29, f, 3);
+  climbWall(tiles, 40, f, 3);
   return {
     name: 'Throne Approach',
     width: W, height: H, tiles,
@@ -1481,6 +1745,21 @@ function buildRoom55() {
       { type: 'arrow_turret', x: W - 3, y: 14, dir: 'left', interval: 2600, burstSize: 3, burstSpacing: 120 },
       { type: 'lore_fragment', id: 'throne_approach_lore', x: 8, y: f,
         text: 'A banquet hall, decayed. Twelve settings, twelve goblets. The wine is still wet in one.' },
+      // Crucible pack — the honor guard pulls every lever in the palace.
+      { type: 'crusher', x: 20, y: 1, dropDist: 5, downTime: 400, upTime: 1900, phase: 'down' },
+      { type: 'crusher', x: 34, y: 1, dropDist: 5, downTime: 400, upTime: 1900, phase: 'top' },
+      { type: 'crusher', x: 42, y: 1, dropDist: 5, downTime: 400, upTime: 1900, phase: 'up' },
+      { type: 'saw_blade', x: 22, y: f - 1, axis: 'x', range: 96, speed: 1.3, phase: 0 },
+      { type: 'saw_blade', x: 36, y: f - 1, axis: 'y', range: 80, speed: 1.2, phase: 0.5 },
+      { type: 'pendulum_trap', x: 20, y: f - 9, length: 96, swing: 48, speed: 1.8, phase: 0 },
+      { type: 'pendulum_trap', x: 34, y: f - 7, length: 88, swing: 44, speed: 1.7, phase: 1.0 },
+      { type: 'moving_platform', x: 16, y: f - 3, axis: 'x', range: 96, speed: 1.1, phase: 0, spin: 0 },
+      { type: 'moving_platform', x: 34, y: f - 5, axis: 'y', range: 80, speed: 1.0, phase: 0.5, spin: 0 },
+      { type: 'moving_platform', x: 24, y: f - 2, axis: 'x', range: 128, speed: 1.2, phase: 1.2, spin: 0 },
+      { type: 'crumble_platform', x: 26, y: f - 4, collapseDelay: 380, respawnDelay: 2400 },
+      { type: 'phase_platform', x: 18, y: f - 3, width: 4, onTime: 1300, offTime: 900, phase: 0 },
+      { type: 'phase_platform', x: 32, y: f - 2, width: 4, onTime: 1300, offTime: 900, phase: 500 },
+      { type: 'portcullis_drop', x: 34 * 32, y: 13 * 32, dropDist: 4 },
     ],
     ambience: 'castle_interior',
   };
@@ -1573,6 +1852,11 @@ function buildRoom57() {
   fillRow(tiles, f - 4, 32, 36, 2);
   fillRow(tiles, f - 8, 18, 28, 2);
   fillRow(tiles, f - 12, 20, 26, 2);
+  // Cathedral maze — sacred columns divide the nave. The last approach
+  // to the Sun is not a run; it is a pilgrimage.
+  climbWall(tiles, 16, f, 3);
+  duckWall(tiles, 30, f, 3);
+  climbWall(tiles, 42, f, 3);
   return {
     name: 'Cathedral of the Sun',
     width: W, height: H, tiles,
