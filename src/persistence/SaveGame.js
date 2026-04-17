@@ -2,16 +2,19 @@ import { TILE_SIZE, rooms } from '../level/rooms.js';
 
 const STORAGE_KEY = 'abyssal_depths_save_v1';
 const PLAYER_NAME_KEY = 'abyssal_depths_player_name';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 function normalizeLoadedSave(s) {
   if (!s || typeof s !== 'object') return null;
   if (s.version === 1) {
-    return {
-      ...s,
-      version: 2,
-      world: { flags: {}, bosses: {} },
-    };
+    // v1 -> v2: introduce world.{flags,bosses}.
+    s = { ...s, version: 2, world: { flags: {}, bosses: {} } };
+  }
+  if (s.version === 2) {
+    // v2 -> v3: chapter 2 adds glide/grapple abilities. Legacy saves default
+    // both to false (they are already absent from s.abilities); no structural
+    // changes required beyond version bump.
+    s = { ...s, version: 3 };
   }
   if (s.version !== SAVE_VERSION) return null;
   if (!s.world || typeof s.world !== 'object') {
@@ -19,6 +22,12 @@ function normalizeLoadedSave(s) {
   } else {
     if (!s.world.flags || typeof s.world.flags !== 'object') s.world.flags = {};
     if (!s.world.bosses || typeof s.world.bosses !== 'object') s.world.bosses = {};
+  }
+  // Saves from before chapter 2 that already beat the Void King need the
+  // chapter2_unlocked flag so the throne room shows the crumbled door instead
+  // of respawning the boss.
+  if (s.world.bosses.boss_room29 && !s.world.flags.chapter2_unlocked) {
+    s.world.flags.chapter2_unlocked = true;
   }
   return s;
 }
@@ -79,7 +88,11 @@ export function getSummary() {
 }
 
 function collectAbilities(player) {
-  const keys = ['slash', 'wallJump', 'dash', 'doubleJump', 'spear', 'kick', 'map'];
+  const keys = [
+    'slash', 'wallJump', 'dash', 'doubleJump',
+    'spear', 'kick', 'map',
+    'glide', 'grapple',
+  ];
   return keys.filter((k) => player.hasAbility(k));
 }
 

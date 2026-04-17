@@ -1,5 +1,7 @@
 import { buildOrganicCaveRoom } from './organicCaveGen.js';
 
+import { ch2Rooms } from './rooms_ch2.js';
+
 export const TILE_SIZE = 32;
 
 function makeRoom(w, h) {
@@ -3531,6 +3533,11 @@ function buildRoom29() {
   // Door opening on left
   clearRect(tiles, f - 2, 0, f + 1, 0);
 
+  // East chapter-2 exit: tile opening is pre-carved but sealed by a crumble
+  // wall until the Void King falls and chapter2_unlocked is set. The seal
+  // spawns via objects so it can be filtered by world flags.
+  clearRect(tiles, f - 2, W - 1, f + 1, W - 1);
+
   return {
     name: 'The Void King',
     width: W,
@@ -3539,7 +3546,13 @@ function buildRoom29() {
     playerSpawn: { x: 3, y: f },
     objects: [
       { type: 'door', targetRoom: 'room28', x: 1, y: f, spawnX: 52, spawnY: 23 },
-      { type: 'boss', bossType: 'void_king', x: 30, y: f },
+      { type: 'boss', bossType: 'void_king', x: 30, y: f, hiddenIfBoss: 'boss_room29' },
+      { type: 'crumble_wall', id: 'chapter2_gate', x: W - 1, y: f - 2, w: 1, h: 4,
+        hiddenIfFlag: 'chapter2_unlocked' },
+      { type: 'door', targetRoom: 'room30', x: W - 2, y: f, spawnX: 2, spawnY: 14,
+        requiresFlag: 'chapter2_unlocked' },
+      { type: 'lore_fragment', id: 'ch2_unlock', x: 32, y: f, requiresFlag: 'chapter2_unlocked',
+        text: 'A wind smelling of pine and rain blows through the broken stone. The world above remembers.' },
       { type: 'moving_platform', x: 14, y: 12, axis: 'y', range: 128, speed: 1.0, phase: 0, spin: 0 },
       { type: 'moving_platform', x: W - 15, y: 12, axis: 'y', range: 128, speed: 1.0, phase: 1.5, spin: 0 },
       { type: 'chain', x: 10, y: 1 },
@@ -3746,4 +3759,5 @@ export const rooms = {
   room_organic: buildOrganicCaveRoom({ width: 56, height: 26, seed: 1337 }),
   sanctuary1: buildSanctuary1(),
   sanctuary2: buildSanctuary2(),
+  ...ch2Rooms,
 };

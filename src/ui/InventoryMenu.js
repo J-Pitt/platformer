@@ -760,6 +760,8 @@ export class InventoryMenu {
       `  Dash:         ${player.hasAbility('dash') ? 'YES' : '—'}`,
       `  Spear:        ${player.hasAbility('spear') ? 'YES' : '—'}`,
       `  Kick:         ${player.hasAbility('kick') ? 'YES' : '—'}`,
+      `  Glide:        ${player.hasAbility('glide') ? 'YES' : '—'}`,
+      `  Grapple:      ${player.hasAbility('grapple') ? 'YES' : '—'}`,
       `  Map:          ${player.hasAbility('map') ? 'YES' : '—'}`,
     ];
     const t = this.scene.add.text(left, top + 28, lines.join('\n'), {

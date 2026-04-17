@@ -15,6 +15,8 @@ const JP_UNLOCK_ABILITIES = [
   'spear',
   'kick',
   'map',
+  'glide',
+  'grapple',
 ];
 
 /** Solo dev profile: exact name JP (case-insensitive). */
@@ -328,7 +330,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     if (!onGround) {
-      if (this.body.velocity.y < -20) {
+      if (this.movement.isGliding && this.scene.textures.exists('player_glide')) {
+        this.setTexture('player_glide');
+        this.currentAnim = 'glide';
+      } else if (this.body.velocity.y < -20) {
         this.setTexture(`player_jump${s}`);
         this.currentAnim = 'jump';
       } else if (this.body.velocity.y > 20) {
@@ -445,6 +450,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'map':
         this.hasMap = true;
         break;
+      case 'glide':
+        this.movement.abilities.glide = true;
+        break;
+      case 'grapple':
+        this.movement.abilities.grapple = true;
+        break;
     }
   }
 
@@ -457,8 +468,30 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       case 'spear': return this.combat.hasSpear;
       case 'kick': return this.combat.hasKick;
       case 'map': return this.hasMap;
+      case 'glide': return !!this.movement.abilities.glide;
+      case 'grapple': return !!this.movement.abilities.grapple;
       default: return false;
     }
+  }
+
+  /**
+   * Fire a grapple at the nearest grapple_anchor within range. Called from
+   * MovementSystem.update when throwPressed is tapped while grapple is
+   * unlocked. If no anchor is in range, nothing happens (silent miss).
+   */
+  tryGrapple() {
+    if (this.movement.isGrappling) return;
+    if (!this.movement.abilities.grapple) return;
+    const anchors = this.scene.levelManager?.grappleAnchors;
+    if (!anchors || !anchors.length) return;
+    let best = null;
+    let bestDist = Infinity;
+    for (const a of anchors) {
+      const d = Phaser.Math.Distance.Between(this.x, this.y, a.x, a.y);
+      if (d < bestDist && d < 260) { bestDist = d; best = a; }
+    }
+    if (!best) return;
+    this.movement.startGrappleTo(best.x, best.y);
   }
 
   /** JP profile: all abilities + 3 max HP (new solo game only). */

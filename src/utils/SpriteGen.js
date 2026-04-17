@@ -47,6 +47,560 @@ export function generateAllTextures(scene) {
   generateTeleportTexture(scene);
   generateKickTextures(scene);
   generateWeaponAndItemTextures(scene);
+  generateSurfaceChapterTextures(scene);
+}
+
+/**
+ * Chapter 2 — The Surface Above: outdoor parallax layers, biome tile/terrain
+ * variants, and all new enemy/boss/trap sprites. Every texture here is
+ * deliberately simple (blocks + a few shaded strokes) so chapter 2 feels
+ * distinct from the painterly cavern art without needing hand-authored
+ * frames per enemy.
+ */
+function generateSurfaceChapterTextures(scene) {
+  const W = 960;
+  const H = 540;
+  const mkGfx = () => scene.make.graphics({ add: false });
+
+  const drawSkyGrad = (g, top, bot) => {
+    const [tr, tg, tb] = [(top >> 16) & 0xff, (top >> 8) & 0xff, top & 0xff];
+    const [br, bg, bb] = [(bot >> 16) & 0xff, (bot >> 8) & 0xff, bot & 0xff];
+    for (let y = 0; y < H; y++) {
+      const t = y / H;
+      const r = Math.floor(tr + (br - tr) * t);
+      const gg = Math.floor(tg + (bg - tg) * t);
+      const b = Math.floor(tb + (bb - tb) * t);
+      g.fillStyle((r << 16) | (gg << 8) | b);
+      g.fillRect(0, y, W, 1);
+    }
+  };
+
+  // ---------- Parallax: Mountain peaks (sky + distant ridges) --------------
+  const gPeakFar = mkGfx();
+  drawSkyGrad(gPeakFar, 0x1a3060, 0x8ca4c8);
+  // Distant ridge silhouettes with snowcaps
+  gPeakFar.fillStyle(0x40527a);
+  for (let i = 0; i < 6; i++) {
+    const cx = 80 + i * 160;
+    const peakY = 180 + (i % 3) * 30;
+    gPeakFar.fillTriangle(cx - 110, H, cx, peakY, cx + 110, H);
+  }
+  gPeakFar.fillStyle(0xe8eef8);
+  for (let i = 0; i < 6; i++) {
+    const cx = 80 + i * 160;
+    const peakY = 180 + (i % 3) * 30;
+    gPeakFar.fillTriangle(cx - 28, peakY + 50, cx, peakY, cx + 28, peakY + 50);
+  }
+  gPeakFar.generateTexture('bg_far_peaks', W, H);
+  gPeakFar.destroy();
+
+  const gPeakMid = mkGfx();
+  gPeakMid.fillStyle(0x000000, 0);
+  gPeakMid.fillRect(0, 0, W, H);
+  gPeakMid.fillStyle(0x2a3a58, 0.85);
+  for (let i = 0; i < 5; i++) {
+    const cx = 130 + i * 200;
+    gPeakMid.fillTriangle(cx - 140, H, cx, 280 + (i % 2) * 30, cx + 140, H);
+  }
+  gPeakMid.fillStyle(0xc4d0e4, 0.7);
+  for (let i = 0; i < 5; i++) {
+    const cx = 130 + i * 200;
+    const py = 280 + (i % 2) * 30;
+    gPeakMid.fillTriangle(cx - 34, py + 44, cx, py, cx + 34, py + 44);
+  }
+  gPeakMid.generateTexture('bg_mid_peaks', W, H);
+  gPeakMid.destroy();
+
+  const gPeakClose = mkGfx();
+  gPeakClose.fillStyle(0x000000, 0);
+  gPeakClose.fillRect(0, 0, W, H);
+  gPeakClose.fillStyle(0x1a243a, 0.55);
+  gPeakClose.fillRect(0, H - 160, W, 160);
+  gPeakClose.fillStyle(0x26324a, 0.7);
+  gPeakClose.fillTriangle(0, H - 80, 180, H - 220, 360, H - 80);
+  gPeakClose.fillTriangle(380, H - 80, 560, H - 240, 740, H - 80);
+  gPeakClose.fillTriangle(740, H - 80, 900, H - 220, W, H - 80);
+  gPeakClose.generateTexture('bg_close_peaks', W, H);
+  gPeakClose.destroy();
+
+  // ---------- Parallax: Forest -------------------------------------------
+  const gForFar = mkGfx();
+  drawSkyGrad(gForFar, 0x184028, 0x3a7854);
+  // Distant tree line
+  gForFar.fillStyle(0x0e2014);
+  for (let i = 0; i < 20; i++) {
+    const x = i * 52 + (i % 2) * 18;
+    const h = 120 + (i % 4) * 30;
+    gForFar.fillTriangle(x - 22, H, x, H - h, x + 22, H);
+  }
+  gForFar.generateTexture('bg_far_forest', W, H);
+  gForFar.destroy();
+
+  const gForMid = mkGfx();
+  gForMid.fillStyle(0x000000, 0);
+  gForMid.fillRect(0, 0, W, H);
+  gForMid.fillStyle(0x1c3624, 0.85);
+  for (let i = 0; i < 14; i++) {
+    const x = i * 72 + (i % 2) * 10;
+    const h = 180 + (i % 3) * 40;
+    gForMid.fillTriangle(x - 32, H, x, H - h, x + 32, H);
+  }
+  gForMid.generateTexture('bg_mid_forest', W, H);
+  gForMid.destroy();
+
+  const gForClose = mkGfx();
+  gForClose.fillStyle(0x000000, 0);
+  gForClose.fillRect(0, 0, W, H);
+  gForClose.fillStyle(0x081a0e, 0.6);
+  gForClose.fillRect(0, H - 180, W, 180);
+  gForClose.generateTexture('bg_close_forest', W, H);
+  gForClose.destroy();
+
+  // ---------- Parallax: Plains -------------------------------------------
+  const gPlFar = mkGfx();
+  drawSkyGrad(gPlFar, 0x6888b8, 0xffd8a0);
+  // Distant mountains
+  gPlFar.fillStyle(0x5868a0, 0.6);
+  for (let i = 0; i < 7; i++) {
+    const cx = 80 + i * 140;
+    gPlFar.fillTriangle(cx - 80, H, cx, H - 120, cx + 80, H);
+  }
+  gPlFar.generateTexture('bg_far_plains', W, H);
+  gPlFar.destroy();
+
+  const gPlMid = mkGfx();
+  gPlMid.fillStyle(0x000000, 0);
+  gPlMid.fillRect(0, 0, W, H);
+  gPlMid.fillStyle(0x88a070, 0.75);
+  gPlMid.fillRect(0, H - 220, W, 220);
+  gPlMid.fillStyle(0x607858, 0.85);
+  for (let i = 0; i < 40; i++) {
+    const x = i * 24 + (i % 3) * 6;
+    gPlMid.fillTriangle(x - 6, H - 180, x, H - 198, x + 6, H - 180);
+  }
+  gPlMid.generateTexture('bg_mid_plains', W, H);
+  gPlMid.destroy();
+
+  const gPlClose = mkGfx();
+  gPlClose.fillStyle(0x000000, 0);
+  gPlClose.fillRect(0, 0, W, H);
+  gPlClose.fillStyle(0x4a5a38, 0.5);
+  gPlClose.fillRect(0, H - 120, W, 120);
+  gPlClose.generateTexture('bg_close_plains', W, H);
+  gPlClose.destroy();
+
+  // ---------- Parallax: Castle -------------------------------------------
+  const gCastFar = mkGfx();
+  drawSkyGrad(gCastFar, 0x1c1430, 0x585070);
+  gCastFar.fillStyle(0x181020);
+  gCastFar.fillRect(0, H - 220, W, 220);
+  gCastFar.fillStyle(0x241a38);
+  // distant towers
+  for (let i = 0; i < 4; i++) {
+    const x = 120 + i * 220;
+    gCastFar.fillRect(x, H - 240, 48, 240);
+    gCastFar.fillTriangle(x - 6, H - 240, x + 54, H - 240, x + 24, H - 280);
+  }
+  gCastFar.generateTexture('bg_far_castle', W, H);
+  gCastFar.destroy();
+
+  const gCastMid = mkGfx();
+  gCastMid.fillStyle(0x000000, 0);
+  gCastMid.fillRect(0, 0, W, H);
+  gCastMid.fillStyle(0x302240, 0.9);
+  gCastMid.fillRect(0, H - 280, W, 80);
+  // crenellations
+  gCastMid.fillStyle(0x392a48, 0.95);
+  for (let i = 0; i < 30; i++) gCastMid.fillRect(i * 32, H - 290, 16, 16);
+  gCastMid.generateTexture('bg_mid_castle', W, H);
+  gCastMid.destroy();
+
+  const gCastClose = mkGfx();
+  gCastClose.fillStyle(0x000000, 0);
+  gCastClose.fillRect(0, 0, W, H);
+  gCastClose.fillStyle(0x140820, 0.7);
+  gCastClose.fillRect(0, H - 200, W, 200);
+  gCastClose.generateTexture('bg_close_castle', W, H);
+  gCastClose.destroy();
+
+  // ---------- Parallax: Cathedral ----------------------------------------
+  const gCathFar = mkGfx();
+  drawSkyGrad(gCathFar, 0x2a1030, 0xffcc80);
+  gCathFar.fillStyle(0xffee88, 0.35);
+  gCathFar.fillCircle(W / 2, 180, 120);
+  gCathFar.fillStyle(0xffcc44, 0.3);
+  gCathFar.fillCircle(W / 2, 180, 180);
+  gCathFar.generateTexture('bg_far_cathedral', W, H);
+  gCathFar.destroy();
+
+  const gCathMid = mkGfx();
+  gCathMid.fillStyle(0x000000, 0);
+  gCathMid.fillRect(0, 0, W, H);
+  gCathMid.fillStyle(0x381828, 0.85);
+  // distant cathedral silhouette
+  gCathMid.fillRect(W / 2 - 160, H - 340, 320, 340);
+  gCathMid.fillTriangle(W / 2 - 170, H - 340, W / 2 + 170, H - 340, W / 2, H - 420);
+  gCathMid.generateTexture('bg_mid_cathedral', W, H);
+  gCathMid.destroy();
+
+  const gCathClose = mkGfx();
+  gCathClose.fillStyle(0x000000, 0);
+  gCathClose.fillRect(0, 0, W, H);
+  gCathClose.fillStyle(0x200818, 0.8);
+  gCathClose.fillRect(0, H - 220, W, 220);
+  gCathClose.generateTexture('bg_close_cathedral', W, H);
+  gCathClose.destroy();
+
+  // ---------- Outdoor tile variants --------------------------------------
+  const mkTile = (key, baseColor, accents) => {
+    const g = mkGfx();
+    g.fillStyle(baseColor);
+    g.fillRect(0, 0, 32, 32);
+    if (accents) accents(g);
+    g.generateTexture(key, 32, 32);
+    g.destroy();
+  };
+  // Forest platform
+  mkTile('tile_platform_forest', 0x4a3a20, (g) => {
+    g.fillStyle(0x5a4a28);
+    g.fillRect(0, 0, 32, 6);
+    g.fillStyle(0x2a7a3a);
+    g.fillRect(0, 0, 32, 3);
+  });
+  mkTile('tile_platform_forest_solo', 0x4a3a20, (g) => {
+    g.fillStyle(0x2a7a3a); g.fillRect(0, 0, 32, 3);
+    g.fillStyle(0x342010); g.fillRect(0, 28, 32, 4);
+  });
+  mkTile('tile_platform_forest_left', 0x4a3a20, (g) => { g.fillStyle(0x2a7a3a); g.fillRect(0, 0, 32, 3); });
+  mkTile('tile_platform_forest_right', 0x4a3a20, (g) => { g.fillStyle(0x2a7a3a); g.fillRect(0, 0, 32, 3); });
+  mkTile('tile_platform_forest_mid2', 0x3a2a18, (g) => { g.fillStyle(0x2a6a3a); g.fillRect(0, 0, 32, 2); });
+
+  // Plains platform
+  mkTile('tile_platform_plains', 0x8a6a3a, (g) => {
+    g.fillStyle(0xaa8848); g.fillRect(0, 0, 32, 4);
+    g.fillStyle(0x60a040); g.fillRect(0, 0, 32, 2);
+  });
+  mkTile('tile_platform_plains_solo', 0x8a6a3a, (g) => { g.fillStyle(0x60a040); g.fillRect(0, 0, 32, 3); });
+  mkTile('tile_platform_plains_left', 0x8a6a3a, (g) => { g.fillStyle(0x60a040); g.fillRect(0, 0, 32, 3); });
+  mkTile('tile_platform_plains_right', 0x8a6a3a, (g) => { g.fillStyle(0x60a040); g.fillRect(0, 0, 32, 3); });
+  mkTile('tile_platform_plains_mid2', 0x7a5a2a, (g) => { g.fillStyle(0x50904a); g.fillRect(0, 0, 32, 2); });
+
+  // Castle platform (cut stone)
+  mkTile('tile_platform_castle', 0x6a5870, (g) => {
+    g.lineStyle(1, 0x403048, 1);
+    g.strokeRect(0, 0, 16, 16);
+    g.strokeRect(16, 0, 16, 16);
+    g.strokeRect(0, 16, 16, 16);
+    g.strokeRect(16, 16, 16, 16);
+  });
+  mkTile('tile_platform_castle_solo', 0x6a5870, (g) => { g.lineStyle(1, 0x403048, 1); g.strokeRect(1, 1, 30, 30); });
+  mkTile('tile_platform_castle_left', 0x6a5870);
+  mkTile('tile_platform_castle_right', 0x6a5870);
+  mkTile('tile_platform_castle_mid2', 0x5a485e);
+
+  // Seal used for the chapter2 crumble wall (weathered sandstone with cracks)
+  mkTile('tile_crumble_seal', 0x60402a, (g) => {
+    g.fillStyle(0x4a3020); g.fillRect(0, 28, 32, 4);
+    g.lineStyle(1, 0x2a1810, 1);
+    g.lineBetween(4, 6, 12, 18);
+    g.lineBetween(14, 8, 24, 22);
+    g.lineBetween(20, 4, 26, 12);
+  });
+
+  // ---------- Player glide frame (cloak spread) --------------------------
+  const pg = mkGfx();
+  // Body (simplified silhouette)
+  pg.fillStyle(0x2a1838); pg.fillRect(20, 18, 8, 16);
+  pg.fillStyle(0x1a0828); pg.fillTriangle(24, 18, 10, 26, 24, 26);
+  pg.fillTriangle(24, 18, 38, 26, 24, 26);
+  pg.fillStyle(0x3a2248); pg.fillRect(22, 14, 4, 6);
+  pg.fillStyle(0xff6622); pg.fillRect(22, 16, 2, 2);
+  pg.generateTexture('player_glide', 48, 48);
+  pg.destroy();
+
+  // ---------- Grapple anchor + projectile + rope ------------------------
+  const ga = mkGfx();
+  ga.fillStyle(0x60402a, 1); ga.fillCircle(16, 16, 12);
+  ga.fillStyle(0xffcc66, 1); ga.fillCircle(16, 16, 8);
+  ga.fillStyle(0x2a1810, 1); ga.fillCircle(16, 16, 4);
+  ga.generateTexture('grapple_anchor', 32, 32);
+  ga.destroy();
+
+  const gp = mkGfx();
+  gp.fillStyle(0xcc7a2a, 1); gp.fillRect(0, 4, 12, 4);
+  gp.fillStyle(0xffaa66, 1); gp.fillRect(8, 2, 6, 8);
+  gp.generateTexture('grapple_hook', 14, 12);
+  gp.destroy();
+
+  // ---------- Enemy sprites (compact, solid, readable) -------------------
+  const mkEnemy = (key, w, h, fn) => {
+    const g = mkGfx();
+    fn(g);
+    g.generateTexture(key, w, h);
+    g.destroy();
+  };
+  mkEnemy('ibex_ram', 48, 44, (g) => {
+    g.fillStyle(0x7a5438); g.fillRect(8, 14, 32, 18);
+    g.fillStyle(0x5a3828); g.fillRect(10, 30, 8, 10);
+    g.fillRect(30, 30, 8, 10);
+    g.fillStyle(0xa88858); g.fillRect(34, 10, 8, 8);
+    g.fillStyle(0xe8ccaa); g.fillTriangle(40, 14, 46, 4, 38, 8);
+    g.fillTriangle(42, 18, 46, 24, 38, 20);
+    g.fillStyle(0x000000); g.fillRect(38, 13, 2, 2);
+  });
+  mkEnemy('rock_hurler', 40, 56, (g) => {
+    g.fillStyle(0x706050); g.fillRect(6, 18, 28, 34);
+    g.fillStyle(0x8a7a68); g.fillRect(10, 8, 20, 14);
+    g.fillStyle(0x000000); g.fillRect(14, 12, 3, 3); g.fillRect(23, 12, 3, 3);
+    g.fillStyle(0x4a3828); g.fillCircle(30, 26, 6);
+  });
+  mkEnemy('thrown_rock', 18, 18, (g) => {
+    g.fillStyle(0x5a4838); g.fillCircle(9, 9, 8);
+    g.fillStyle(0x786654); g.fillCircle(6, 6, 3);
+  });
+  mkEnemy('falling_rock', 22, 22, (g) => {
+    g.fillStyle(0x604838); g.fillCircle(11, 11, 10);
+    g.fillStyle(0x483428); g.fillCircle(14, 12, 3);
+  });
+  mkEnemy('rock_warning', 28, 28, (g) => {
+    g.fillStyle(0xffaa44, 0.9);
+    g.fillTriangle(14, 2, 26, 26, 2, 26);
+    g.fillStyle(0x000000); g.fillRect(13, 10, 2, 8); g.fillRect(13, 20, 2, 2);
+  });
+
+  mkEnemy('thorn_spider', 36, 32, (g) => {
+    g.fillStyle(0x201020); g.fillCircle(18, 18, 10);
+    g.fillStyle(0x301830); g.fillCircle(18, 18, 6);
+    g.fillStyle(0xff4488); g.fillRect(14, 16, 2, 2); g.fillRect(20, 16, 2, 2);
+    g.lineStyle(1.2, 0x100810, 1);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI - Math.PI / 2;
+      g.lineBetween(18, 18, 18 + Math.cos(a) * 14, 18 + Math.sin(a) * 10);
+      g.lineBetween(18, 18, 18 - Math.cos(a) * 14, 18 + Math.sin(a) * 10);
+    }
+  });
+  mkEnemy('bark_archer', 40, 48, (g) => {
+    g.fillStyle(0x3a2a18); g.fillRect(12, 8, 16, 38);
+    g.fillStyle(0x5a3a20); g.fillRect(16, 4, 8, 8);
+    g.fillStyle(0x60a040); g.fillTriangle(6, 20, 12, 16, 12, 22);
+    g.fillTriangle(34, 20, 28, 16, 28, 22);
+    g.fillStyle(0xff6622); g.fillRect(17, 20, 2, 2); g.fillRect(21, 20, 2, 2);
+  });
+  mkEnemy('thorn_proj', 12, 12, (g) => {
+    g.fillStyle(0x406030); g.fillTriangle(6, 0, 12, 6, 6, 12);
+    g.fillTriangle(6, 0, 0, 6, 6, 12);
+  });
+  mkEnemy('arrow_proj', 20, 8, (g) => {
+    g.fillStyle(0xdcc48c); g.fillRect(0, 3, 14, 2);
+    g.fillStyle(0x8c7040); g.fillTriangle(14, 0, 20, 4, 14, 8);
+    g.fillStyle(0x60a040); g.fillTriangle(0, 2, 4, 4, 0, 6);
+  });
+  mkEnemy('thorn_snare', 40, 18, (g) => {
+    g.fillStyle(0x2a4030); g.fillRect(0, 10, 40, 4);
+    g.fillStyle(0x40603a); g.lineStyle(1.4, 0x40603a, 1);
+    for (let i = 0; i < 8; i++) {
+      const x = 4 + i * 4;
+      g.fillTriangle(x - 2, 14, x + 2, 14, x, 2);
+    }
+  });
+  mkEnemy('bee_swarm', 48, 36, (g) => {
+    g.fillStyle(0xffe066, 0.5); g.fillCircle(24, 18, 18);
+    g.fillStyle(0xffcc22, 0.7); g.fillCircle(24, 18, 10);
+    g.fillStyle(0x201000); for (let i = 0; i < 6; i++) g.fillCircle(10 + i * 6, 10 + (i % 2) * 12, 1.5);
+  });
+  mkEnemy('lightning_bolt', 16, 540, (g) => {
+    g.fillStyle(0xfff4a0, 1); g.fillRect(6, 0, 4, 540);
+    g.fillStyle(0xffffff, 0.8); g.fillRect(7, 0, 2, 540);
+  });
+  mkEnemy('wind_gust', 64, 24, (g) => {
+    g.fillStyle(0xa8c0e0, 0.6);
+    for (let i = 0; i < 4; i++) g.fillRect(i * 16, 4 + (i % 2) * 8, 12, 3);
+  });
+
+  mkEnemy('hawk_diver', 40, 32, (g) => {
+    g.fillStyle(0x60483a); g.fillTriangle(0, 16, 20, 6, 20, 18);
+    g.fillTriangle(40, 16, 20, 6, 20, 18);
+    g.fillStyle(0x8a6a50); g.fillRect(16, 10, 8, 14);
+    g.fillStyle(0xffc444); g.fillTriangle(22, 14, 28, 18, 22, 18);
+    g.fillStyle(0x000000); g.fillRect(18, 12, 2, 2);
+  });
+  mkEnemy('raider_horseman', 52, 44, (g) => {
+    g.fillStyle(0x4a2a18); g.fillRect(6, 20, 40, 16); // horse body
+    g.fillRect(8, 32, 6, 10); g.fillRect(38, 32, 6, 10); // legs
+    g.fillStyle(0x603828); g.fillRect(38, 14, 10, 10); // horse head
+    g.fillStyle(0x8a2a2a); g.fillRect(20, 8, 12, 16); // rider
+    g.fillStyle(0xccaa44); g.fillRect(24, 4, 4, 6); // helm
+    g.fillStyle(0xaaaaaa); g.fillRect(30, 6, 14, 2); // spear
+  });
+  mkEnemy('raider_spear', 22, 6, (g) => {
+    g.fillStyle(0x8a6a3a); g.fillRect(0, 2, 16, 2);
+    g.fillStyle(0xccaa44); g.fillTriangle(16, 0, 22, 3, 16, 6);
+  });
+
+  mkEnemy('banner_pikeman', 36, 48, (g) => {
+    g.fillStyle(0x444458); g.fillRect(10, 14, 16, 28);
+    g.fillStyle(0x88889c); g.fillRect(12, 10, 12, 8);
+    g.fillStyle(0x8a2a2a); g.fillRect(28, 4, 3, 30); // pike
+    g.fillStyle(0xccaa44); g.fillTriangle(28, 0, 34, 4, 28, 8);
+    g.fillStyle(0xff6622); g.fillRect(14, 14, 2, 2); g.fillRect(20, 14, 2, 2);
+  });
+  mkEnemy('crossbowman', 36, 44, (g) => {
+    g.fillStyle(0x2a2a38); g.fillRect(10, 12, 16, 28);
+    g.fillStyle(0x7a5838); g.fillRect(18, 18, 14, 4); // crossbow body
+    g.fillStyle(0xc0a070); g.fillRect(22, 20, 4, 2);
+    g.fillStyle(0xe0c078); g.fillRect(16, 8, 10, 6);
+  });
+  mkEnemy('crossbow_bolt', 18, 6, (g) => {
+    g.fillStyle(0x583820); g.fillRect(0, 2, 14, 2);
+    g.fillStyle(0xc0a070); g.fillTriangle(14, 0, 18, 3, 14, 6);
+  });
+  mkEnemy('arrow_slit', 32, 32, (g) => {
+    g.fillStyle(0x3a3048); g.fillRect(0, 0, 32, 32);
+    g.fillStyle(0x000000); g.fillRect(14, 6, 4, 20);
+    g.lineStyle(1, 0x605078, 1); g.strokeRect(0, 0, 32, 32);
+  });
+  mkEnemy('portcullis', 36, 108, (g) => {
+    g.fillStyle(0x2a2838); g.fillRect(0, 0, 36, 108);
+    g.lineStyle(1, 0x666484, 1);
+    for (let y = 0; y <= 108; y += 12) g.lineBetween(0, y, 36, y);
+    for (let x = 0; x <= 36; x += 12) g.lineBetween(x, 0, x, 108);
+  });
+
+  mkEnemy('chandelier', 56, 28, (g) => {
+    g.fillStyle(0x705030); g.fillRect(8, 10, 40, 4);
+    g.fillStyle(0xccaa44); g.fillRect(4, 8, 48, 4);
+    g.fillStyle(0xfff080); for (let i = 0; i < 5; i++) g.fillCircle(12 + i * 8, 20, 3);
+  });
+  mkEnemy('chandelier_anchor', 16, 16, (g) => {
+    g.fillStyle(0x302838); g.fillRect(0, 0, 16, 16);
+    g.fillStyle(0x605078); g.fillRect(2, 2, 12, 4);
+  });
+
+  mkEnemy('lightwraith', 40, 44, (g) => {
+    g.fillStyle(0xaacce0, 0.5); g.fillEllipse(20, 22, 36, 40);
+    g.fillStyle(0xe0f0ff, 0.8); g.fillEllipse(20, 18, 20, 22);
+    g.fillStyle(0xffffff); g.fillRect(14, 16, 3, 3); g.fillRect(23, 16, 3, 3);
+  });
+
+  // ---------- Bosses -----------------------------------------------------
+  mkEnemy('peak_warden', 80, 96, (g) => {
+    g.fillStyle(0x403848); g.fillRect(16, 30, 48, 56);
+    g.fillStyle(0x5a506a); g.fillRect(22, 10, 36, 30);
+    g.fillStyle(0xccd0e0); g.fillTriangle(22, 10, 32, 0, 42, 10);
+    g.fillTriangle(42, 10, 52, 0, 58, 10);
+    g.fillStyle(0xff6688); g.fillRect(30, 22, 4, 4); g.fillRect(46, 22, 4, 4);
+    g.fillStyle(0x705040); g.fillRect(60, 40, 16, 8); // rock club
+  });
+  mkEnemy('hydra_base', 120, 80, (g) => {
+    g.fillStyle(0x1a3020); g.fillEllipse(60, 50, 110, 50);
+    g.fillStyle(0x2a5030); g.fillRect(30, 40, 60, 24);
+    g.fillStyle(0x6a8040); for (let i = 0; i < 8; i++) g.fillTriangle(20 + i * 12, 40, 24 + i * 12, 32, 28 + i * 12, 40);
+  });
+  mkEnemy('hydra_head', 48, 48, (g) => {
+    g.fillStyle(0x2a5030); g.fillCircle(24, 24, 18);
+    g.fillStyle(0x1a3020); g.fillCircle(24, 24, 12);
+    g.fillStyle(0xff4466); g.fillRect(16, 20, 4, 4); g.fillRect(28, 20, 4, 4);
+    g.fillStyle(0xffffff); g.fillTriangle(20, 28, 22, 34, 24, 28);
+    g.fillTriangle(24, 28, 26, 34, 28, 28);
+  });
+  mkEnemy('windblade_marauder', 64, 64, (g) => {
+    g.fillStyle(0x3a281a); g.fillRect(4, 34, 56, 20);
+    g.fillRect(8, 50, 6, 14); g.fillRect(50, 50, 6, 14);
+    g.fillStyle(0x4a3020); g.fillRect(50, 22, 12, 14);
+    g.fillStyle(0xaa3030); g.fillRect(20, 12, 18, 26);
+    g.fillStyle(0xffcc44); g.fillRect(26, 4, 6, 12);
+    g.fillStyle(0xc0c0c0); g.fillRect(36, 8, 22, 4); // lance
+  });
+  mkEnemy('fallen_paladin_armored', 64, 80, (g) => {
+    g.fillStyle(0x28304a); g.fillRect(16, 24, 32, 48);
+    g.fillStyle(0x4a5878); g.fillRect(20, 10, 24, 22);
+    g.fillStyle(0xffe0a0); g.fillRect(28, 18, 4, 2); g.fillRect(36, 18, 4, 2);
+    g.fillStyle(0xccaa44); g.fillRect(12, 28, 8, 30); // shield edge
+    g.fillStyle(0xe0c078); g.fillRect(48, 22, 10, 42); // sword
+  });
+  mkEnemy('fallen_paladin_bare', 64, 80, (g) => {
+    g.fillStyle(0x6a3020); g.fillRect(20, 24, 24, 48);
+    g.fillStyle(0xffccaa); g.fillRect(22, 10, 20, 20);
+    g.fillStyle(0xffd888); g.fillRect(26, 16, 4, 3); g.fillRect(36, 16, 4, 3);
+    g.fillStyle(0xe0c078); g.fillRect(48, 18, 10, 46);
+  });
+  mkEnemy('scoured_sun', 80, 80, (g) => {
+    g.fillStyle(0xffcc44, 1); g.fillCircle(40, 40, 32);
+    g.fillStyle(0xffe888, 1); g.fillCircle(40, 40, 22);
+    g.fillStyle(0xffffe8, 1); g.fillCircle(40, 40, 10);
+    // corona spikes
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      g.fillTriangle(
+        40 + Math.cos(a) * 30, 40 + Math.sin(a) * 30,
+        40 + Math.cos(a + 0.15) * 40, 40 + Math.sin(a + 0.15) * 40,
+        40 + Math.cos(a - 0.15) * 40, 40 + Math.sin(a - 0.15) * 40,
+      );
+    }
+  });
+
+  // ---------- Decor ------------------------------------------------------
+  const mkDecor = (key, w, h, fn) => { const g = mkGfx(); fn(g); g.generateTexture(key, w, h); g.destroy(); };
+  mkDecor('oak_tree', 96, 128, (g) => {
+    g.fillStyle(0x4a2a18); g.fillRect(44, 70, 10, 58);
+    g.fillStyle(0x2a5030); g.fillCircle(48, 50, 38);
+    g.fillStyle(0x3a7040); g.fillCircle(38, 40, 18); g.fillCircle(60, 50, 22);
+  });
+  mkDecor('thorn_bush', 48, 32, (g) => {
+    g.fillStyle(0x2a3a20); g.fillEllipse(24, 20, 44, 22);
+    g.fillStyle(0x6a8040); for (let i = 0; i < 10; i++) g.fillTriangle(4 + i * 4, 20, 6 + i * 4, 10, 8 + i * 4, 20);
+  });
+  mkDecor('wild_flower', 20, 24, (g) => {
+    g.fillStyle(0x40803a); g.fillRect(9, 12, 2, 12);
+    g.fillStyle(0xff6688); g.fillCircle(10, 10, 4);
+    g.fillStyle(0xffcc44); g.fillCircle(10, 10, 2);
+  });
+  mkDecor('wheat_tuft', 24, 28, (g) => {
+    g.fillStyle(0xc8a858); for (let i = 0; i < 5; i++) g.fillRect(2 + i * 4, 4, 2, 24);
+    g.fillStyle(0x8a6838); for (let i = 0; i < 5; i++) g.fillTriangle(2 + i * 4, 4, 4 + i * 4, 0, 6 + i * 4, 4);
+  });
+  mkDecor('fence_post', 10, 40, (g) => {
+    g.fillStyle(0x6a4020); g.fillRect(3, 0, 4, 40);
+    g.fillStyle(0x4a2810); g.fillRect(3, 36, 4, 4);
+  });
+  mkDecor('banner_red', 24, 60, (g) => {
+    g.fillStyle(0x8a2020); g.fillRect(4, 0, 16, 48);
+    g.fillStyle(0xccaa44); g.fillRect(4, 0, 16, 4);
+    g.fillStyle(0x8a2020); g.fillTriangle(4, 48, 12, 60, 20, 48);
+  });
+  mkDecor('banner_gold', 24, 60, (g) => {
+    g.fillStyle(0xaa8a30); g.fillRect(4, 0, 16, 48);
+    g.fillStyle(0xffe088); g.fillRect(4, 0, 16, 4);
+    g.fillStyle(0xaa8a30); g.fillTriangle(4, 48, 12, 60, 20, 48);
+  });
+  mkDecor('castle_window', 28, 48, (g) => {
+    g.fillStyle(0x20182a); g.fillRect(0, 0, 28, 48);
+    g.fillStyle(0x8a88a0); g.fillRect(4, 4, 20, 30);
+    g.fillStyle(0x20182a); g.fillRect(13, 4, 2, 30); g.fillRect(4, 18, 20, 2);
+  });
+  mkDecor('ivy_drape', 48, 120, (g) => {
+    g.fillStyle(0x2a4028); g.fillRect(0, 0, 48, 10);
+    g.fillStyle(0x40603a); for (let i = 0; i < 6; i++) g.fillRect(4 + i * 7, 0, 3, 80 + (i % 3) * 20);
+  });
+  mkDecor('grass_blade', 16, 20, (g) => {
+    g.fillStyle(0x60a040); g.fillRect(7, 4, 2, 16);
+    g.fillTriangle(7, 4, 10, 0, 9, 10);
+  });
+  mkDecor('rain_streak', 4, 24, (g) => {
+    g.fillStyle(0xaaccee, 0.7); g.fillRect(1, 0, 2, 24);
+  });
+  mkDecor('storm_cloud', 160, 60, (g) => {
+    g.fillStyle(0x48506a, 0.85); g.fillEllipse(80, 30, 150, 50);
+    g.fillStyle(0x303648, 0.9); g.fillEllipse(50, 40, 80, 30);
+    g.fillEllipse(110, 40, 80, 30);
+  });
+  mkDecor('mountain_flag', 32, 64, (g) => {
+    g.fillStyle(0x2a1810); g.fillRect(14, 0, 4, 64);
+    g.fillStyle(0xaa4040); g.fillTriangle(18, 4, 30, 12, 18, 20);
+  });
+  mkDecor('fog_bank', 240, 48, (g) => {
+    g.fillStyle(0xe0e8f0, 0.45); g.fillEllipse(120, 24, 220, 40);
+  });
 }
 
 /** Royal greatsword + gold guard + pommel (hx,hy = hand / crossguard center) */

@@ -649,4 +649,126 @@ export class GameScene extends Phaser.Scene {
       targets: sub, alpha: 0.8, duration: 1000, delay: 1200,
     });
   }
+
+  /**
+   * Post-Void-King chapter bridge. Plays lore cards, then crumbles the east
+   * wall of the throne arena to reveal a new door leading to chapter 2.
+   * Sets the chapter2_unlocked flag so the door persists across reloads.
+   */
+  playChapterTransition() {
+    if (this._chapterTransitionPlayed) return;
+    this._chapterTransitionPlayed = true;
+    this.transitioning = true;
+    if (this.hud?.mapOverlay) this.hud.mapOverlay.hide();
+
+    const cam = this.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height / 2;
+
+    const scrim = this.add.rectangle(cx, cy, cam.width, cam.height, 0x000000, 0)
+      .setScrollFactor(0).setDepth(250);
+    this.tweens.add({ targets: scrim, fillAlpha: 0.78, duration: 1400 });
+
+    const cards = [
+      'The Void King lies still.',
+      'His crown cracks open, and a wind that has not stirred in ages\nrises from the stone — warm, tasting of rain.',
+      'Somewhere above, a wall that has stood for a thousand years begins to fall.',
+    ];
+
+    const showCard = (i, cb) => {
+      if (i >= cards.length) { cb(); return; }
+      const t = this.add.text(cx, cy - 20, cards[i], {
+        fontSize: '18px', fontFamily: 'monospace', color: '#e0d4b8',
+        stroke: '#000', strokeThickness: 4, align: 'center', lineSpacing: 6,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(251).setAlpha(0);
+      this.tweens.add({
+        targets: t, alpha: 1, duration: 700, yoyo: true, hold: 1700,
+        onComplete: () => { t.destroy(); showCard(i + 1, cb); },
+      });
+    };
+
+    showCard(0, () => {
+      this.triggerEastWallCrumble();
+      this.time.delayedCall(2600, () => {
+        this.tweens.add({
+          targets: scrim, fillAlpha: 0, duration: 900,
+          onComplete: () => scrim.destroy(),
+        });
+        this.transitioning = false;
+      });
+    });
+  }
+
+  /**
+   * Physical/visual: shatter the crumble wall sealing room 29's east side,
+   * set the chapter2_unlocked flag, and spawn the door into chapter 2.
+   */
+  triggerEastWallCrumble() {
+    const lm = this.levelManager;
+    if (!lm) return;
+    this.gameState?.setFlag('chapter2_unlocked', true);
+    this.cameras.main.shake(1600, 0.012);
+    if (lm.crumbleChapterWall) lm.crumbleChapterWall();
+    if (typeof this.saveGameIfEligible === 'function') {
+      this.time.delayedCall(2800, () => this.saveGameIfEligible(false));
+    }
+  }
+
+  /**
+   * Victory sequence after The Scoured Sun. Fades to gold, displays the
+   * epilogue cards, sets the game_complete flag, and leaves the scene in a
+   * settled "bow" state (input still works so the player can wander, save).
+   */
+  playGameCompleteSequence() {
+    if (this._gameCompletePlayed) return;
+    this._gameCompletePlayed = true;
+    this.gameState?.setFlag('game_complete', true);
+    this.transitioning = true;
+    if (this.hud?.mapOverlay) this.hud.mapOverlay.hide();
+    this.physics.pause();
+
+    const cam = this.cameras.main;
+    const cx = cam.width / 2;
+    const cy = cam.height / 2;
+
+    const wash = this.add.rectangle(cx, cy, cam.width, cam.height, 0xffd488, 0)
+      .setScrollFactor(0).setDepth(260).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: wash, fillAlpha: 0.85, duration: 1800 });
+
+    const scrim = this.add.rectangle(cx, cy, cam.width, cam.height, 0x000000, 0)
+      .setScrollFactor(0).setDepth(261);
+    this.tweens.add({ targets: scrim, fillAlpha: 0.78, duration: 2400, delay: 1400 });
+
+    const cards = [
+      'The Scoured Sun scatters.',
+      'Warmth returns to the stones of Ur-Karath.\nRain falls on fields that forgot the taste of it.',
+      'You walk on into the morning.',
+    ];
+
+    const showCard = (i, cb) => {
+      if (i >= cards.length) { cb(); return; }
+      const t = this.add.text(cx, cy - 10, cards[i], {
+        fontSize: '20px', fontFamily: 'monospace', color: '#fff0c8',
+        stroke: '#000', strokeThickness: 4, align: 'center', lineSpacing: 6,
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(262).setAlpha(0);
+      this.tweens.add({
+        targets: t, alpha: 1, duration: 900, yoyo: true, hold: 2200,
+        onComplete: () => { t.destroy(); showCard(i + 1, cb); },
+      });
+    };
+
+    this.time.delayedCall(1800, () => {
+      showCard(0, () => {
+        const title = this.add.text(cx, cy - 30, 'THE DEPTHS HAVE ENDED', {
+          fontSize: '32px', fontFamily: 'monospace', color: '#ffd880',
+          stroke: '#000', strokeThickness: 6,
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(263).setAlpha(0);
+        const sub = this.add.text(cx, cy + 20, 'a quiet morning beyond the ruin', {
+          fontSize: '16px', fontFamily: 'monospace', color: '#e0c898',
+          stroke: '#000', strokeThickness: 3,
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(263).setAlpha(0);
+        this.tweens.add({ targets: [title, sub], alpha: 1, duration: 1600 });
+      });
+    });
+  }
 }

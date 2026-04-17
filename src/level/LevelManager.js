@@ -12,6 +12,20 @@ import { ChargerBrute } from '../entities/ChargerBrute.js';
 import { Spitter } from '../entities/Spitter.js';
 import { FrostWarden } from '../entities/FrostWarden.js';
 import { VoidKing } from '../entities/VoidKing.js';
+import { IbexRam } from '../entities/IbexRam.js';
+import { RockHurler } from '../entities/RockHurler.js';
+import { ThornSpider } from '../entities/ThornSpider.js';
+import { BarkArcher } from '../entities/BarkArcher.js';
+import { HawkDiver } from '../entities/HawkDiver.js';
+import { RaiderHorseman } from '../entities/RaiderHorseman.js';
+import { BannerPikeman } from '../entities/BannerPikeman.js';
+import { Crossbowman } from '../entities/Crossbowman.js';
+import { Lightwraith } from '../entities/Lightwraith.js';
+import { PeakWarden } from '../entities/PeakWarden.js';
+import { ThornrootHydra } from '../entities/ThornrootHydra.js';
+import { WindbladeMarauder } from '../entities/WindbladeMarauder.js';
+import { FallenPaladin } from '../entities/FallenPaladin.js';
+import { ScouredSun } from '../entities/ScouredSun.js';
 
 /**
  * Center + size (px) of the contiguous air gap at a wall/floor so door portals match the opening.
@@ -203,7 +217,21 @@ export class LevelManager {
       tunnel_fungal: { far: 'bg_far_fungal', mid: 'bg_mid_fungal' },
       tunnel_crystal: { far: 'bg_far_crystal', mid: 'bg_mid_cavern' },
       tunnel_guardian: { far: 'bg_far_crystal', mid: 'bg_mid_cavern' },
+      // Chapter 2 outdoor biomes (use dedicated parallax if available, else fall back to cavern art).
+      mountain_peak: { far: 'bg_far_peaks', mid: 'bg_mid_peaks' },
+      mountain_pass: { far: 'bg_far_peaks', mid: 'bg_mid_peaks' },
+      forest: { far: 'bg_far_forest', mid: 'bg_mid_forest' },
+      forest_deep: { far: 'bg_far_forest', mid: 'bg_mid_forest' },
+      plains: { far: 'bg_far_plains', mid: 'bg_mid_plains' },
+      plains_storm: { far: 'bg_far_plains', mid: 'bg_mid_plains' },
+      castle_courtyard: { far: 'bg_far_castle', mid: 'bg_mid_castle' },
+      castle_interior: { far: 'bg_far_castle', mid: 'bg_mid_castle' },
+      cathedral: { far: 'bg_far_cathedral', mid: 'bg_mid_cathedral' },
     };
+    for (const k of Object.keys(bgKeys)) {
+      if (!this.scene.textures.exists(bgKeys[k].far)) bgKeys[k].far = 'bg_far_cavern';
+      if (!this.scene.textures.exists(bgKeys[k].mid)) bgKeys[k].mid = 'bg_mid_cavern';
+    }
 
     const keys = bgKeys[amb] || bgKeys.cavern;
 
@@ -212,6 +240,11 @@ export class LevelManager {
       cavern: 0x020108, fungal: 0x020a06, crystal: 0x06020e, guardian: 0x080210, shaft: 0x020108,
       mountain: 0x020108, mountain_shaft: 0x020108,
       tunnel: 0x010206, tunnel_fungal: 0x010504, tunnel_crystal: 0x03010a, tunnel_guardian: 0x040208,
+      mountain_peak: 0x1a2a4a, mountain_pass: 0x182038,
+      forest: 0x082012, forest_deep: 0x04140c,
+      plains: 0x284868, plains_storm: 0x182030,
+      castle_courtyard: 0x1a1828, castle_interior: 0x100810,
+      cathedral: 0x201020,
     };
     const sky = this.scene.add.rectangle(rpw / 2, rph / 2, rpw, rph, skyColor[amb] || 0x040210);
     sky.setScrollFactor(0.01, 0.01);
@@ -256,6 +289,15 @@ export class LevelManager {
       tunnel_fungal: 0x041810,
       tunnel_crystal: 0x100818,
       tunnel_guardian: 0x120818,
+      mountain_peak: 0x203858,
+      mountain_pass: 0x1a2850,
+      forest: 0x0c2018,
+      forest_deep: 0x061810,
+      plains: 0x2a4868,
+      plains_storm: 0x1a2030,
+      castle_courtyard: 0x201830,
+      castle_interior: 0x180820,
+      cathedral: 0x3a1840,
     };
     const tintAlpha = {
       cavern: 0.42,
@@ -269,6 +311,15 @@ export class LevelManager {
       tunnel_fungal: 0.52,
       tunnel_crystal: 0.5,
       tunnel_guardian: 0.54,
+      mountain_peak: 0.18,
+      mountain_pass: 0.22,
+      forest: 0.3,
+      forest_deep: 0.4,
+      plains: 0.15,
+      plains_storm: 0.35,
+      castle_courtyard: 0.32,
+      castle_interior: 0.44,
+      cathedral: 0.36,
     };
     const overlay = this.scene.add.rectangle(
       rpw / 2, rph / 2, rpw, rph,
@@ -291,6 +342,15 @@ export class LevelManager {
       tunnel_fungal: { color: 0x18aa66, alpha: 0.052 },
       tunnel_crystal: { color: 0x7744cc, alpha: 0.06 },
       tunnel_guardian: { color: 0xaa3366, alpha: 0.052 },
+      mountain_peak: { color: 0xbbcce0, alpha: 0.07 },
+      mountain_pass: { color: 0x8aa0c8, alpha: 0.06 },
+      forest: { color: 0x88cc88, alpha: 0.055 },
+      forest_deep: { color: 0x55aa66, alpha: 0.05 },
+      plains: { color: 0xffe0a0, alpha: 0.06 },
+      plains_storm: { color: 0x6688cc, alpha: 0.06 },
+      castle_courtyard: { color: 0xaa99cc, alpha: 0.05 },
+      castle_interior: { color: 0x8866aa, alpha: 0.055 },
+      cathedral: { color: 0xffcc66, alpha: 0.09 },
     };
     const cc = castCfg[amb];
     if (cc) {
@@ -391,7 +451,19 @@ export class LevelManager {
       tunnel_fungal: 'bg_close_fungal',
       tunnel_crystal: 'bg_close_crystal',
       tunnel_guardian: 'bg_close_crystal',
+      mountain_peak: 'bg_close_peaks',
+      mountain_pass: 'bg_close_peaks',
+      forest: 'bg_close_forest',
+      forest_deep: 'bg_close_forest',
+      plains: 'bg_close_plains',
+      plains_storm: 'bg_close_plains',
+      castle_courtyard: 'bg_close_castle',
+      castle_interior: 'bg_close_castle',
+      cathedral: 'bg_close_cathedral',
     };
+    for (const k of Object.keys(keyMap)) {
+      if (!this.scene.textures.exists(keyMap[k])) keyMap[k] = 'bg_close_cavern';
+    }
     const key = keyMap[amb] || 'bg_close_cavern';
 
     const close = this.scene.add.tileSprite(rpw / 2, rph / 2, rpw, rph, key);
@@ -703,12 +775,24 @@ export class LevelManager {
             if (leftP && !rightP) return `${prefix}_right`;
             return (row + col * 3) % 5 === 0 ? `${prefix}_mid2` : prefix;
           };
-          if (amb === 'mountain' || amb === 'mountain_shaft') {
+          if (amb === 'mountain' || amb === 'mountain_shaft' || amb === 'mountain_peak' || amb === 'mountain_pass') {
             platKey = pickTerrace('tile_platform_mountain');
           } else if (amb === 'fungal' || amb === 'tunnel_fungal') {
             platKey = pickTerrace('tile_platform_fungal');
           } else if (amb === 'crystal' || amb === 'guardian' || amb === 'tunnel_crystal' || amb === 'tunnel_guardian') {
             platKey = pickTerrace('tile_platform_crystal');
+          } else if (amb === 'forest' || amb === 'forest_deep') {
+            if (this.scene.textures.exists('tile_platform_forest')) {
+              platKey = pickTerrace('tile_platform_forest');
+            }
+          } else if (amb === 'plains' || amb === 'plains_storm') {
+            if (this.scene.textures.exists('tile_platform_plains')) {
+              platKey = pickTerrace('tile_platform_plains');
+            }
+          } else if (amb === 'castle_courtyard' || amb === 'castle_interior' || amb === 'cathedral') {
+            if (this.scene.textures.exists('tile_platform_castle')) {
+              platKey = pickTerrace('tile_platform_castle');
+            }
           }
 
           const plat = this.platformGroup.create(x, y, platKey);
@@ -770,7 +854,19 @@ export class LevelManager {
   spawnObjects(room) {
     this.scene.enemies = this.scene.physics.add.group();
 
+    const gs = this.scene.gameState;
+    const checkFlag = (k) => !!gs && gs.hasFlag(k);
+    const checkBoss = (k) => !!gs && gs.isBossDefeated(k);
+
     for (const obj of room.objects || []) {
+      // Gating: allow objects to be filtered by world flags / boss clears so
+      // persistent story beats (e.g. chapter2_unlocked) can reshape a room
+      // without duplicating layouts.
+      if (obj.requiresFlag && !checkFlag(obj.requiresFlag)) continue;
+      if (obj.hiddenIfFlag && checkFlag(obj.hiddenIfFlag)) continue;
+      if (obj.requiresBoss && !checkBoss(obj.requiresBoss)) continue;
+      if (obj.hiddenIfBoss && checkBoss(obj.hiddenIfBoss)) continue;
+
       const px = obj.x * TILE_SIZE + TILE_SIZE / 2;
       const py = obj.y * TILE_SIZE + TILE_SIZE / 2;
 
@@ -834,8 +930,46 @@ export class LevelManager {
         case 'mud_patch':
         case 'gravel_patch':
         case 'tomb_light_beam':
+        case 'oak_tree':
+        case 'thorn_bush':
+        case 'wild_flower':
+        case 'wheat_tuft':
+        case 'fence_post':
+        case 'banner_red':
+        case 'banner_gold':
+        case 'castle_window':
+        case 'ivy_drape':
+        case 'grass_blade':
+        case 'rain_streak':
+        case 'storm_cloud':
+        case 'mountain_flag':
+        case 'fog_bank':
           this.createDecoration(px, py, obj.type === 'fungus' ? 'fungus_glow' : obj.type);
           break;
+
+        // Chapter 2 additions
+        case 'crumble_wall': this.createCrumbleWall(px, py, obj); break;
+        case 'grapple_anchor': this.createGrappleAnchor(px, py, obj); break;
+        case 'checkpoint_totem': this.createCheckpointShrine(px, py, obj); break;
+        case 'falling_rocks': this.createFallingRocks(px, py, obj); break;
+        case 'snow_drift_slip': this.createIcePatch(px, py, { ...obj, _snow: true }); break;
+        case 'thorn_snare': this.createThornSnare(px, py, obj); break;
+        case 'bee_swarm_zone': this.createBeeSwarmZone(px, py, obj); break;
+        case 'lightning_strike': this.createLightningStrike(px, py, obj); break;
+        case 'wind_gust_zone': this.createWindGustZone(px, py, obj); break;
+        case 'swinging_chandelier': this.createSwingingChandelier(px, py, obj); break;
+        case 'arrow_slit_volley': this.createArrowSlitVolley(px, py, obj); break;
+        case 'portcullis_drop': this.createPortcullisDrop(px, py, obj); break;
+
+        case 'ibex_ram': this.createIbexRam(px, py); break;
+        case 'rock_hurler': this.createRockHurler(px, py); break;
+        case 'thorn_spider': this.createThornSpider(px, py); break;
+        case 'bark_archer': this.createBarkArcher(px, py); break;
+        case 'hawk_diver': this.createHawkDiver(px, py); break;
+        case 'raider_horseman': this.createRaiderHorseman(px, py); break;
+        case 'banner_pikeman': this.createBannerPikeman(px, py); break;
+        case 'crossbowman': this.createCrossbowman(px, py); break;
+        case 'lightwraith': this.createLightwraith(px, py); break;
       }
     }
   }
@@ -1263,6 +1397,11 @@ export class LevelManager {
     switch (bossType) {
       case 'void_king':    boss = new VoidKing(this.scene, x, y); break;
       case 'frost_warden': boss = new FrostWarden(this.scene, x, y); break;
+      case 'peak_warden':       boss = new PeakWarden(this.scene, x, y); break;
+      case 'thornroot_hydra':   boss = new ThornrootHydra(this.scene, x, y); break;
+      case 'windblade_marauder': boss = new WindbladeMarauder(this.scene, x, y); break;
+      case 'fallen_paladin':    boss = new FallenPaladin(this.scene, x, y); break;
+      case 'scoured_sun':       boss = new ScouredSun(this.scene, x, y); break;
       case 'bone_tyrant':
       default:             boss = new Boss(this.scene, x, y); break;
     }
@@ -1287,6 +1426,404 @@ export class LevelManager {
   createSpitter(x, y) {
     const sp = new Spitter(this.scene, x, y);
     this.scene.enemies.add(sp);
+  }
+
+  // ----- Chapter 2 enemies -------------------------------------------------
+
+  createIbexRam(x, y) { this.scene.enemies.add(new IbexRam(this.scene, x, y)); }
+  createRockHurler(x, y) { this.scene.enemies.add(new RockHurler(this.scene, x, y)); }
+  createThornSpider(x, y) { this.scene.enemies.add(new ThornSpider(this.scene, x, y)); }
+  createBarkArcher(x, y) { this.scene.enemies.add(new BarkArcher(this.scene, x, y)); }
+  createHawkDiver(x, y) { this.scene.enemies.add(new HawkDiver(this.scene, x, y)); }
+  createRaiderHorseman(x, y) { this.scene.enemies.add(new RaiderHorseman(this.scene, x, y)); }
+  createBannerPikeman(x, y) { this.scene.enemies.add(new BannerPikeman(this.scene, x, y)); }
+  createCrossbowman(x, y) { this.scene.enemies.add(new Crossbowman(this.scene, x, y)); }
+  createLightwraith(x, y) { this.scene.enemies.add(new Lightwraith(this.scene, x, y)); }
+
+  /**
+   * A solid physical wall tile, drawn with a weathered stone-slab texture,
+   * that can be shattered by `crumbleChapterWall()`. Used to seal the east
+   * exit of room29 until The Void King falls.
+   */
+  createCrumbleWall(x, y, obj) {
+    if (!this.wallLayer) return;
+    const w = obj.w || 2;
+    const h = obj.h || 4;
+    const tx = Math.floor(obj.x);
+    const ty = Math.floor(obj.y);
+    const group = { sprites: [], id: obj.id || 'default' };
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < w; c++) {
+        const sx = (tx + c) * TILE_SIZE + TILE_SIZE / 2;
+        const sy = (ty + r) * TILE_SIZE + TILE_SIZE / 2;
+        const key = this.scene.textures.exists('tile_crumble_seal')
+          ? 'tile_crumble_seal' : 'tile_wall';
+        const wall = this.wallLayer.create(sx, sy, key);
+        wall.setDisplaySize(TILE_SIZE, TILE_SIZE);
+        wall.setDepth(3);
+        wall.refreshBody();
+        group.sprites.push(wall);
+      }
+    }
+    if (!this.crumbleWalls) this.crumbleWalls = [];
+    this.crumbleWalls.push(group);
+  }
+
+  /**
+   * Physically dismantle every crumble_wall in the current room. Called from
+   * `GameScene.triggerEastWallCrumble()`. Pieces tween out with dust plumes
+   * and the sprites/colliders are removed so the player can walk through.
+   */
+  crumbleChapterWall() {
+    if (!this.crumbleWalls || !this.crumbleWalls.length) return;
+    for (const group of this.crumbleWalls) {
+      for (let i = 0; i < group.sprites.length; i++) {
+        const s = group.sprites[i];
+        if (!s || !s.active) continue;
+        const delay = 40 * i;
+        if (this.scene.dustEmitter) {
+          this.scene.time.delayedCall(delay, () => {
+            this.scene.dustEmitter.emitParticleAt(s.x, s.y, 6);
+          });
+        }
+        this.scene.tweens.add({
+          targets: s,
+          alpha: 0,
+          y: s.y + 24 + Math.random() * 32,
+          angle: (Math.random() - 0.5) * 40,
+          scaleX: 0.1, scaleY: 0.1,
+          duration: 900, delay,
+          ease: 'Cubic.easeIn',
+          onComplete: () => {
+            if (s.body) s.body.enable = false;
+            s.destroy();
+          },
+        });
+      }
+    }
+    this.crumbleWalls = [];
+  }
+
+  /**
+   * Static, gravity-less anchor point the player's grapple projectile can
+   * target. Stored in `this.grappleAnchors` for Combat system lookup.
+   */
+  createGrappleAnchor(x, y, obj) {
+    const key = this.scene.textures.exists('grapple_anchor') ? 'grapple_anchor' : 'door';
+    const anchor = this.scene.add.image(x, y, key);
+    anchor.setDepth(3);
+    const pulse = this.scene.tweens.add({
+      targets: anchor,
+      scale: { from: 0.9, to: 1.1 },
+      alpha: { from: 0.85, to: 1 },
+      duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    if (!this.grappleAnchors) this.grappleAnchors = [];
+    this.grappleAnchors.push({ sprite: anchor, pulse, x, y });
+  }
+
+  // ----- Chapter 2 trap handlers ------------------------------------------
+
+  /**
+   * Periodic falling rocks trap: every N ms, drop a rock from (x, top) down
+   * to the floor. Rocks deal damage on player overlap.
+   */
+  createFallingRocks(x, y, obj) {
+    const interval = obj.interval || 2600;
+    const dropHeight = (obj.dropHeight || 6) * TILE_SIZE;
+    const warningKey = this.scene.textures.exists('rock_warning') ? 'rock_warning' : 'particle_dust';
+    const rockKey = this.scene.textures.exists('falling_rock') ? 'falling_rock' : 'particle_dust';
+
+    const timer = this.scene.time.addEvent({
+      delay: interval,
+      loop: true,
+      callback: () => {
+        if (!this.scene.player || this.scene.transitioning) return;
+        const startY = y - dropHeight;
+        const warn = this.scene.add.image(x, y, warningKey)
+          .setDepth(4).setAlpha(0.7).setTint(0xff6644);
+        this.scene.tweens.add({
+          targets: warn, alpha: { from: 0.3, to: 0.9 },
+          duration: 180, yoyo: true, repeat: 2,
+          onComplete: () => warn.destroy(),
+        });
+        this.scene.time.delayedCall(900, () => {
+          const rock = this.scene.physics.add.image(x, startY, rockKey).setDepth(5);
+          rock.body.allowGravity = true;
+          rock.setScale(1.4);
+          rock.damage = 1;
+          for (const player of this.allPlayers) {
+            const ov = this.scene.physics.add.overlap(player, rock, () => {
+              if (rock._spent) return;
+              rock._spent = true;
+              if (player.takeDamage && rock.damage) player.takeDamage(rock.damage, rock.x);
+              rock.destroy();
+            });
+            rock._ov = rock._ov || [];
+            rock._ov.push(ov);
+          }
+          this.scene.physics.add.collider(rock, this.wallLayer, () => {
+            if (this.scene.dustEmitter) this.scene.dustEmitter.emitParticleAt(rock.x, rock.y, 6);
+            this.scene.time.delayedCall(260, () => { if (rock.active) rock.destroy(); });
+          });
+          this.hazardZones.push({ sprite: rock });
+        });
+      },
+    });
+    this.hazardZones.push({ zone: { destroy: () => timer.remove(false) } });
+  }
+
+  /**
+   * Thorn snare: a patch on the floor. Slows the player and ticks damage
+   * every 400ms while standing in it.
+   */
+  createThornSnare(x, y, obj) {
+    const key = this.scene.textures.exists('thorn_snare') ? 'thorn_snare' : 'particle_dust';
+    const sprite = this.scene.add.image(x, y, key).setDepth(3);
+    const zone = this.scene.physics.add.image(x, y, key).setAlpha(0);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(TILE_SIZE * 2, TILE_SIZE);
+    let lastDmg = 0;
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        const now = this.scene.time.now;
+        if (now - lastDmg < 400) return;
+        lastDmg = now;
+        if (player.takeDamage) player.takeDamage(1, x);
+      });
+    }
+    this.hazardZones.push({ sprite, zone });
+  }
+
+  /**
+   * Bee swarm: a hovering cloud that pursues a short distance when the
+   * player enters it, then returns. Deals contact damage.
+   */
+  createBeeSwarmZone(x, y, obj) {
+    const key = this.scene.textures.exists('bee_swarm') ? 'bee_swarm' : 'particle_dust';
+    const sprite = this.scene.add.image(x, y, key).setDepth(4).setAlpha(0.9);
+    this.scene.tweens.add({
+      targets: sprite,
+      x: { from: x - 16, to: x + 16 },
+      y: { from: y - 8, to: y + 8 },
+      duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    const zone = this.scene.physics.add.image(x, y, key).setAlpha(0);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(TILE_SIZE * 3, TILE_SIZE * 2);
+    let lastDmg = 0;
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        const now = this.scene.time.now;
+        if (now - lastDmg < 500) return;
+        lastDmg = now;
+        if (player.takeDamage) player.takeDamage(1, x);
+      });
+    }
+    this.hazardZones.push({ sprite, zone });
+  }
+
+  /**
+   * Lightning strike trap: periodic bolt falls in a fixed x column. Brief
+   * warning flash, then a vertical damaging beam.
+   */
+  createLightningStrike(x, y, obj) {
+    const interval = obj.interval || 3200;
+    const phase = obj.phase || 0;
+    const boltKey = this.scene.textures.exists('lightning_bolt') ? 'lightning_bolt' : 'particle_teal';
+
+    let t = 0;
+    const timer = this.scene.time.addEvent({
+      delay: 100, loop: true,
+      callback: () => {
+        t += 100;
+        if ((t + phase) % interval < 100) this.triggerLightning(x, boltKey);
+      },
+    });
+    this.hazardZones.push({ zone: { destroy: () => timer.remove(false) } });
+  }
+
+  triggerLightning(x, boltKey) {
+    const rph = this.roomPixelH;
+    const warn = this.scene.add.rectangle(x, rph / 2, 8, rph, 0xffff88, 0.4)
+      .setDepth(4).setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({ targets: warn, alpha: 0.9, duration: 240, yoyo: true });
+    this.scene.time.delayedCall(520, () => {
+      warn.destroy();
+      const bolt = this.scene.add.image(x, rph / 2, boltKey).setDisplaySize(16, rph).setDepth(6)
+        .setBlendMode(Phaser.BlendModes.ADD);
+      this.scene.cameras.main.flash(180, 240, 240, 180);
+      this.scene.cameras.main.shake(180, 0.006);
+      const zone = this.scene.physics.add.image(x, rph / 2, 'particle_teal').setAlpha(0);
+      zone.body.allowGravity = false;
+      zone.body.setImmovable(true);
+      zone.body.setSize(16, rph);
+      for (const player of this.allPlayers) {
+        this.scene.physics.add.overlap(player, zone, () => {
+          if (zone._spent) return; zone._spent = true;
+          if (player.takeDamage) player.takeDamage(2, x);
+        });
+      }
+      this.scene.time.delayedCall(220, () => { bolt.destroy(); zone.destroy(); });
+    });
+  }
+
+  /**
+   * Wind gust zone: horizontal push on the player while overlapping. Used
+   * for gliding puzzles — push direction is obj.dir ('left'|'right'|'up').
+   */
+  createWindGustZone(x, y, obj) {
+    const key = this.scene.textures.exists('wind_gust') ? 'wind_gust' : 'particle_dust';
+    const w = (obj.w || 3) * TILE_SIZE;
+    const h = (obj.h || 4) * TILE_SIZE;
+    const dir = obj.dir || 'up';
+    const strength = obj.strength || 260;
+
+    const sprite = this.scene.add.tileSprite(x, y, w, h, key).setDepth(3).setAlpha(0.55)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    this.scene.tweens.add({
+      targets: sprite, alpha: { from: 0.35, to: 0.7 }, duration: 800, yoyo: true, repeat: -1,
+    });
+    if (dir === 'up' || dir === 'down') {
+      this._windGustScrollY = (this._windGustScrollY || 0);
+    }
+    const zone = this.scene.physics.add.image(x, y, key).setAlpha(0);
+    zone.body.allowGravity = false;
+    zone.body.setImmovable(true);
+    zone.body.setSize(w, h);
+    zone.body.checkCollision.none = true;
+
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, zone, () => {
+        if (!player.body) return;
+        if (dir === 'up') player.body.velocity.y = Math.min(player.body.velocity.y, -strength);
+        else if (dir === 'down') player.body.velocity.y = Math.max(player.body.velocity.y, strength * 0.6);
+        else if (dir === 'left') player.body.velocity.x = Math.min(player.body.velocity.x, -strength);
+        else if (dir === 'right') player.body.velocity.x = Math.max(player.body.velocity.x, strength);
+      });
+    }
+    this.hazardZones.push({ sprite, zone });
+  }
+
+  /**
+   * Swinging chandelier: visual + lethal swinging brass arc across the
+   * ceiling. Pendulum motion similar to pendulum_trap but with damage tick.
+   */
+  createSwingingChandelier(x, y, obj) {
+    const length = obj.length || 96;
+    const swing = obj.swing || 60;
+    const speed = obj.speed || 1.2;
+    const phase = obj.phase || 0;
+    const anchorKey = this.scene.textures.exists('chandelier_anchor') ? 'chandelier_anchor' : 'chain';
+    const bobKey = this.scene.textures.exists('chandelier') ? 'chandelier' : 'saw_blade';
+
+    const anchor = this.scene.add.image(x, y, anchorKey).setDepth(3);
+    const bob = this.scene.physics.add.image(x, y + length, bobKey).setDepth(4);
+    bob.body.allowGravity = false;
+    bob.body.setImmovable(true);
+    bob.body.setSize(48, 24);
+    bob.damage = 1;
+
+    const start = this.scene.time.now;
+    const timer = this.scene.time.addEvent({
+      delay: 16, loop: true,
+      callback: () => {
+        if (!bob.active) return;
+        const t = (this.scene.time.now - start) / 1000;
+        const ang = Math.sin(t * speed + phase) * (swing * Math.PI / 180);
+        bob.x = x + Math.sin(ang) * length;
+        bob.y = y + Math.cos(ang) * length;
+      },
+    });
+    let lastDmg = 0;
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, bob, () => {
+        const now = this.scene.time.now;
+        if (now - lastDmg < 500) return;
+        lastDmg = now;
+        if (player.takeDamage) player.takeDamage(1, bob.x);
+      });
+    }
+    this.hazardZones.push({ sprite: anchor, blade: bob, zone: { destroy: () => timer.remove(false) } });
+  }
+
+  /**
+   * Arrow slit volley: a wall slit that fires horizontal arrows on interval.
+   */
+  createArrowSlitVolley(x, y, obj) {
+    const interval = obj.interval || 2400;
+    const dir = obj.dir === 'left' ? -1 : 1;
+    const speed = obj.speed || 280;
+    const slitKey = this.scene.textures.exists('arrow_slit') ? 'arrow_slit' : 'tile_wall_2';
+    const arrowKey = this.scene.textures.exists('arrow_proj') ? 'arrow_proj' : 'particle_teal';
+
+    const slit = this.scene.add.image(x, y, slitKey).setDepth(3);
+    const timer = this.scene.time.addEvent({
+      delay: interval, loop: true,
+      callback: () => {
+        if (!this.scene.player) return;
+        const arr = this.scene.physics.add.image(x + dir * 12, y, arrowKey).setDepth(4).setFlipX(dir < 0);
+        arr.body.allowGravity = false;
+        arr.setVelocityX(dir * speed);
+        arr.damage = 1;
+        for (const player of this.allPlayers) {
+          this.scene.physics.add.overlap(player, arr, () => {
+            if (arr._spent) return; arr._spent = true;
+            if (player.takeDamage) player.takeDamage(1, arr.x);
+            arr.destroy();
+          });
+        }
+        this.scene.physics.add.collider(arr, this.wallLayer, () => arr.destroy());
+        this.scene.time.delayedCall(2200, () => { if (arr.active) arr.destroy(); });
+      },
+    });
+    this.hazardZones.push({ sprite: slit, zone: { destroy: () => timer.remove(false) } });
+  }
+
+  /**
+   * Portcullis: a heavy iron gate that drops when the player steps into its
+   * tile column, then slowly retracts. Deals damage if the player is under.
+   */
+  createPortcullisDrop(x, y, obj) {
+    const dropDist = (obj.dropDist || 4) * TILE_SIZE;
+    const key = this.scene.textures.exists('portcullis') ? 'portcullis' : 'tile_wall';
+    const gate = this.scene.physics.add.image(x, y - dropDist, key).setDepth(3);
+    gate.body.allowGravity = false;
+    gate.body.setImmovable(true);
+    gate.body.setSize(TILE_SIZE, TILE_SIZE * 3);
+    gate.damage = 2;
+
+    const trigger = this.scene.physics.add.image(x, y + TILE_SIZE * 2, 'particle_dust').setAlpha(0);
+    trigger.body.allowGravity = false;
+    trigger.body.setImmovable(true);
+    trigger.body.setSize(TILE_SIZE, TILE_SIZE * 4);
+
+    let dropping = false;
+    const dropIt = () => {
+      if (dropping) return; dropping = true;
+      this.scene.tweens.add({
+        targets: gate, y: y, duration: 180, ease: 'Cubic.easeIn',
+        onComplete: () => {
+          this.scene.cameras.main.shake(120, 0.006);
+          this.scene.time.delayedCall(1600, () => {
+            this.scene.tweens.add({
+              targets: gate, y: y - dropDist, duration: 1400, ease: 'Sine.easeInOut',
+              onComplete: () => { dropping = false; },
+            });
+          });
+        },
+      });
+    };
+    for (const player of this.allPlayers) {
+      this.scene.physics.add.overlap(player, trigger, dropIt);
+      this.scene.physics.add.overlap(player, gate, () => {
+        if (!dropping) return;
+        if (player.takeDamage) player.takeDamage(1, gate.x);
+      });
+    }
+    this.hazardZones.push({ sprite: gate, zone: trigger });
   }
 
   createNPC(x, y, obj) {
@@ -2860,16 +3397,30 @@ export class LevelManager {
    *  Rooms are no longer sealed on entry; this simply watches for room29
    *  to be empty of enemies after the boss is defeated. */
   checkRoomCleared() {
-    if (this.currentRoomId !== 'room29') return;
     if (this._levelCompleteTriggered) return;
     if (!this.scene.enemies) return;
     const children = this.scene.enemies.getChildren();
     if (children.length === 0) return;
     const alive = children.filter(e => !e.isDead);
-    if (alive.length === 0) {
+    if (alive.length > 0) return;
+
+    // Void King arena — trigger chapter 2 unlock sequence.
+    if (this.currentRoomId === 'room29'
+        && !this.scene.gameState?.hasFlag('chapter2_unlocked')) {
       this._levelCompleteTriggered = true;
       this.scene.time.delayedCall(2500, () => {
-        this.scene.showLevelComplete();
+        if (this.scene.playChapterTransition) this.scene.playChapterTransition();
+        else this.scene.showLevelComplete();
+      });
+      return;
+    }
+
+    // Final boss arena — game complete.
+    if (this.currentRoomId === 'room58'
+        && !this.scene.gameState?.hasFlag('game_complete')) {
+      this._levelCompleteTriggered = true;
+      this.scene.time.delayedCall(2500, () => {
+        if (this.scene.playGameCompleteSequence) this.scene.playGameCompleteSequence();
       });
     }
   }
@@ -3022,6 +3573,15 @@ export class LevelManager {
     }
     this.secretWalls = [];
     if (this.secretWallGroup) { this.secretWallGroup.clear(true, true); this.secretWallGroup = null; }
+
+    if (this.grappleAnchors) {
+      for (const g of this.grappleAnchors) {
+        if (g.pulse) g.pulse.stop();
+        if (g.sprite && g.sprite.active) g.sprite.destroy();
+      }
+      this.grappleAnchors = [];
+    }
+    if (this.crumbleWalls) this.crumbleWalls = [];
 
     for (const n of this.npcs) {
       if (n.npc && n.npc.active) n.npc.destroy();

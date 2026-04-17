@@ -15,6 +15,12 @@ const DASH_SPEED = 520;
 const DASH_DURATION = 440;
 const DASH_COOLDOWN = 1000;
 
+// Glide: when airborne + jump held, fall speed is capped and horizontal
+// acceleration is boosted. Reads as "carry the wind" rather than flight.
+const GLIDE_FALL_SPEED = 80;
+const GLIDE_ACCEL_MULT = 1.7;
+const GLIDE_MAX_H_SPEED_MULT = 1.2;
+
 export class MovementSystem {
   constructor(player) {
     this.player = player;
@@ -39,7 +45,12 @@ export class MovementSystem {
       wallJump: false,
       dash: false,
       doubleJump: false,
+      glide: false,
+      grapple: false,
     };
+    this.isGliding = false;
+    this.isGrappling = false;
+    this._grapple = null;
   }
 
   update(dt, input) {
@@ -58,6 +69,11 @@ export class MovementSystem {
       return;
     }
 
+    if (this.isGrappling) {
+      this.updateGrapple(dt);
+      return;
+    }
+
     if (onGround) {
       this.coyoteTimer = COYOTE_TIME;
       this.wasOnGround = true;
@@ -72,13 +88,25 @@ export class MovementSystem {
       this.jumpBufferTimer = Math.max(0, this.jumpBufferTimer - dt);
     }
 
+    // Glide: active while airborne + jump held + descending. Caps fall and
+    // boosts horizontal accel / cap so the player can sail across chasms.
+    this.isGliding = !!(
+      this.abilities.glide && !onGround && input.jumpHeld && body.velocity.y > 10 && !this.isWallSliding
+    );
+    if (this.isGliding) {
+      body.velocity.y = Math.min(body.velocity.y, GLIDE_FALL_SPEED);
+    }
+
+    const accel = ACCELERATION * (this.isGliding ? GLIDE_ACCEL_MULT : 1);
+    const maxH = MOVE_SPEED * (this.isGliding ? GLIDE_MAX_H_SPEED_MULT : 1);
+
     if (this.wallJumpLockoutTimer <= 0) {
       if (input.left) {
-        body.velocity.x = Math.max(body.velocity.x - ACCELERATION * (dt / 1000), -MOVE_SPEED);
+        body.velocity.x = Math.max(body.velocity.x - accel * (dt / 1000), -maxH);
         p.setFlipX(true);
         p.facing = -1;
       } else if (input.right) {
-        body.velocity.x = Math.min(body.velocity.x + ACCELERATION * (dt / 1000), MOVE_SPEED);
+        body.velocity.x = Math.min(body.velocity.x + accel * (dt / 1000), maxH);
         p.setFlipX(false);
         p.facing = 1;
       } else {
@@ -137,6 +165,55 @@ export class MovementSystem {
     if (this.abilities.dash && this.dashCooldownTimer <= 0 && input.dashPressed) {
       this.startDash();
     }
+
+    // Grapple: input.throwPressed doubles as grapple trigger if no daggers
+    // are armed; we route the fire through Player.tryGrapple to decide.
+    if (this.abilities.grapple && input.throwPressed && !this.isGrappling) {
+      if (typeof p.tryGrapple === 'function') p.tryGrapple();
+    }
+  }
+
+  startGrappleTo(anchorX, anchorY) {
+    const p = this.player;
+    if (!p.body) return;
+    this.isGrappling = true;
+    this._grapple = { x: anchorX, y: anchorY, t: 0 };
+    p.body.allowGravity = false;
+    p.body.velocity.set(0, 0);
+    p.setInvulnerable?.(true);
+    // Visual: rope drawn from player to anchor during tween.
+    if (p.scene.textures.exists('particle_teal')) {
+      this._ropeLine = p.scene.add.line(0, 0, p.x, p.y, anchorX, anchorY, 0xffddaa, 0.9)
+        .setOrigin(0, 0).setDepth(6).setLineWidth(2);
+    }
+  }
+
+  updateGrapple(dt) {
+    const p = this.player;
+    const g = this._grapple;
+    if (!g) { this.endGrapple(); return; }
+    g.t += dt;
+    const dx = g.x - p.x;
+    const dy = g.y - p.y;
+    const dist = Math.hypot(dx, dy);
+    const speed = 540;
+    if (dist < 12 || g.t > 900) { this.endGrapple(); return; }
+    p.body.velocity.set((dx / dist) * speed, (dy / dist) * speed);
+    if (this._ropeLine) {
+      this._ropeLine.setTo(p.x, p.y, g.x, g.y);
+    }
+  }
+
+  endGrapple() {
+    const p = this.player;
+    this.isGrappling = false;
+    this._grapple = null;
+    if (p.body) {
+      p.body.allowGravity = true;
+      p.body.velocity.y = Math.min(p.body.velocity.y, -160);
+    }
+    p.setInvulnerable?.(false);
+    if (this._ropeLine) { this._ropeLine.destroy(); this._ropeLine = null; }
   }
 
   startDash() {
