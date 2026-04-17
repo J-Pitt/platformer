@@ -1119,13 +1119,20 @@ export class LevelManager {
     door.requiresAbilities = Array.isArray(obj.requiresAbilities) ? obj.requiresAbilities : [];
     door.setAlpha(0.96);
 
-    // Trigger body: cover the full opening AND reach one tile into the
-    // room so the player triggers while still standing on the approach
-    // surface (no "walk off the ledge then fall past the portal" gap).
+    // Trigger body sizing:
+    //   - Vertical door (wall opening): body matches opening width so the
+    //     player has to walk right up to it. No horizontal "pull-in" from
+    //     several tiles away.
+    //   - Horizontal door (floor/ceiling): keep a small vertical buffer
+    //     so a player running off an approach ledge still triggers the
+    //     portal instead of falling past it.
+    //
+    // Post-load re-entry is handled by the player's _doorCooldownUntil
+    // timer below, so we don't need an oversized trigger body for that.
     if (oh >= ow) {
-      door.body.setSize(ow + TILE_SIZE * 2, oh, true);
+      door.body.setSize(ow, oh, true);
     } else {
-      door.body.setSize(ow, oh + TILE_SIZE * 2, true);
+      door.body.setSize(ow, oh + TILE_SIZE, true);
     }
 
     const pulseTween = this.scene.tweens.add({
