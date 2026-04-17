@@ -1,4 +1,5 @@
 import { rooms, TILE_SIZE } from '../level/rooms.js';
+import { isJpProfileName } from '../entities/Player.js';
 
 export const ROOM_META = {
   room1:  { label: 'Broken Threshold',  col: 0,  row: 1 },
@@ -153,6 +154,13 @@ export class MapOverlay {
     this._containerStartY = 0;
     this._panKeys = { up: false, down: false, left: false, right: false };
     this._updateEvent = null;
+
+    // JP fast-travel: solo-dev profile gets an extra affordance — arrow
+    // keys move a gold "pin" between visited rooms, Enter/Space warps
+    // straight there. Non-JP players keep pan-on-arrow behavior.
+    this._fastTravelEnabled = isJpProfileName(scene.savedPlayerName);
+    this._selectedRoomId = null;
+    this._selectionRect = null;
   }
 
   toggle() {
@@ -164,7 +172,29 @@ export class MapOverlay {
     if (this.visible) return;
     this.visible = true;
     this.zoomIdx = this.bestFitZoom();
+    if (this._fastTravelEnabled) {
+      const cur = this.scene.levelManager?.currentRoomId;
+      if (cur && ROOM_META[cur]) this._selectedRoomId = cur;
+      else this._selectedRoomId = this._firstVisitedRoom();
+    }
     this.build();
+  }
+
+  _firstVisitedRoom() {
+    for (const id of Object.keys(ROOM_META)) {
+      if (this._isVisited(id)) return id;
+    }
+    return null;
+  }
+
+  /**
+   * JP god-mode: every room with metadata counts as "visited" so the
+   * whole dungeon shows up fully drawn (tiles, doors, orbs, bosses,
+   * coins…). Normal players still see only what they've explored.
+   */
+  _isVisited(roomId) {
+    if (this._fastTravelEnabled) return !!ROOM_META[roomId];
+    return !!this.scene.player?.visitedRooms?.has(roomId);
   }
 
   hide() {
@@ -239,14 +269,19 @@ export class MapOverlay {
     const totalH = allBounds.h;
 
     let offX, offY;
+    // Priority: caller-provided restore > JP selection re-center > current-room center.
+    const focusRoomId = this._centerOnSelection
+      ? this._selectedRoomId
+      : currentRoom;
+    this._centerOnSelection = false;
     if (restoreX != null && restoreY != null) {
       offX = restoreX;
       offY = restoreY;
     } else {
-      const currentRP = roomPositions[currentRoom];
-      if (currentRP) {
-        offX = cx - (currentRP.x + currentRP.w / 2 - allBounds.minX);
-        offY = cy - (currentRP.y + currentRP.h / 2 - allBounds.minY);
+      const focusRP = roomPositions[focusRoomId];
+      if (focusRP) {
+        offX = cx - (focusRP.x + focusRP.w / 2 - allBounds.minX);
+        offY = cy - (focusRP.y + focusRP.h / 2 - allBounds.minY);
       } else {
         offX = cx - totalW / 2;
         offY = cy - totalH / 2;
@@ -258,8 +293,8 @@ export class MapOverlay {
     this._mapTotalH = totalH;
 
     for (const [a, b] of CONNECTIONS) {
-      const aVis = player.visitedRooms.has(a);
-      const bVis = player.visitedRooms.has(b);
+      const aVis = this._isVisited(a);
+      const bVis = this._isVisited(b);
       const rpA = roomPositions[a];
       const rpB = roomPositions[b];
       if (!rpA || !rpB) continue;
@@ -277,7 +312,7 @@ export class MapOverlay {
     }
 
     for (const [roomId, rp] of Object.entries(roomPositions)) {
-      const visited = player.visitedRooms.has(roomId);
+      const visited = this._isVisited(roomId);
       const isCurrent = roomId === currentRoom;
       const room = rooms[roomId];
       const rx = rp.x - allBounds.minX;
@@ -313,7 +348,7 @@ export class MapOverlay {
       this.container.add(label);
     }
 
-    if (currentRoom && rooms[currentRoom] && player.visitedRooms.has(currentRoom)) {
+    if (currentRoom && rooms[currentRoom] && this._isVisited(currentRoom)) {
       const rp = roomPositions[currentRoom];
       const rx = rp.x - allBounds.minX;
       const ry = rp.y - allBounds.minY;
@@ -347,12 +382,31 @@ export class MapOverlay {
     this.elements.push(title);
 
     const isMobile = 'ontouchstart' in window && navigator.maxTouchPoints > 1;
-    const hintStr = isMobile ? '[ DRAG TO PAN  ·  TAP TO CLOSE ]' : '[ DRAG / ARROWS TO PAN  ·  M TO CLOSE ]';
+    let hintStr;
+    if (this._fastTravelEnabled) {
+      hintStr = isMobile
+        ? '[ TAP ROOM TO TRAVEL  ·  TAP AWAY TO CLOSE ]'
+        : '[ ARROWS: PICK ROOM  ·  ENTER: TRAVEL  ·  WASD/DRAG: PAN  ·  M: CLOSE ]';
+    } else {
+      hintStr = isMobile ? '[ DRAG TO PAN  ·  TAP TO CLOSE ]' : '[ DRAG / ARROWS TO PAN  ·  M TO CLOSE ]';
+    }
     const hint = this.scene.add.text(cx, cam.height - 16, hintStr, {
-      fontSize: '11px', fontFamily: 'monospace', color: '#6a5838',
+      fontSize: '11px', fontFamily: 'monospace', color: this._fastTravelEnabled ? '#ffcc44' : '#6a5838',
       stroke: '#000', strokeThickness: 2,
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(302);
     this.elements.push(hint);
+
+    if (this._fastTravelEnabled) {
+      this._renderSelectionHighlight(roomPositions, allBounds);
+      this._setupTapToTravel(roomPositions, allBounds);
+
+      const badge = this.scene.add.text(20, 20, 'JP GOD MODE · FULL MAP', {
+        fontSize: '10px', fontFamily: 'monospace', color: '#ffcc44',
+        stroke: '#000', strokeThickness: 3,
+        backgroundColor: '#1a1008', padding: { x: 6, y: 3 },
+      }).setOrigin(0, 0).setScrollFactor(0).setDepth(303);
+      this.elements.push(badge);
+    }
 
     this.createZoomButtons(cam);
     this.setupDrag(overlay);
@@ -395,13 +449,28 @@ export class MapOverlay {
 
   setupPanKeys() {
     const keys = this._panKeys;
+    const jp = this._fastTravelEnabled;
 
     const onDown = (e) => {
       if (!this.visible) return;
-      if (e.key === 'ArrowUp' || e.key === 'w') keys.up = true;
-      if (e.key === 'ArrowDown' || e.key === 's') keys.down = true;
-      if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-      if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+      // In JP mode the arrow keys drive the fast-travel cursor; pan still
+      // works on WASD. In default mode both sets pan.
+      if (jp) {
+        if (e.key === 'ArrowUp')    { this._moveSelection(0, -1); return; }
+        if (e.key === 'ArrowDown')  { this._moveSelection(0,  1); return; }
+        if (e.key === 'ArrowLeft')  { this._moveSelection(-1, 0); return; }
+        if (e.key === 'ArrowRight') { this._moveSelection( 1, 0); return; }
+        if (e.key === 'Enter' || e.key === ' ') { this._travelToSelection(); return; }
+      } else {
+        if (e.key === 'ArrowUp')    keys.up = true;
+        if (e.key === 'ArrowDown')  keys.down = true;
+        if (e.key === 'ArrowLeft')  keys.left = true;
+        if (e.key === 'ArrowRight') keys.right = true;
+      }
+      if (e.key === 'w') keys.up = true;
+      if (e.key === 's') keys.down = true;
+      if (e.key === 'a') keys.left = true;
+      if (e.key === 'd') keys.right = true;
       if (e.key === '=' || e.key === '+') this.zoomIn();
       else if (e.key === '-' || e.key === '_') this.zoomOut();
     };
@@ -534,5 +603,103 @@ export class MapOverlay {
     }
 
     this.container.add(g);
+  }
+
+  // ─── JP fast-travel helpers ──────────────────────────────────────────
+
+  /** Draw the gold pin on the currently-selected room. */
+  _renderSelectionHighlight(roomPositions, allBounds) {
+    if (!this._selectedRoomId) return;
+    const rp = roomPositions[this._selectedRoomId];
+    if (!rp) return;
+    const rx = rp.x - allBounds.minX;
+    const ry = rp.y - allBounds.minY;
+
+    const rect = this.scene.add.rectangle(
+      rx + rp.w / 2, ry + rp.h / 2, rp.w + 8, rp.h + 8,
+      0xffcc44, 0,
+    );
+    rect.setStrokeStyle(2, 0xffcc44, 1);
+    this.container.add(rect);
+    this._selectionRect = rect;
+
+    // Gentle pulse to distinguish from the fixed "current room" outline.
+    this.scene.tweens.add({
+      targets: rect, alpha: 0.4, duration: 520, yoyo: true, repeat: -1,
+    });
+  }
+
+  /** Allow clicking a visited room to warp to it. */
+  _setupTapToTravel(roomPositions, allBounds) {
+    for (const [roomId, rp] of Object.entries(roomPositions)) {
+      if (!this._isVisited(roomId)) continue;
+      const rx = rp.x - allBounds.minX;
+      const ry = rp.y - allBounds.minY;
+      const hit = this.scene.add.rectangle(
+        rx + rp.w / 2, ry + rp.h / 2, rp.w + 6, rp.h + 10, 0xffffff, 0,
+      );
+      hit.setInteractive({ useHandCursor: true });
+      hit.on('pointerup', (pointer) => {
+        if (this._dragMoved) return;
+        if (pointer.event && pointer.event.button !== undefined && pointer.event.button !== 0) return;
+        this._selectedRoomId = roomId;
+        this._travelToSelection();
+      });
+      this.container.add(hit);
+    }
+  }
+
+  /** Pick the nearest visited room in the given direction. */
+  _moveSelection(dx, dy) {
+    const cur = this._selectedRoomId;
+    if (!cur) return;
+    const curMeta = ROOM_META[cur];
+    if (!curMeta) return;
+
+    let best = null;
+    let bestScore = Infinity;
+    for (const [id, meta] of Object.entries(ROOM_META)) {
+      if (id === cur || !this._isVisited(id)) continue;
+      const ccol = meta.col - curMeta.col;
+      const crow = meta.row - curMeta.row;
+      // Must be meaningfully in the requested direction.
+      if (dx !== 0 && Math.sign(ccol) !== Math.sign(dx)) continue;
+      if (dy !== 0 && Math.sign(crow) !== Math.sign(dy)) continue;
+      if (dx === 0 && ccol !== 0 && Math.abs(ccol) > Math.abs(crow)) continue;
+      if (dy === 0 && crow !== 0 && Math.abs(crow) > Math.abs(ccol)) continue;
+      // Score: primary-axis distance plus a small penalty for off-axis drift.
+      const primary = dx !== 0 ? Math.abs(ccol) : Math.abs(crow);
+      const offAxis = dx !== 0 ? Math.abs(crow) : Math.abs(ccol);
+      const score = primary * 10 + offAxis;
+      if (score < bestScore) { bestScore = score; best = id; }
+    }
+    if (best) {
+      this._selectedRoomId = best;
+      this._centerOnSelection = true;
+      // Force a full re-center rather than a position-preserving rebuild.
+      this.cleanup();
+      this.build();
+    }
+  }
+
+  /** Warp the player to the selected room (or bail with a flash). */
+  _travelToSelection() {
+    const target = this._selectedRoomId;
+    if (!target) return;
+    const scene = this.scene;
+    if (!this._isVisited(target)) {
+      scene.cameras.main.flash(200, 180, 40, 40);
+      return;
+    }
+    if (target === scene.levelManager?.currentRoomId) {
+      this.hide();
+      return;
+    }
+    this.hide();
+    scene.cameras.main.fade(240, 0, 0, 0, true, (_cam, p) => {
+      if (p < 1) return;
+      scene.levelManager.loadRoom(target);
+      scene.cameras.main.fadeIn(320, 0, 0, 0);
+    });
   }
 }

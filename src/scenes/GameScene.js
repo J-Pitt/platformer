@@ -66,6 +66,12 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // JP profile always runs in god mode, even on reloaded saves.
+    if (isJpProfileName(this.savedPlayerName)) {
+      this.player.godMode = true;
+      this.player.hasMap = true;
+    }
+
     this.hud = new HUD(this);
     this.inventoryMenu = new InventoryMenu(this);
 

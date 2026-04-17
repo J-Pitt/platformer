@@ -361,6 +361,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   takeDamage(amount, fromX) {
+    // JP godMode: absorb the hit silently — no HP loss, no knockback, no
+    // hurt anim. Damage still "registers" (return true) so hazards/enemies
+    // don't accidentally re-trigger the same frame.
+    if (this.godMode) return true;
     const hit = this.combat.takeDamage(amount);
     if (hit) {
       if (fromX !== undefined) {
@@ -494,13 +498,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.movement.startGrappleTo(best.x, best.y);
   }
 
-  /** JP profile: all abilities + 3 max HP (new solo game only). */
+  /** JP profile: all abilities + 3 max HP + map + god mode (new solo game only). */
   applyJpUnlock() {
     for (const a of JP_UNLOCK_ABILITIES) {
       this.unlockAbility(a);
     }
     this.maxHp += 3;
     this.hp = this.maxHp;
+    this.hasMap = true;
+    this.godMode = true;
   }
 
   /** Apply data from SaveGame.loadGameState() after loadRoom(). */

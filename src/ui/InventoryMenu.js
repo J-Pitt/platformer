@@ -499,8 +499,13 @@ export class InventoryMenu {
     const player = this.scene.player;
     const lm = this.scene.levelManager;
 
+    // JP god-mode: treat every known room as visited so the atlas page
+    // reveals tile detail, markers, labels, and connections in full.
+    const isJp = !!player.godMode;
+    const isRoomVisited = (id) => isJp || player.visitedRooms.has(id);
+
     this._addBodyText(left, top, "CARTOGRAPHER'S ATLAS", '#ffc86a');
-    const visited = player.visitedRooms.size;
+    const visited = isJp ? Object.keys(ROOM_META).length : player.visitedRooms.size;
     const total = Object.keys(rooms).length;
     this._addBodyText(left + (right - left) - 4, top,
       `Charted: ${visited} / ${total}`, '#b88a50', 11
@@ -577,8 +582,8 @@ export class InventoryMenu {
       const rpA = positions[a];
       const rpB = positions[b];
       if (!rpA || !rpB) continue;
-      const aVis = player.visitedRooms.has(a);
-      const bVis = player.visitedRooms.has(b);
+      const aVis = isRoomVisited(a);
+      const bVis = isRoomVisited(b);
       const lit = aVis && bVis;
       const ax = offX + rpA.x + rpA.w / 2;
       const ay = offY + rpA.y + rpA.h / 2;
@@ -596,7 +601,7 @@ export class InventoryMenu {
       const rx = offX + rp.x;
       const ry = offY + rp.y;
       const isCurrent = currentRoom === id;
-      const visitedRoom = player.visitedRooms.has(id);
+      const visitedRoom = isRoomVisited(id);
       const alphaMul = visitedRoom ? 1 : 0.55;
 
       // Room backdrop (dark)
@@ -674,7 +679,7 @@ export class InventoryMenu {
     }
 
     // Player blip on the current room
-    if (currentRoom && positions[currentRoom] && player.visitedRooms.has(currentRoom)) {
+    if (currentRoom && positions[currentRoom] && isRoomVisited(currentRoom)) {
       const rp = positions[currentRoom];
       const ptx = offX + rp.x + (player.x / TILE_SIZE) * ppt;
       const pty = offY + rp.y + (player.y / TILE_SIZE) * ppt;
