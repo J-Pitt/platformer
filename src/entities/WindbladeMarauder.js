@@ -20,6 +20,7 @@ export class WindbladeMarauder extends Phaser.Physics.Arcade.Sprite {
 
     this.hp = 28; this.maxHp = 28; this.damage = 2;
     this.isDead = false; this.activated = false; this.intangible = false;
+    this.isBoss = true;
     this.hitCooldown = 0;
     this.direction = -1;
     this.state = 'gallop';

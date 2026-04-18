@@ -53,6 +53,7 @@ export class VoidKing extends Phaser.Physics.Arcade.Sprite {
     this.damage = DAMAGE;
     this.isHit = false;
     this.isDead = false;
+    this.isBoss = true;
     this.direction = -1;
     this.knockbackTimer = 0;
     this.hitCooldown = 0;

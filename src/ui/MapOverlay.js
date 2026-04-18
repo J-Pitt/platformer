@@ -81,21 +81,52 @@ export const CONNECTIONS = [
 
 export const PIXEL_PER_TILE_BASE = 3;
 export const GAP = 12;
-export const ZOOM_LEVELS = [0.35, 0.5, 0.75, 1, 1.5, 2];
+export const ZOOM_LEVELS = [0.22, 0.35, 0.5, 0.75, 1, 1.5, 2];
 const PAN_SPEED = 6;
+
+function prettyRoomLabel(id) {
+  if (/^room\d+$/i.test(id)) return `Room ${id.slice(4)}`;
+  if (/^sanctuary\d+$/i.test(id)) return `Sanctuary ${id.slice(9)}`;
+  return id;
+}
+
+/**
+ * JP-only: extend ROOM_META with auto-placed entries for every room in
+ * the world that the hand-curated map doesn't already cover (Chapter 2,
+ * sanctuaries, future additions). These show up in an extra grid section
+ * below the main map so JP can fast-travel absolutely anywhere.
+ */
+export function buildJpRoomMeta() {
+  const meta = { ...ROOM_META };
+  const missing = Object.keys(rooms).filter((id) => !meta[id]);
+  if (missing.length === 0) return meta;
+
+  const rows = Object.values(meta).map((m) => m.row);
+  const startRow = (rows.length ? Math.max(...rows) : 0) + 2;
+  const colsPerRow = 10;
+  missing.forEach((id, i) => {
+    meta[id] = {
+      label: prettyRoomLabel(id),
+      col: i % colsPerRow,
+      row: startRow + Math.floor(i / colsPerRow),
+    };
+  });
+  return meta;
+}
 
 /**
  * Grid-lay out every known room given a `pixels-per-tile` scale. Shared
  * by the main MapOverlay and by the Codex page preview so both renderers
- * agree on room geometry.
+ * agree on room geometry. Accepts an optional `meta` dict so JP mode can
+ * pass an extended metadata object covering every room in the game.
  */
-export function computeRoomPositions(ppt) {
+export function computeRoomPositions(ppt, meta = ROOM_META) {
   const positions = {};
-  for (const [roomId, meta] of Object.entries(ROOM_META)) {
+  for (const [roomId, m] of Object.entries(meta)) {
     const room = rooms[roomId];
     const w = room ? room.width * ppt : 20;
     const h = room ? room.height * ppt : 16;
-    positions[roomId] = { w, h, col: meta.col, row: meta.row };
+    positions[roomId] = { w, h, col: m.col, row: m.row };
   }
 
   const colWidths = {};
@@ -161,6 +192,9 @@ export class MapOverlay {
     this._fastTravelEnabled = isJpProfileName(scene.savedPlayerName);
     this._selectedRoomId = null;
     this._selectionRect = null;
+    // JP mode operates on an extended meta that covers every room in the
+    // game (including ch2 + sanctuaries). Non-JP keeps the curated meta.
+    this._activeMeta = this._fastTravelEnabled ? buildJpRoomMeta() : ROOM_META;
   }
 
   toggle() {
@@ -174,26 +208,27 @@ export class MapOverlay {
     this.zoomIdx = this.bestFitZoom();
     if (this._fastTravelEnabled) {
       const cur = this.scene.levelManager?.currentRoomId;
-      if (cur && ROOM_META[cur]) this._selectedRoomId = cur;
+      if (cur && this._activeMeta[cur]) this._selectedRoomId = cur;
       else this._selectedRoomId = this._firstVisitedRoom();
     }
     this.build();
   }
 
   _firstVisitedRoom() {
-    for (const id of Object.keys(ROOM_META)) {
+    for (const id of Object.keys(this._activeMeta)) {
       if (this._isVisited(id)) return id;
     }
     return null;
   }
 
   /**
-   * JP god-mode: every room with metadata counts as "visited" so the
-   * whole dungeon shows up fully drawn (tiles, doors, orbs, bosses,
-   * coins…). Normal players still see only what they've explored.
+   * JP god-mode: every room in the extended meta counts as "visited" so
+   * the whole world shows up fully drawn (tiles, doors, orbs, bosses,
+   * coins…) and is fair game for fast-travel. Normal players still see
+   * only what they've explored.
    */
   _isVisited(roomId) {
-    if (this._fastTravelEnabled) return !!ROOM_META[roomId];
+    if (this._fastTravelEnabled) return !!this._activeMeta[roomId];
     return !!this.scene.player?.visitedRooms?.has(roomId);
   }
 
@@ -337,7 +372,7 @@ export class MapOverlay {
         this.container.add(highlight);
       }
 
-      const meta = ROOM_META[roomId];
+      const meta = this._activeMeta[roomId];
       const labelText = visited ? (meta ? meta.label : roomId) : '???';
       const labelColor = isCurrent ? '#44ff66' : visited ? '#8a7858' : '#444433';
       const fontSize = ppt >= 3 ? '8px' : '7px';
@@ -538,7 +573,7 @@ export class MapOverlay {
   }
 
   computeRoomPositions(ppt) {
-    return computeRoomPositions(ppt);
+    return computeRoomPositions(ppt, this._activeMeta);
   }
 
   drawRoomTiles(rx, ry, room, ppt, isCurrent) {
@@ -653,12 +688,12 @@ export class MapOverlay {
   _moveSelection(dx, dy) {
     const cur = this._selectedRoomId;
     if (!cur) return;
-    const curMeta = ROOM_META[cur];
+    const curMeta = this._activeMeta[cur];
     if (!curMeta) return;
 
     let best = null;
     let bestScore = Infinity;
-    for (const [id, meta] of Object.entries(ROOM_META)) {
+    for (const [id, meta] of Object.entries(this._activeMeta)) {
       if (id === cur || !this._isVisited(id)) continue;
       const ccol = meta.col - curMeta.col;
       const crow = meta.row - curMeta.row;

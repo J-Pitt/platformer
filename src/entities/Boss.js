@@ -40,6 +40,7 @@ export class Boss extends Phaser.Physics.Arcade.Sprite {
     this.damage = BOSS_DAMAGE;
     this.isHit = false;
     this.isDead = false;
+    this.isBoss = true;
     this.direction = -1;
     this.state = 'idle';
     this.knockbackTimer = 0;

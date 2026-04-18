@@ -22,6 +22,7 @@ export class FallenPaladin extends Phaser.Physics.Arcade.Sprite {
 
     this.hp = 30; this.maxHp = 30; this.damage = 2;
     this.isDead = false; this.activated = false; this.intangible = false;
+    this.isBoss = true;
     this.hitCooldown = 0;
     this.direction = -1;
     this.armored = true;

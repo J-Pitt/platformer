@@ -23,6 +23,7 @@ class HydraHead extends Phaser.Physics.Arcade.Sprite {
     this.index = index;
     this.hp = 8; this.maxHp = 8; this.damage = 2;
     this.isDead = false; this.hitCooldown = 0;
+    this.isBoss = true;
     this.fireCooldown = 1400 + index * 600;
     this.baseX = x; this.baseY = y;
     this.tween = scene.tweens.add({
@@ -94,6 +95,7 @@ export class ThornrootHydra extends Phaser.Physics.Arcade.Sprite {
 
     this.hp = 24; this.maxHp = 24; this.damage = 0;
     this.isDead = false;
+    this.isBoss = true;
     this.activated = false;
     this.heads = [];
     this.headsAlive = 3;

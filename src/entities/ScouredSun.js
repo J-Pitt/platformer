@@ -25,6 +25,7 @@ export class ScouredSun extends Phaser.Physics.Arcade.Sprite {
 
     this.hp = 48; this.maxHp = 48; this.damage = 2;
     this.isDead = false; this.activated = false; this.intangible = false;
+    this.isBoss = true;
     this.hitCooldown = 0;
     this.phase = 1;
     this.attackCooldown = 1200;

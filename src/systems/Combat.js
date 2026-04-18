@@ -249,6 +249,8 @@ export class CombatSystem {
 
   onSlashHitEnemy(hitbox, enemy) {
     if (!enemy.active || enemy.isHit) return;
+    // JP god mode: bosses are untouchable so JP can roam boss rooms freely.
+    if (this.player.godMode && enemy.isBoss) return;
 
     const stats = this._currentSlashStats || this.getWeaponStats();
     enemy.takeDamage(stats.damage, hitbox.slashDirection);
@@ -300,6 +302,7 @@ export class CombatSystem {
     if (this.scene.enemies) {
       const col = this.scene.physics.add.overlap(proj, this.scene.enemies, (pj, enemy) => {
         if (!enemy.active || enemy.isHit) return;
+        if (this.player.godMode && enemy.isBoss) return;
         enemy.takeDamage(pj._damage, dir > 0 ? 'right' : 'left');
         shakeScene(this.scene, 40, 0.004);
         this._destroyDagger(pj, col);
@@ -402,6 +405,7 @@ export class CombatSystem {
 
   onKickHitEnemy(hitbox, enemy) {
     if (!enemy.active || enemy.isHit) return;
+    if (this.player.godMode && enemy.isBoss) return;
     enemy.takeDamage(1, hitbox.kickDir > 0 ? 'right' : 'left');
 
     this.scene.physics.pause();

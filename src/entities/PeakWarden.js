@@ -22,6 +22,7 @@ export class PeakWarden extends Phaser.Physics.Arcade.Sprite {
 
     this.hp = 24; this.maxHp = 24; this.damage = 2;
     this.isHit = false; this.isDead = false; this.intangible = false;
+    this.isBoss = true;
     this.activated = false;
     this.phase = 1;
     this.knockbackTimer = 0; this.hitCooldown = 0;

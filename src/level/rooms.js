@@ -1878,10 +1878,10 @@ function buildRoom13() {
   fillRow(tiles, 12, 14, 26, 2);
   fillRow(tiles, 8, 18, 22, 2);
 
-  // Arena pillars — grounded so the boss room actually has walls instead
-  // of hanging decor.
-  fillRect(tiles, 4, 12, H - 3, 12, 1);
-  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
+  // Arena pillars — suspended as wall-jump markers so the boss has an
+  // open lane to traverse and the player can approach the center.
+  fillRect(tiles, 4, 12, 14, 12, 1);
+  fillRect(tiles, 4, W - 13, 14, W - 13, 1);
 
   // Icy ceiling
   fillRect(tiles, 2, 4, 5, W - 5, 1);
@@ -3040,10 +3040,10 @@ function buildRoom21() {
   fillRow(tiles, 12, 18, 26, 2);
   fillRow(tiles, 8, 20, 24, 2);
 
-  // Shadow arena pillars — grounded so the warden's flanks aren't just
-  // floating decor you can run under.
-  fillRect(tiles, 4, 12, H - 3, 12, 1);
-  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
+  // Shadow arena pillars — suspended so the warden has an open arena
+  // floor and the player can maneuver past them.
+  fillRect(tiles, 4, 12, 16, 12, 1);
+  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
 
   // Vaulted ceiling
   fillRect(tiles, 2, 4, 5, W - 5, 1);
@@ -3647,9 +3647,10 @@ function buildRoom25() {
   fillRow(tiles, 12, 18, 26, 2);
   fillRow(tiles, 8, 20, 24, 2);
 
-  // Archive sentinels — pillars, grounded so the sentinel's flanks really wall.
-  fillRect(tiles, 4, 12, H - 3, 12, 1);
-  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
+  // Archive sentinels — suspended pillars so the sentinel has an open
+  // arena and the player can close the distance past them.
+  fillRect(tiles, 4, 12, 16, 12, 1);
+  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
 
   // Vaulted ceiling
   fillRect(tiles, 2, 4, 5, W - 5, 1);
@@ -4212,10 +4213,10 @@ function buildRoom29() {
   fillRow(tiles, 10, 20, 28, 2);
   fillRow(tiles, 6, 22, 26, 2);
 
-  // Arena pillars framing the center — grounded so the king's arena has
-  // real walls, not floating banners.
-  fillRect(tiles, 4, 12, H - 3, 12, 1);
-  fillRect(tiles, 4, W - 13, H - 3, W - 13, 1);
+  // Arena pillars framing the center — suspended so the king has open
+  // floor to traverse and the player can reach him.
+  fillRect(tiles, 4, 12, 16, 12, 1);
+  fillRect(tiles, 4, W - 13, 16, W - 13, 1);
 
   // Throne ceiling — oppressive stone dome
   fillRect(tiles, 2, 4, 5, W - 5, 1);
