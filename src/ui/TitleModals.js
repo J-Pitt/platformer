@@ -72,7 +72,13 @@ const COLS = 10;
 const ROWS = KEY_GRID_ROWS.length;
 const MAX_NAME_LEN = 16;
 
-export function createNameEntry(scene, { initial = 'Traveler', onConfirm, onCancel } = {}) {
+export function createNameEntry(scene, {
+  initial = 'Traveler',
+  title = 'ENTER YOUR NAME',
+  maxLen = MAX_NAME_LEN,
+  onConfirm,
+  onCancel,
+} = {}) {
   const cam = scene.cameras.main;
   const cx = cam.width / 2;
   const cy = cam.height / 2;
@@ -83,7 +89,7 @@ export function createNameEntry(scene, { initial = 'Traveler', onConfirm, onCanc
   const elements = [];
   const push = (el) => { elements.push(el); return el; };
 
-  let buffer = String(initial || '').slice(0, MAX_NAME_LEN);
+  let buffer = String(initial || '').slice(0, maxLen);
   let cursorRow = 0;
   let cursorCol = 0;
   let isOpen = true;
@@ -99,7 +105,7 @@ export function createNameEntry(scene, { initial = 'Traveler', onConfirm, onCanc
     .setScrollFactor(0).setDepth(DEPTH_PANEL));
 
   // Title
-  push(scene.add.text(cx, cy - panelH / 2 + 22, 'ENTER YOUR NAME', {
+  push(scene.add.text(cx, cy - panelH / 2 + 22, title, {
     fontSize: '18px', fontFamily: 'monospace', color: '#44ff66',
     stroke: '#000', strokeThickness: 4,
   }).setOrigin(0.5).setScrollFactor(0).setDepth(DEPTH_CONTENT));
@@ -231,7 +237,7 @@ export function createNameEntry(scene, { initial = 'Traveler', onConfirm, onCanc
 
   // ── Actions ─────────────────────────────────────────────────────────
   const insertChar = (ch) => {
-    if (buffer.length >= MAX_NAME_LEN) return;
+    if (buffer.length >= maxLen) return;
     buffer += ch;
     refreshName();
   };
@@ -243,7 +249,7 @@ export function createNameEntry(scene, { initial = 'Traveler', onConfirm, onCanc
   const insertSpace = () => insertChar(' ');
 
   const confirmName = () => {
-    const clean = buffer.trim().slice(0, MAX_NAME_LEN) || 'Traveler';
+    const clean = buffer.trim().slice(0, maxLen) || 'Traveler';
     cleanup();
     if (typeof onConfirm === 'function') onConfirm(clean);
   };

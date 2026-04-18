@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import { Player, isJpProfileName } from '../entities/Player.js';
+import { WEAPONS } from '../systems/Inventory.js';
 import { LevelManager } from '../level/LevelManager.js';
 import { HUD } from '../ui/HUD.js';
 import { InputManager } from '../systems/InputManager.js';
@@ -8,6 +9,9 @@ import * as SaveGame from '../persistence/SaveGame.js';
 import { GameState } from '../state/GameState.js';
 import { CameraRig } from '../systems/CameraRig.js';
 import { InventoryMenu } from '../ui/InventoryMenu.js';
+import { MultiplayerClient, colorFromName } from '../systems/Multiplayer.js';
+import { RemotePlayer } from '../entities/RemotePlayer.js';
+import { PadInputSource } from '../systems/PadInputSource.js';
 export class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
@@ -66,10 +70,15 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // JP profile always runs in god mode, even on reloaded saves.
+    // JP profile always runs in god mode, even on reloaded saves. Also
+    // top up the weapon rack in case this save predates the "all weapons"
+    // unlock.
     if (isJpProfileName(this.savedPlayerName)) {
       this.player.godMode = true;
       this.player.hasMap = true;
+      for (const id of Object.keys(WEAPONS)) {
+        this.player.inventory.acquireWeapon(id);
+      }
     }
 
     this.hud = new HUD(this);
@@ -101,6 +110,14 @@ export class GameScene extends Phaser.Scene {
 
     this.setupSoloAutosave();
     this.time.delayedCall(2000, () => this.saveGameIfEligible(false));
+
+    if (data?.multiplayer) {
+      this.setupMultiplayer(data.multiplayer);
+    }
+
+    if (data?.coopHint) {
+      this.showCoopJoinHint();
+    }
 
     if (this.textures.exists('screen_vignette')) {
       this.add.image(480, 270, 'screen_vignette')
@@ -257,11 +274,21 @@ export class GameScene extends Phaser.Scene {
 
     this.pollUpHoldSoftRecover(dt);
 
+    if (this.player2Input) this.player2Input.update();
+    this.pollCoopJoin();
+
     this.player.update(dt);
+    if (this.player2 && !this.player2.isDead) this.player2.update(dt);
     if (this.levelManager) this.levelManager.update(dt);
+
+    if (this.multiplayer) this.updateMultiplayer(dt);
+    if (this.coopCameraEnabled) this.updateCoopCamera();
 
     if (this.playerRimLight) {
       this.playerRimLight.setPosition(this.player.x, this.player.y);
+    }
+    if (this.player2RimLight && this.player2) {
+      this.player2RimLight.setPosition(this.player2.x, this.player2.y);
     }
 
     if (this.gamepadDebugText) {
@@ -269,8 +296,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     const roomH = this.levelManager.roomPixelH;
-    if (this.player.y > roomH + 32 && !this.player.isDead) {
-      this.player.die();
+    for (const pl of this.getActivePlayers()) {
+      if (pl.y > roomH + 32 && !pl.isDead) pl.die();
     }
     const activePlayers = this.getActivePlayers();
     if (this.enemies) {
@@ -453,16 +480,29 @@ export class GameScene extends Phaser.Scene {
   }
 
   getActivePlayers() {
-    return [this.player];
+    const list = [this.player];
+    if (this.player2) list.push(this.player2);
+    return list;
   }
 
-  respawnPlayer() {
-    this.transitioning = true;
+  respawnPlayer(who) {
+    // Couch co-op: if a specific player died but the other is still alive,
+    // respawn just them at their checkpoint without tearing down the room.
+    const target = who || this.player;
+    const other = target === this.player ? this.player2 : this.player;
+    const otherAlive = other && !other.isDead;
+    if (this.player2 && otherAlive) {
+      target.respawn();
+      this.showCoopToast(`${target === this.player ? 'P1' : 'P2'} REVIVED`);
+      return;
+    }
 
+    this.transitioning = true;
     this.cameras.main.fade(400, 10, 0, 0, false, (cam, progress) => {
       if (progress >= 1) {
         this.levelManager.loadRoom(this.levelManager.currentRoomId);
         this.player.respawn();
+        if (this.player2) this.player2.respawn();
         this.cameras.main.fadeIn(400, 0, 0, 0);
         this.transitioning = false;
         this.saveGameIfEligible(false);
@@ -777,6 +817,310 @@ export class GameScene extends Phaser.Scene {
         }).setOrigin(0.5).setScrollFactor(0).setDepth(263).setAlpha(0);
         this.tweens.add({ targets: [title, sub], alpha: 1, duration: 1600 });
       });
+    });
+  }
+
+  // ── Multiplayer ─────────────────────────────────────────────────────────
+
+  setupMultiplayer(mpData) {
+    const { roomCode, playerId, name } = mpData;
+    const color = colorFromName(name);
+    this.multiplayer = new MultiplayerClient({ roomCode, playerId, name, color });
+    this.remotePlayers = new Map();
+
+    this.multiplayer.bindLocalStateProvider(() => this.snapshotLocalPlayer());
+    this.multiplayer.onPlayersUpdate = (players) => this.reconcileRemotePlayers(players);
+    this.multiplayer.onConnectionError = () => {
+      this.showMultiplayerToast('Network hiccup…');
+    };
+    this.multiplayer.start();
+
+    const cam = this.cameras.main;
+    const pillBg = this.add.rectangle(cam.width - 90, 18, 160, 22, 0x000000, 0.55)
+      .setOrigin(0.5).setScrollFactor(0).setDepth(220);
+    const codeTxt = this.add.text(cam.width - 90, 18, `ROOM ${roomCode}`, {
+      fontSize: '12px',
+      fontFamily: 'monospace',
+      color: '#9effc2',
+      stroke: '#000',
+      strokeThickness: 2,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(221);
+    this._mpHudPill = pillBg;
+    this._mpHudCode = codeTxt;
+
+    const onShutdown = () => this.teardownMultiplayer();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, onShutdown);
+    this.events.once(Phaser.Scenes.Events.DESTROY, onShutdown);
+    window.addEventListener('beforeunload', onShutdown);
+  }
+
+  snapshotLocalPlayer() {
+    if (!this.player || this.player.isDead === true) return null;
+    const roomId = this.levelManager?.currentRoomId || 'room1';
+    const playingKey = this.player.anims?.currentAnim?.key || '';
+    const armed = playingKey.endsWith('_armed');
+    let anim = this.player.currentAnim || 'idle';
+    if (anim === 'run' && armed) anim = 'run_armed';
+    if (anim === 'idle' && armed) anim = 'idle_armed';
+    return {
+      x: Math.round(this.player.x),
+      y: Math.round(this.player.y),
+      roomId,
+      facing: this.player.facing === -1 ? -1 : 1,
+      anim,
+      hp: this.player.hp,
+      maxHp: this.player.maxHp,
+    };
+  }
+
+  reconcileRemotePlayers(playersMap) {
+    if (!this.remotePlayers) return;
+    const currentRoom = this.levelManager?.currentRoomId;
+    const seen = new Set();
+    for (const [id, snap] of playersMap) {
+      seen.add(id);
+      let rp = this.remotePlayers.get(id);
+      if (!rp) {
+        rp = new RemotePlayer(this, id, snap);
+        this.remotePlayers.set(id, rp);
+      } else {
+        rp.applySnapshot(snap);
+      }
+      rp.setVisibleInRoom(rp.roomId === currentRoom);
+    }
+    for (const [id, rp] of [...this.remotePlayers]) {
+      if (!seen.has(id)) {
+        rp.destroy();
+        this.remotePlayers.delete(id);
+      }
+    }
+  }
+
+  updateMultiplayer(dt) {
+    if (!this.remotePlayers) return;
+    const currentRoom = this.levelManager?.currentRoomId;
+    for (const rp of this.remotePlayers.values()) {
+      rp.setVisibleInRoom(rp.roomId === currentRoom);
+      if (rp.roomId === currentRoom) rp.tick(dt);
+    }
+  }
+
+  showMultiplayerToast(message) {
+    if (this._mpToastTimer && this._mpToastTimer.getProgress() < 1) return;
+    const cam = this.cameras.main;
+    const t = this.add.text(cam.width - 90, 40, message, {
+      fontSize: '11px', fontFamily: 'monospace', color: '#ffaa66',
+      stroke: '#000', strokeThickness: 2,
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(221);
+    this._mpToastTimer = this.time.delayedCall(1500, () => t.destroy());
+  }
+
+  teardownMultiplayer() {
+    if (this.remotePlayers) {
+      for (const rp of this.remotePlayers.values()) rp.destroy();
+      this.remotePlayers.clear();
+      this.remotePlayers = null;
+    }
+    if (this.multiplayer) {
+      this.multiplayer.leave().catch(() => {});
+      this.multiplayer = null;
+    }
+    this._mpHudPill?.destroy?.();
+    this._mpHudCode?.destroy?.();
+    this._mpHudPill = null;
+    this._mpHudCode = null;
+  }
+
+  // ── Couch co-op (local 2-player) ────────────────────────────────────────
+
+  /**
+   * If an unused gamepad slot has any button pressed, spawn P2.
+   *
+   * Cheap by design: throttled to ~8 fps, short-circuited when there's
+   * nothing plausible to scan (solo with 0–1 pads, or P1 is keyboard-only
+   * and InputManager hasn't claimed a pad yet — otherwise the first button
+   * press on a controller would bind P2 instead of giving P1 a pad).
+   */
+  pollCoopJoin() {
+    if (this.player2 || this._coopJoinDisabled) return;
+    if (!navigator.getGamepads) return;
+
+    this._coopPollCounter = (this._coopPollCounter | 0) + 1;
+    if (this._coopPollCounter < 8) return;
+    this._coopPollCounter = 0;
+
+    const p1Index = this.inputManager?.padIndex ?? -1;
+    if (p1Index < 0) return;
+
+    const list = navigator.getGamepads();
+    if (!list) return;
+
+    let connected = 0;
+    for (let i = 0; i < list.length; i++) {
+      if (list[i] && list[i].connected) connected++;
+      if (connected >= 2) break;
+    }
+    if (connected < 2) return;
+
+    if (!this._coopJoinPrev) this._coopJoinPrev = new Map();
+    for (let i = 0; i < list.length; i++) {
+      const pad = list[i];
+      if (!pad || !pad.connected) { this._coopJoinPrev.delete(i); continue; }
+      if (i === p1Index) continue;
+      let prev = this._coopJoinPrev.get(i);
+      if (!prev) { prev = {}; this._coopJoinPrev.set(i, prev); }
+      if (PadInputSource.anyActionEdge(pad, prev)) {
+        this.spawnPlayer2(i);
+        return;
+      }
+    }
+  }
+
+  spawnPlayer2(padIndex) {
+    if (this.player2) return;
+
+    this.player2Input = new PadInputSource(padIndex);
+
+    const p2 = new Player(this, this.player.x + 24, this.player.y);
+    p2.setInputProvider(() => this.player2Input.state);
+    p2.setTint(0x88c8ff);
+    p2.setDepth(5);
+    if (this.player.godMode) p2.godMode = true;
+    if (this.player.hasMap) p2.hasMap = true;
+    if (isJpProfileName(this.savedPlayerName)) p2.applyJpUnlock();
+    this.player2 = p2;
+
+    // Flip the camera over first so the upcoming room reload's applyRoom
+    // picks up the midpoint target instead of snapping to P1.
+    this.enableCoopCamera();
+
+    // Rebuild the current room so every collider/overlap the level wires
+    // up (walls, platforms, enemies, hazards, portals, pickups, NPCs, …)
+    // is registered against BOTH players. Reloading in place is simpler
+    // and safer than trying to replay every spawn path by hand — and
+    // positionPlayer fans them out around the spawn.
+    this.levelManager.loadRoom(this.levelManager.currentRoomId);
+
+    this.setupHudForPlayer2();
+
+    this.showCoopToast('PLAYER 2 JOINED');
+    this._coopJoinPrev?.delete(padIndex);
+    this.hideCoopJoinHint();
+  }
+
+  /** Persistent HUD banner nudging P2 to press a button on a 2nd pad. */
+  showCoopJoinHint() {
+    if (this._coopHint || this.player2) return;
+    const cam = this.cameras.main;
+    const bg = this.add.rectangle(cam.width / 2, 40, 420, 28, 0x001122, 0.78)
+      .setScrollFactor(0).setDepth(259).setStrokeStyle(1, 0x88c8ff, 0.7);
+    const txt = this.add.text(
+      cam.width / 2, 40,
+      'PLAYER 2: press any button on a 2nd controller to join',
+      {
+        fontSize: '11px', fontFamily: 'monospace', color: '#88c8ff',
+        stroke: '#000', strokeThickness: 3,
+      },
+    ).setOrigin(0.5).setScrollFactor(0).setDepth(260);
+    const pulse = this.tweens.add({
+      targets: [bg, txt], alpha: { from: 1, to: 0.55 },
+      duration: 900, yoyo: true, repeat: -1,
+    });
+    this._coopHint = { bg, txt, pulse };
+  }
+
+  hideCoopJoinHint() {
+    if (!this._coopHint) return;
+    const { bg, txt, pulse } = this._coopHint;
+    this._coopHint = null;
+    pulse?.remove?.();
+    this.tweens.add({
+      targets: [bg, txt], alpha: 0, duration: 300,
+      onComplete: () => { bg.destroy(); txt.destroy(); },
+    });
+  }
+
+  enableCoopCamera() {
+    if (this.coopCameraEnabled) return;
+    this.coopCameraEnabled = true;
+
+    this._coopCamTarget = this.add.rectangle(
+      this.player.x,
+      this.player.y,
+      2, 2, 0xff0000, 0,
+    ).setDepth(-100);
+
+    // Scene-level hook CameraRig.applyRoom consults when choosing a follow target.
+    this.localFollowTarget = () => this._coopCamTarget;
+
+    const cam = this.cameras.main;
+    cam.startFollow(this._coopCamTarget, true, 0.12, 0.12);
+  }
+
+  updateCoopCamera() {
+    if (!this._coopCamTarget || !this.player2) return;
+    const ax = this.player.x;
+    const ay = this.player.y;
+    const bx = this.player2.x;
+    const by = this.player2.y;
+    this._coopCamTarget.setPosition((ax + bx) * 0.5, (ay + by) * 0.5);
+
+    const cam = this.cameras.main;
+    const viewW = cam.width;
+    const viewH = cam.height;
+    const dx = Math.abs(ax - bx);
+    const dy = Math.abs(ay - by);
+    const needZoomX = dx > viewW * 0.7 ? viewW * 0.7 / dx : 1;
+    const needZoomY = dy > viewH * 0.7 ? viewH * 0.7 / dy : 1;
+    const target = Math.max(0.65, Math.min(1, needZoomX, needZoomY));
+    const current = cam.zoom;
+    cam.setZoom(current + (target - current) * 0.08);
+  }
+
+  setupHudForPlayer2() {
+    if (this._hudP2Created) return;
+    this._hudP2Created = true;
+
+    const baseY = 98;
+    const label = this.add.text(30, baseY, 'P2', {
+      fontSize: '10px',
+      fontFamily: 'monospace',
+      color: '#88c8ff',
+      stroke: '#000',
+      strokeThickness: 2,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(100);
+
+    const hearts = [];
+    for (let i = 0; i < this.player2.maxHp; i++) {
+      const full = this.add.image(54 + i * 22, baseY, 'health_orb')
+        .setScrollFactor(0).setDepth(100).setScale(0.8).setTint(0x88c8ff);
+      const empty = this.add.image(54 + i * 22, baseY, 'health_orb_empty')
+        .setScrollFactor(0).setDepth(99).setScale(0.8);
+      hearts.push({ full, empty });
+    }
+    this._hudP2 = { label, hearts };
+
+    this._hudP2UpdateEvt = this.time.addEvent({
+      delay: 100,
+      loop: true,
+      callback: () => {
+        if (!this.player2 || !this._hudP2) return;
+        for (let i = 0; i < this._hudP2.hearts.length; i++) {
+          this._hudP2.hearts[i].full.setVisible(i < this.player2.hp);
+        }
+      },
+    });
+  }
+
+  showCoopToast(msg) {
+    const cam = this.cameras.main;
+    const t = this.add.text(cam.width / 2, 120, msg, {
+      fontSize: '14px', fontFamily: 'monospace', color: '#88c8ff',
+      stroke: '#000', strokeThickness: 3,
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(260).setAlpha(0);
+    this.tweens.add({
+      targets: t, alpha: 1, duration: 250, hold: 1100, yoyo: true,
+      onComplete: () => t.destroy(),
     });
   }
 }

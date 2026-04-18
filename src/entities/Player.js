@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { MovementSystem } from '../systems/Movement.js';
 import { CombatSystem } from '../systems/Combat.js';
-import { Inventory } from '../systems/Inventory.js';
+import { Inventory, WEAPONS } from '../systems/Inventory.js';
 import { TILE_SIZE } from '../level/rooms.js';
 import { shakeScene } from '../systems/CameraRig.js';
 
@@ -87,7 +87,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   getInputState() {
+    if (typeof this._inputProvider === 'function') return this._inputProvider();
     return this.scene.inputManager.state;
+  }
+
+  /**
+   * Override the default input source (InputManager → P1). Used by couch
+   * co-op to route a dedicated gamepad into Player 2.
+   */
+  setInputProvider(fn) {
+    this._inputProvider = fn;
   }
 
   playLandSquash(impact = 1) {
@@ -389,7 +398,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       targets: this,
       alpha: 0, scaleX: 1.5, scaleY: 1.5,
       duration: 600, ease: 'Power2',
-      onComplete: () => { this.scene.respawnPlayer(); },
+      onComplete: () => { this.scene.respawnPlayer(this); },
     });
   }
 
@@ -498,10 +507,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.movement.startGrappleTo(best.x, best.y);
   }
 
-  /** JP profile: all abilities + 3 max HP + map + god mode (new solo game only). */
+  /** JP profile: all abilities + every weapon + 3 max HP + map + god mode (new solo game only). */
   applyJpUnlock() {
     for (const a of JP_UNLOCK_ABILITIES) {
       this.unlockAbility(a);
+    }
+    for (const id of Object.keys(WEAPONS)) {
+      this.inventory.acquireWeapon(id);
     }
     this.maxHp += 3;
     this.hp = this.maxHp;

@@ -6,6 +6,7 @@ import {
   pollMenuGamepadEdges,
 } from '../utils/menuRemoteInput.js';
 import { createNameEntry, createConfirm } from '../ui/TitleModals.js';
+import { createRoom, joinRoom, pingHealth } from '../systems/Multiplayer.js';
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -104,6 +105,22 @@ export class TitleScene extends Phaser.Scene {
       },
     });
 
+    menuEntries.push({
+      label: 'LOCAL CO-OP',
+      onSelect: () => {
+        this.openLocalCoopMenu({ fadeToGame });
+      },
+    });
+
+    menuEntries.push({
+      label: 'PLAY ONLINE',
+      onSelect: () => {
+        this.openMultiplayerMenu({
+          fadeToGame,
+        });
+      },
+    });
+
     if (SaveGame.hasSavedGame()) {
       menuEntries.push({
         label: 'ERASE SAVE',
@@ -137,7 +154,7 @@ export class TitleScene extends Phaser.Scene {
     const hint = this.add.text(
       cx,
       hintY,
-      'D-pad / stick · OK or ENTER · keyboard · Progress saves in this browser',
+      'D-pad / stick · OK or ENTER · keyboard · LOCAL CO-OP: plug in a 2nd controller, press any button in-game to join',
       {
         fontSize: '10px', fontFamily: 'monospace', color: '#4a3828',
         stroke: '#000', strokeThickness: 2,
@@ -305,6 +322,187 @@ export class TitleScene extends Phaser.Scene {
         this._modal = null;
         if (opts.onNo) opts.onNo();
       },
+    });
+  }
+
+  /**
+   * Local couch co-op: one shared screen, P1 uses keyboard/P1 pad,
+   * P2 hot-joins by pressing any button on a 2nd controller in-game.
+   */
+  openLocalCoopMenu({ fadeToGame }) {
+    if (this._modal && this._modal.isOpen) return;
+    this._modalGpHeld = {
+      up: true, down: true, left: true, right: true,
+      confirm: true, cancel: true, start: true,
+    };
+    const hasSave = SaveGame.hasSavedGame();
+    this._modal = createConfirm(this, {
+      title: 'Local Co-op',
+      message:
+        'Two players, one screen.\n\n'
+        + 'P1: keyboard or 1st controller\n'
+        + 'P2: press any button on a 2nd controller in-game to join\n\n'
+        + (hasSave ? 'Continue your save or start new?' : 'Start a new run?'),
+      yesLabel: hasSave ? 'CONTINUE' : 'START',
+      noLabel: 'NEW GAME',
+      onYes: () => {
+        this._modal = null;
+        if (hasSave) {
+          fadeToGame({ fromSave: true, coopHint: true });
+        } else {
+          this._startLocalCoopNew(fadeToGame);
+        }
+      },
+      onNo: () => {
+        this._modal = null;
+        this._startLocalCoopNew(fadeToGame);
+      },
+    });
+  }
+
+  _startLocalCoopNew(fadeToGame) {
+    this.openNameEntry({
+      initial: SaveGame.getStoredPlayerName() || 'Traveler',
+      onConfirm: (name) => {
+        const stored = SaveGame.setStoredPlayerName(name);
+        fadeToGame({ profileName: stored, coopHint: true });
+      },
+    });
+  }
+
+  /**
+   * Multi-step multiplayer flow:
+   *   1) HOST  → ask name → POST create → launch GameScene with roomCode
+   *   2) JOIN  → ask name → ask 5-char code → POST join → launch GameScene
+   */
+  openMultiplayerMenu({ fadeToGame }) {
+    if (this._modal && this._modal.isOpen) return;
+    this._modalGpHeld = {
+      up: true, down: true, left: true, right: true,
+      confirm: true, cancel: true, start: true,
+    };
+    this._modal = createConfirm(this, {
+      title: 'Play Online',
+      message: 'Host a new room or join a friend\'s room?',
+      yesLabel: 'HOST',
+      noLabel: 'JOIN',
+      onYes: () => {
+        this._modal = null;
+        this._mpHost(fadeToGame);
+      },
+      onNo: () => {
+        this._modal = null;
+        this._mpJoin(fadeToGame);
+      },
+    });
+  }
+
+  async _mpHealthCheckOrFail() {
+    try {
+      const ok = await pingHealth();
+      if (ok) return true;
+    } catch {}
+    this._mpShowError('Room server is unreachable.\nStart it with `npm run room-server`.');
+    return false;
+  }
+
+  _mpShowError(message) {
+    if (this._modal && this._modal.isOpen) return;
+    this._modalGpHeld = {
+      up: true, down: true, left: true, right: true,
+      confirm: true, cancel: true, start: true,
+    };
+    this._modal = createConfirm(this, {
+      title: 'Connection Error',
+      message,
+      yesLabel: 'OK',
+      noLabel: 'OK',
+      onYes: () => { this._modal = null; },
+      onNo: () => { this._modal = null; },
+    });
+  }
+
+  _mpShowCode(roomCode, onContinue) {
+    if (this._modal && this._modal.isOpen) return;
+    this._modalGpHeld = {
+      up: true, down: true, left: true, right: true,
+      confirm: true, cancel: true, start: true,
+    };
+    this._modal = createConfirm(this, {
+      title: 'Room Created',
+      message: `Share this code with friends:\n\n${roomCode}\n\nPress START to begin.`,
+      yesLabel: 'START',
+      noLabel: 'CANCEL',
+      onYes: () => { this._modal = null; onContinue(); },
+      onNo: () => { this._modal = null; },
+    });
+  }
+
+  _mpHost(fadeToGame) {
+    this.openNameEntry({
+      initial: SaveGame.getStoredPlayerName() || 'Traveler',
+      onConfirm: async (name) => {
+        const stored = SaveGame.setStoredPlayerName(name);
+        if (!(await this._mpHealthCheckOrFail())) return;
+        try {
+          const { roomCode, playerId } = await createRoom(stored);
+          this._mpShowCode(roomCode, () => {
+            fadeToGame({
+              profileName: stored,
+              multiplayer: { roomCode, playerId, name: stored, role: 'host' },
+            });
+          });
+        } catch (e) {
+          this._mpShowError(`Failed to create room: ${e?.message || e}`);
+        }
+      },
+    });
+  }
+
+  _mpJoin(fadeToGame) {
+    this.openNameEntry({
+      initial: SaveGame.getStoredPlayerName() || 'Traveler',
+      onConfirm: (name) => {
+        const stored = SaveGame.setStoredPlayerName(name);
+        this._mpAskCode(async (code) => {
+          if (!(await this._mpHealthCheckOrFail())) return;
+          try {
+            const { roomCode, playerId } = await joinRoom(code, stored);
+            fadeToGame({
+              profileName: stored,
+              multiplayer: { roomCode, playerId, name: stored, role: 'guest' },
+            });
+          } catch (e) {
+            const msg = e?.status === 404
+              ? `No active room with code ${code}.`
+              : `Failed to join: ${e?.message || e}`;
+            this._mpShowError(msg);
+          }
+        });
+      },
+    });
+  }
+
+  _mpAskCode(onSubmit) {
+    if (this._modal && this._modal.isOpen) return;
+    this._modalGpHeld = {
+      up: true, down: true, left: true, right: true,
+      confirm: true, cancel: true, start: true,
+    };
+    this._modal = createNameEntry(this, {
+      title: 'ENTER ROOM CODE',
+      initial: '',
+      maxLen: 5,
+      onConfirm: (raw) => {
+        this._modal = null;
+        const code = String(raw || '').trim().toUpperCase();
+        if (code.length !== 5) {
+          this._mpShowError('Room code must be 5 characters.');
+          return;
+        }
+        onSubmit(code);
+      },
+      onCancel: () => { this._modal = null; },
     });
   }
 }

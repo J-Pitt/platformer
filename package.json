@@ -6,12 +6,19 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "validate-map": "node scripts/validate-map.mjs"
+    "validate-map": "node scripts/validate-map.mjs",
+    "room-server": "node server/roomServer.js",
+    "dev:mp": "concurrently -k -n vite,room \"npm run dev\" \"npm run room-server\""
   },
   "dependencies": {
+    "@upstash/redis": "^1.37.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
     "phaser": "^4.0.0"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "vite": "^6.2.4"
   }
 }

@@ -210,9 +210,14 @@ export class LevelManager {
     // anything (a lingering follow target, a zoom change, a deadzone, etc.)
     // leaves the camera looking at stale coordinates, the player ends up
     // off-screen behind the fade-in. centerOn ignores follow state.
-    const p = this.scene.player;
-    if (p) {
-      this.scene.cameras.main.centerOn(p.x, p.y);
+    const players = this.allPlayers.filter(Boolean);
+    if (players.length) {
+      const avgX = players.reduce((s, pl) => s + pl.x, 0) / players.length;
+      const avgY = players.reduce((s, pl) => s + pl.y, 0) / players.length;
+      this.scene.cameras.main.centerOn(avgX, avgY);
+      if (this.scene._coopCamTarget) {
+        this.scene._coopCamTarget.setPosition(avgX, avgY);
+      }
     }
   }
 
@@ -996,6 +1001,9 @@ export class LevelManager {
   }
 
   get allPlayers() {
+    if (typeof this.scene.getActivePlayers === 'function') {
+      return this.scene.getActivePlayers();
+    }
     return [this.scene.player];
   }
 
@@ -1070,40 +1078,47 @@ export class LevelManager {
       }
     }
 
-    const p = this.scene.player;
-
-    // Kill any in-flight tweens on the player (juice squash, hurt flash,
-    // etc) so their final values don't clobber the restored state below.
-    if (this.scene.tweens) this.scene.tweens.killTweensOf(p);
-
-    p.setPosition(sx, sy);
-    p.setScale(1);
-    p.setAlpha(1);
-    p.setVisible(true);
-    p.setAngle(0);
-    p.setRotation(0);
-    if (typeof p.clearTint === 'function') p.clearTint();
-    if (p.body) {
-      p.body.enable = true;
-      p.body.allowGravity = true;
-      p.body.velocity.set(0, 0);
-    }
-    delete p._enteringDoor;
-
-    // Block door-portal re-triggering for a short window after a room
-    // load. This prevents ping-pong when a spawn point lands next to the
-    // return portal (the door's overlap body intentionally reaches one
-    // tile into the room), and gives the player a moment to read the
-    // layout before any door can fire.
     const now = this.scene.time?.now ?? 0;
-    p._doorCooldownUntil = now + 600;
+    const cpX = room.playerSpawn.x * TILE_SIZE + TILE_SIZE / 2;
+    const cpY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
 
-    p.spawnX = sx;
-    p.spawnY = sy;
-    p.checkpointX = room.playerSpawn.x * TILE_SIZE + TILE_SIZE / 2;
-    p.checkpointY = room.playerSpawn.y * TILE_SIZE + TILE_SIZE / 2;
-    p._checkpointRoom = this.currentRoomId;
-    p.visitedRooms.add(this.currentRoomId);
+    // In couch co-op, fan the players out horizontally around the spawn
+    // so they don't overlap and immediately shove each other into a wall.
+    const players = this.allPlayers.filter(Boolean);
+    const nP = players.length;
+    players.forEach((p, idx) => {
+      const offset = nP > 1 ? (idx - (nP - 1) / 2) * TILE_SIZE : 0;
+
+      if (this.scene.tweens) this.scene.tweens.killTweensOf(p);
+
+      p.setPosition(sx + offset, sy);
+      p.setScale(1);
+      p.setAlpha(1);
+      p.setVisible(true);
+      p.setAngle(0);
+      p.setRotation(0);
+      if (p === this.scene.player && typeof p.clearTint === 'function') {
+        p.clearTint();
+      }
+      if (p.body) {
+        p.body.enable = true;
+        p.body.allowGravity = true;
+        p.body.velocity.set(0, 0);
+      }
+      delete p._enteringDoor;
+
+      // Block door-portal re-triggering for a short window after a room
+      // load. Prevents ping-pong when a spawn point lands next to the return
+      // portal.
+      p._doorCooldownUntil = now + 600;
+
+      p.spawnX = sx + offset;
+      p.spawnY = sy;
+      p.checkpointX = cpX + offset;
+      p.checkpointY = cpY;
+      p._checkpointRoom = this.currentRoomId;
+      p.visitedRooms?.add(this.currentRoomId);
+    });
   }
 
   createDoor(px, py, obj) {
